@@ -1749,7 +1749,7 @@ global define symbol SummaryDialog() ``{
 
 	if (size(not_readable_files) > 0 || !hostname_stored || !date_stored || !file_list_stored || !comment_stored || !packages_list_stored)
 	{
-	    backup_result = backup_result + p + _("Some errors occurred during backup. See <B>Details</B>.") + _p;
+	    backup_result = backup_result + p + _("Some errors occurred during backup. Press button Details for more information.") + _p;
 	}
 
 
