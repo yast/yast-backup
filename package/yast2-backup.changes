@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Feb 10 15:04:12 CET 2003 - lslezak@suse.de
+
+- use new autoinstallation API
+- version 2.7.5
+
+-------------------------------------------------------------------
 Fri Feb  7 13:27:26 CET 2003 - lslezak@suse.cz
 
 - fixed root user detection
