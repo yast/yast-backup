@@ -19,7 +19,7 @@
 
 module	"Backup";
 
-import "AIClone";
+import "AutoinstClone";
 import "Profile";
 import "Lan";
 import "Progress";
@@ -312,7 +312,7 @@ global define void ExcludeNodevFS() ``{
 global define map WriteProfile(list volumes) ``{
 
     import "Profile";
-    
+
     string archive = archive_name;
     integer pos = findlastof(archive, "/");
     string dir = "";
@@ -330,8 +330,7 @@ global define map WriteProfile(list volumes) ``{
     y2debug("dir: %1, file: %2", dir, file);
 
     // create profile with with currently available resources (partitioning, software etc.)
-    AIClone::Process();
-  
+    AutoinstClone::Process();
 
     string prefix = "file://";
 
