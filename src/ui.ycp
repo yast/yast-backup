@@ -1818,8 +1818,18 @@ Backup will be aborted.
 
     y2milestone("Searching done");
 
+    list dparts = splitstring(Backup::archive_name, "/");
+    dparts = remove(dparts, size(dparts) - 1);
+    string tdir = mergestring(dparts, "/");
 
-    if (Backup::display && !Backup::no_interactive )
+    // check available space
+    if (check_space(nopkg_size + modified_size, Backup::tmp_dir, tdir, Backup::archive_type) == false)
+    {
+	// there is no space, user selected to not continue
+	return `abort;
+    }
+
+    if (Backup::display && !Backup::no_interactive)
     {
 	if (Backup::selected_files == nil)
 	{
@@ -3253,6 +3263,121 @@ global define boolean WriteArchive() ``{
     }
 
     return ret;
+}
+
+/**
+ * Check available free space and decide whether archive will fit
+ * @param found_size total size of found files in bytes
+ * @param tmpdir selected temporary directory
+ * @param target_type target archive type
+ * @return boolean true = archive fits, false = it doesn't fit,
+ *    nil = may not fit (compression is used, there is no guarantee that
+ *    archive will fit but can be possible if compression ration will
+ *    be enough high
+ */
+
+global define boolean check_space(integer found_size, string tmp_dir, string target_dir, symbol target_type) ``{
+
+    // required size in 1024-blocks
+    found_size = found_size / 1024;
+
+    map available_tmp = get_free_space(tmp_dir);
+    map available_target = get_free_space(target_dir);
+
+    if (size(available_target) == 0 || size(available_tmp) == 0)
+    {
+	return true;
+    }
+
+    boolean fits = true;
+
+    // temporary and target directories are same
+    if (available_tmp["device"]:nil == available_target["device"]:nil)
+    {
+	integer free = available_target["free"]:0;
+	// required space is doubled (tmpdir + target_dir)
+	integer required = found_size + found_size;
+
+	fits = is_space(required, free, target_type);
+
+	if (display_free_space_warning(fits, target_dir) == false)
+	{
+	    return false;
+	}
+    }
+    else
+    // temporary location and target directories are different
+    {
+	fits = is_space(required, available_target["free"]:0, target_type);
+	if (display_free_space_warning(fits, target_dir) == false)
+	{
+	    return false;
+	}
+
+	fits = is_space(required, available_tmp["free"]:0, target_type);
+	if (display_free_space_warning(fits, tmp_dir) == false)
+	{
+	    return false;
+	}
+    }
+
+    return true;
+}
+
+
+global define boolean is_space(integer required, integer available, symbol target_type)
+
+    if (available < 0)
+    {
+	return false;
+    }
+
+    if (contains( [`tgz, `stgz, `tbz, `stbz], target_type))
+    {
+	// require at least 10M extra free space (overhead)
+	return (required + 10240 < available) ? true : nil;
+    }
+    else if (target_type == `tar || target_type == `star)
+    {
+	// require at least 10M extra free space (overhead)
+	return required + 10240 < available;
+    }
+    else if (target_type == `txt)
+    {
+	// require at least 500k extra free space (overhead)
+	return required + 500 < available;
+    }
+    else
+    {
+	y2warning("Unknown archive type: %1", target_type);
+    }
+
+    return nil;
+}
+
+global define boolean display_free_space_warning(boolean fits, string dir) ``{
+    return cont = true;
+
+    // don't ask in cron mode - there is no UI
+    // always continue, summary mail with fail message
+    // will be sent to root user
+    if (Backup::cron_mode == true)
+    {
+	return cont;
+    }
+
+    if (fits == false)
+    {
+	// there is no enough space
+	cont = Popup::YesNo(sformat(_("There is not enough free space in directory %1.\nDo you wish to continue anyway?"), tmpdir));
+    }
+    else if (fits == nil)
+    {
+	// may be that there is not enough space
+	cont = Popup::YesNo(sformat(_("There may not be enough free space in directory %1.\nDo you wish to continue anyway?"), tmpdir));
+    }
+
+    return cont;
 }
 
 }
