@@ -1210,10 +1210,13 @@ global define symbol SearchingModifiedDialog() ``{
     // set buffer size
     SCR::Write(.background.buffer_size, 500);
 
-    boolean started = SCR::Execute(.background.run_output, Backup::script_get_files + Backup::get_search_script_parameters());
+    y2debug("Search script: %1", Backup::script_get_files + Backup::get_search_script_parameters());
+    boolean started = SCR::Execute(.background.run_output_err, Backup::script_get_files + Backup::get_search_script_parameters());
     list script_out = [ ];
 
     symbol ret = nil;
+
+    y2milestone("subprocess started: %1 (PID: %2)", started, SCR::Read(.background.pid));
 
     if (!started)
     {
@@ -1221,6 +1224,7 @@ global define symbol SearchingModifiedDialog() ``{
 	Report::Error(_("Could not start search script.
 Backup will be aborted.
 "));
+	y2error("Errors: %1", SCR::Read(.background.newerr));
 	return `abort;
     }
 
@@ -3024,9 +3028,10 @@ global define symbol Test_VolumeSizeDialog(/*list supported_media*/) ``{
 
 	    if (s != nil && size(label) > 0)
 	    {
-		units = add(units, `item(`id(s), label);
+		units = add(units, `item(`id(s), label));
 	    }
 	}
+    );
 
 
     UI::OpenDialog(
