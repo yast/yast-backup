@@ -2276,7 +2276,7 @@ Backup will be aborted.
 				y2milestone("vol_name: %1, nfsmount: %2, size(nfsmount):%3", vol_name, Backup::nfsmount, size(Backup::nfsmount));
 				string location = substring(vol_name, size(Backup::nfsmount));
 				vol_name = Backup::nfsserver + ":" + Backup::nfsexport + location;
-				y2internal("Volume name: %1", vol_name);
+				y2debug("Volume name: %1", vol_name);
 			    }
 
 			    created_archive_files = add(created_archive_files, vol_name);
@@ -2889,6 +2889,13 @@ global define symbol SelectProfileDialog() ``{
 
 		// select the profile in the list
 		UI::ChangeWidget( `id(`profile), `CurrentItem, new_name );
+
+		if (ret == `add)
+		{
+		    // start config. workflow for the new profile
+		    ret = `edit;
+		    Backup::RestoreSettingsFromBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
+		}
 	    }
 	}
 	else if( ret == `delete )
@@ -2924,15 +2931,11 @@ global define symbol SelectProfileDialog() ``{
 		ret = nil;
 	    }
 	}
-	else if (ret == `newworkflow)
-	{
-	    ret = `newworkflow;
-	}
 	else if (ret == `cancel)
 	{
 	    ret = `abort;
 	}
-    } while( ret != `finish && ret != `manual && ret != `start && ret != `edit && ret != `cron && ret != `abort && ret != `newworkflow);
+    } while( ret != `finish && ret != `manual && ret != `start && ret != `edit && ret != `cron && ret != `abort);
 
     if( ret == `finish )
     {
@@ -2942,6 +2945,8 @@ global define symbol SelectProfileDialog() ``{
 
     Wizard::RestoreNextButton ();
     Wizard::RestoreBackButton ();
+
+    y2debug("SelectProfileDialog result: %1", ret);
 
     return ret;
 }

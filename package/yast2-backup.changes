@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Mon Sep  8 16:34:13 CEST 2003 - lslezak@suse.de
+
+- start configuration workflow for the new profile
+- fixed backup_search.pl script (syntax error in the generated
+  YCP structure)
+- fixed map change
+- merged text from proofreading
+- version 2.8.11
+
+-------------------------------------------------------------------
 Tue Sep  2 10:55:15 CEST 2003 - lslezak@suse.cz
 
 - fixed testsuite (constructor was changed in imported module)

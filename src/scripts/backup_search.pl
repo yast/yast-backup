@@ -47,6 +47,7 @@ my %instalable_packages;
 
 my $widget_file = "";
 my $widget_index = 1;
+my $first = 1;
 
 my %exclude_dirs;
 
@@ -296,14 +297,16 @@ sub PrintFoundFile($$$$$$)
 
 	if ($widget_file ne "")
 	{
-	    if ($widget_index != 1)
+	    if (!$first)
 	    {
 		print WIDGETFILE ",\n";
 		print WIDGETFILE2 ",\n";
+
+		$first = 0;
 	    }
 
-	    print WIDGETFILE "`item(`id($widget_index), \"X\", \"$file\", \"$package\")";
-	    print WIDGETFILE2 "`item(`id($widget_index), \" \", \"$file\", \"$package\")";
+	    print WIDGETFILE "`item(`id($widget_index), \"X\", \"$file\", \"$package\"),\n";
+	    print WIDGETFILE2 "`item(`id($widget_index), \" \", \"$file\", \"$package\"),\n";
 	}
     }
 }

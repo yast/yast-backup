@@ -950,7 +950,12 @@ global define void WriteCronSettings() ``{
 	    }
 
 	    // mark saved value as unchanged
-	    backup_profiles[name, `cron_settings, "cron_changed"] = false;
+	    map prof = eval(backup_profiles[name]:$[]);
+	    map cron_s = eval(prof[`cron_settings]:$[]);
+
+	    cron_s["cron_changed"] = false;
+	    prof[`cron_settings] = eval(cron_s);
+	    backup_profiles[name] = eval(prof);
 	}
     );
 }
