@@ -40,10 +40,9 @@ textdomain "backup";
 
 	    _("Launch this module to backup your system.")
 	    +
-	    _("<p>You need to be logged in as <i>root</i> in order to do this.</p>")),
+	    _("<p>You need to be logged in as <i>root</i> to make complete backup.</p>")),
 
-	/* TODO: explanation in YaST2 Control Center */
-	`helptext     : _("Backup the changed files and system areas"),
+	`helptext     : _("Backup files and system areas"),
 
 	/* leave nil, experts only ;-) */
 	`codefragment : nil
