@@ -24,25 +24,23 @@ use Getopt::Long;
 use POSIX qw(tmpnam strftime);
 
 # return all harddisks present in system
-#TODO: contains /proc/partitions file only HDD entiries or other devices (CD-ROM, ZIP,...) are listed??
 sub harddisks()
 {
     my @disks = ();
 
-    open(PTS, "/proc/partitions")
-        or die "Can not open /proc/partitions file!\n";
+    open(SFD, 'sfdisk -s |');
 
-    while (my $line = <PTS>)
+    while (my $line = <SFD>)
     {
 	chomp($line);
 
-	if ($line =~ /^\s+\d+\s+\d+\s+\d+ ([ehsx])d(.)$/)
+	if ($line =~ /^\/dev\/(.d.):\s+\d+$/)
 	{
-	    push(@disks, "$1d$2");
+	    push(@disks, $1);
 	}
     }
 
-    close(PTS);
+    close(SFD);
 
     return @disks;
 }
@@ -79,7 +77,7 @@ GetOptions('archive-name=s' => \$archive_name,
     'archive-type=s' => \$archive_type, 'help' => \$help,
     'store-ptable' => \$store_pt, 'store-ext2=s' => \@ext2_parts,
     'verbose' => \$verbose, 'files-info=s' => \$files_info,
-    'comment-file=s'=> \$comment_file, 'multi-volume=s' => \$multi_volume
+    'comment-file=s'=> \$comment_file, 'multi-volume=i' => \$multi_volume
 );
 
 
@@ -140,6 +138,10 @@ my $files_num = 0;
 
 open(OUT, '>', $tmp_dir_root."/files")
     or die "Can not open file $tmp_dir_root/files\n";
+
+
+print OUT "tmp/YaST2-backup/files_info\n";
+$files_num++;
 
 
 # store host name
@@ -269,7 +271,10 @@ if (defined open(FILES, $files_info))
 	    }
 	    else
 	    {
-		print STDERR "File $line is not readable.\n"
+		if ($verbose)
+		{
+		    print "/File not readable: $line\n";
+		}
 	    }
 	}
 	else
@@ -294,14 +299,6 @@ if (length($comment_file) > 0)
 	$files_num++;
     }
 }
-
-
-# TODO files info should be first file for faster unpacking (???)
-# ... seems NO, tar does not exit when selected file is unpacked
-# note: tar writes file name after starting unpacking of this file
-
-print OUT "tmp/YaST2-backup/files_info\n";
-$files_num++;
 
 
 #store ext2 system area
@@ -425,6 +422,11 @@ if ($multi_volume > 0)
 	
 	open(OUTPUT, '>'.$output_directory.'/'.$volume_string.'_'.$output_filename)
 	    or die "Can not open target file: ";
+
+	if ($verbose)
+	{
+	    print '/Volume created: '.$volume_string.'_'.$output_filename."\n";
+	}
 
 	$written = 0;
 	    
