@@ -414,7 +414,7 @@ global define string get_search_script_parameters() ``{
 global define boolean PrepareBackup() ``{
     if (target_type == `nfs && nfsmount == nil)
     {
-	nfsmount = Nfs::Mount(nfsserver, nfsexport, nil, nil);
+	nfsmount = Nfs::Mount(nfsserver, nfsexport, nil, "");
 	return nfsmount != nil;
     }
 
@@ -705,7 +705,7 @@ global define map WriteProfile(list<string> volumes) ``{
     if (target_type == `nfs)
     {
 	pos = findlastof(archive_name, "/");
-	string nm = (pos > 0) ? substring(archive_name, 0, pos) : "";
+	string nm = (pos != nil && pos > 0) ? substring(archive_name, 0, pos) : "";
 
 	y2debug("pos: %1, nm: %2", pos, nm);
 

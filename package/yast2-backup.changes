@@ -1,4 +1,24 @@
 -------------------------------------------------------------------
+Fri May 14 14:40:14 CEST 2004 - lslezak@suse.cz
+
+- NFS mount bugfix (pass empty string as paramater instead
+  of nil) (#40564)
+- version 2.9.19
+
+-------------------------------------------------------------------
+Wed May  5 13:33:13 CEST 2004 - lslezak@suse.cz
+
+- directory excluding didn't work correctly for files owned
+  by a RPM package (#36233)
+- version 2.9.18
+
+-------------------------------------------------------------------
+Tue May  4 13:52:57 CEST 2004 - lslezak@suse.cz
+
+- merged proofread texts
+- 2.9.17
+
+-------------------------------------------------------------------
 Sun Apr  4 14:10:19 CEST 2004 - kkaempf@suse.de
 
 - fix testsuite
