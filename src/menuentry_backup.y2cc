@@ -15,7 +15,7 @@ Name = _("Back up your system")
 Group = System
 
 ; icon displayed in y2cc
-Icon = default.png
+Icon = system.png
 
 ; *one* *short* descriptive line for y2cc
 Helptext = _("Back up files and system areas")

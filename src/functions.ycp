@@ -168,8 +168,10 @@ global define symbol waitForUserOrProcess(integer wait, symbol abort_question) `
 
 	ret = UI::PollInput();
 
-	if (ret == `abort)
+	if (ret == `abort || ret == `cancel)
 	{
+	    ret = `abort;
+
 	    if (AbortConfirmation(abort_question))
 	    {
 		SCR::Execute(.background.kill, nil);
