@@ -434,7 +434,7 @@ if (defined open(FILES, $files_info))
 	}
 	else
 	{
-	    if ($line =~ /Package: (.*)/)
+	    if ($line =~ /Package: (.*)/ || $line eq "Nopackage:")
 	    {
 
 		if (defined $opened)
@@ -470,7 +470,7 @@ if (defined open(FILES, $files_info))
 
 		}
 		
-		$package_name = $1;
+		$package_name = ($line eq "Nopackage:") ? "NOPACKAGE" : $1;
 
 		$opened = open(PKGLIST, ">$tmp_dir_root/$package_name");
 		print FILES_INFO $line."\n";
@@ -594,14 +594,15 @@ if (defined $multi_volume && $multi_volume >= 0)
 	chop($output_directory);
     }
     
-    $tar_command .= " -M -V 'YaST2 backup:' -f $output_directory/${volume_num}_$output_filename";
+    my $num_string = sprintf("%02d", $volume_num);
+    $tar_command .= " -M -V 'YaST2 backup:' -f $output_directory/${num_string}_$output_filename";
 
     if ($multi_volume > 0)
     {
 	# round size down: subtract 5kiB from size (default block size)
-	if ($multi_volume > 5)
+	if ($multi_volume > 10 && $multi_volume % 10 != 0)
 	{
-	    $multi_volume -= 5;
+	    $multi_volume -= 10;
 	}
 	
 	$tar_command .= " -L $multi_volume";
@@ -633,7 +634,7 @@ if (defined $multi_volume && $multi_volume >= 0)
 	{
 	    $buffer .= $char;		# add character to buffer
 
-	    if ($buffer =~ /Prepare volume #(\d) for `.*' and hit return: /)
+	    if ($buffer =~ /Prepare volume #(\d+) for `.*' and hit return: /)
 	    {
 		if ($1 == $volume_num)
 		{
@@ -641,8 +642,12 @@ if (defined $multi_volume && $multi_volume >= 0)
 		}
 		else
 		{
+		    print "/Volume created: $output_directory/${num_string}_$output_filename\n";
+
 		    $volume_num++;
-		    print Writer "n $output_directory/${volume_num}_$output_filename\n";
+		    $num_string = sprintf("%02d", $volume_num);
+
+		    print Writer "n $output_directory/${num_string}_$output_filename\n";
 		}
 
 		$buffer = "";	# clear buffer for next file name or tar prompt
