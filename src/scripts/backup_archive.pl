@@ -151,8 +151,6 @@ if ($archive_type eq 'txt')
     exit 0;
 }
 
-
-#FIXME CLEANUP => 1
 my $tmp_dir_root = tempdir(CLEANUP => 1);	# remove directory content at exit
 
 my $tmp_dir = $tmp_dir_root."/tmp";
@@ -405,6 +403,8 @@ my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
 $year += 1900;
 $mon++;
 
+my $date_str = sprintf("%04d%02d%02d", $year, $mon, $mday);
+
 if ($verbose)
 {
     print "Creating archive:\n";
@@ -441,9 +441,9 @@ if (defined open(FILES, $files_info))
 		{
 		    close(PKGLIST);
 
-		    my $command = "/bin/tar -c -v --files-from $tmp_dir_root/$package_name --ignore-failed-read -S -f $tmp_dir_root/tmp/$package_name-$year$mon$mday-0.tar";
+		    my $command = "/bin/tar -c -v --files-from $tmp_dir_root/$package_name --ignore-failed-read -S -f $tmp_dir_root/tmp/$package_name-$date_str-0.tar";
 
-		    print OUT "$package_name-$year$mon$mday-0.tar";
+		    print OUT "$package_name-$date_str-0.tar";
 		    $files_num++;
 
 		    if ($archive_type eq 'tgz')
@@ -497,9 +497,9 @@ if (defined $opened)
 {
     close(PKGLIST);
 
-    my $command = "/bin/tar -c -v --files-from $tmp_dir_root/$package_name --ignore-failed-read -S -f $tmp_dir_root/tmp/$package_name-$year$mon$mday-0.tar";
+    my $command = "/bin/tar -c -v --files-from $tmp_dir_root/$package_name --ignore-failed-read -S -f $tmp_dir_root/tmp/$package_name-$date_str-0.tar";
 
-    print OUT "$package_name-$year$mon$mday-0.tar";
+    print OUT "$package_name-$date_str-0.tar";
     $files_num++;
 
     if ($archive_type eq 'tgz')
@@ -599,13 +599,15 @@ if (defined $multi_volume && $multi_volume >= 0)
 
     if ($multi_volume > 0)
     {
-	# round size down: subtract 5kiB from size (default block size)
-	if ($multi_volume > 10 && $multi_volume % 10 != 0)
-	{
-	    $multi_volume -= 10;
-	}
+	my $num_blocks = 4;	# set block size to 4*512B (default is 20) with value 1 or 2 I get SIGSEGV :-( 
 	
-	$tar_command .= " -L $multi_volume";
+	# round size down: subtract block size
+	if ($multi_volume > ($num_blocks / 2) && $multi_volume % ($num_blocks / 2) != 0)
+	{
+	    $multi_volume -= $num_blocks / 2;
+	}
+
+	$tar_command .= " -L $multi_volume -b $num_blocks";
     }
 
     # redirect STDERR to STDOUT
@@ -654,6 +656,8 @@ if (defined $multi_volume && $multi_volume >= 0)
 	    }
 	}
     }
+
+    print "/Volume created: $output_directory/${num_string}_$output_filename\n";
 }
 else
 {

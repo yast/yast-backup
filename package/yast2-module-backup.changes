@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Thu Jan  3 14:58:52 CET 2002 - lslezak@suse.cz
+
+- small bugfixes
+- tar multi volume archive: block size changed to 4
+- documetation update
+- version 2.5.8
+
+-------------------------------------------------------------------
 Wed Dec 19 17:33:41 CET 2001 - lslezak@suse.cz
 
 - do not create volumes larger than specified

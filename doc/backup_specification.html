@@ -18,6 +18,7 @@ Changes:
 
 <P>
 <UL>
+  <LI><B>2002-01-03:</B> Multi volume problems with tar utility</LI>
   <LI><B>2001-12-18:</B> Changed archive file internal structure</LI>
   <LI><B>2001-11-29:</B> Changed solutions of some problems</LI>
   <LI><B>2001-10-31:</B> Multi volume archive</LI>
@@ -108,8 +109,11 @@ do not belong to any RPM package.</P>
 <I>&lt;package_name&gt;-&lt;package_version&gt;-&lt;date_of_backup&gt;-&lt;num&gt;.&lt;ext&gt;</I>
 </UL>
 
-Currently <I>num</I> is 0 - this value is for future enhacement, file extension
-<I>ext</I> is one of '.tar.gz', '.tar.bz2' or '.tar'.</P>
+Currently <I>num</I> is 0 - this value is for future enhacement (backup archive
+created by package update have similar structure, so it is possible to include
+already created backup files to archive and this number can be used to differ
+file names) file extension <I>ext</I> is one of '.tar.gz', '.tar.bz2' or
+'.tar'.</P>
 
 <P>Some additional information will be stored in subdirectory <I>info</I> in the archive.
 This directory should contain files:
@@ -210,7 +214,8 @@ is more acceptable automatic splitting.</P>
 
 <P>Tar archiver creates multiple volume archives if <I>-M</I> or <I>-L</I> is used.
 Each volume is standalone archive - files can be extracted without need of
-other volumes (except files which were splitted to more volumes) 
+other volumes (except files which were splitted to more volumes). Volume size
+is in 1024 bytes blocks.
 </P>
 
 <!--
@@ -230,6 +235,16 @@ compression parameters and start compression utility connected to tar output.)</
 <P>Each volume is named according to pattern <EM>&lt;volume_number&gt;_&lt;archive_name&gt;</EM>.
 If user enters archive name <EM>/tmp/archive.tar</EM> then volume names are:
 <EM>/tmp/01_archive.tar</EM>, <EM>/tmp/02_archive.tar</EM>, ...</P>
+
+<P>There is small problem with tar and multi volume archives: Volume size is
+multiply of block size, which is default 20&nbsp;*&nbsp;512 bytes = 10kiB. So if requested
+volume size is 32kiB (with parametr -L 32) created volume will have size 40kiB.
+There is option to set block size, but with parameter -b&nbsp;1 (block size 1*512B)
+or -b&nbsp;2 tar exits on SIGSEGV. With -b&nbsp;4 it seems that it works, so default
+block size is set to 4*512 bytes. This was tested with tar version 1.13.18.</P>
+
+<P>Solution is to create smaller volumes - if requested volume size is 35kiB 
+create volumes with size 34kiB (with 2kiB blocks).</P>
 
 
 <H4>Architecture</H4>
