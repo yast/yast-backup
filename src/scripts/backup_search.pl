@@ -89,8 +89,27 @@ my @installed_packages = ReadAllPackages();
 
 my %packages_files;
 my %package_files_inodes;
+my %dups;
 
-my %dups = ReadAllFiles(\%packages_files, \%package_files_inodes);
+# read list of all package's files if searching not owned files is required
+# or MD5 sum is not used in searching modified files
+if ($search_files or $no_md5)	
+{
+    %dups = ReadAllFiles(\%packages_files, \%package_files_inodes);
+}
+else
+{
+    if ($output_progress)
+    {
+     	print "Files read\n";
+    }
+}
+
+# release list of files if it will not be used to save memory
+if (!$search_files)
+{
+    %packages_files = ();
+}
 
 VerifyPackages(\@installed_packages, \%dups);
 
@@ -291,8 +310,11 @@ sub ReadAllFiles(%%)
 	    }
 	    else
 	    {
-		my @st = stat($line);
-		$pkg_inodes->{$st[0].$st[1]} = 1;	# store device and inode number
+		if ($search_files)
+		{
+		    my @st = stat($line);
+		    $pkg_inodes->{$st[0].$st[1]} = 1;	# store device and inode number
+		}
 
 		$all_files->{$line} = 1;
 	    }
