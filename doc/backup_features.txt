@@ -12,7 +12,7 @@ Features:
     * can backup files which do not belong to any RPM package
       (can exclude selected filesystems/directories from search)
 
-    * create tar backup file (with tar, tar.gz or tar.bz2 package archives)
+    * create tar backup file (with tar, tar.gz, tar.bz2 or star package archives)
              or only store list of changed files
 
     * backup partition table (text: sfdisk -d, raw:dd)
@@ -22,7 +22,7 @@ Features:
     * additional information is part of the archive (hostname,
         date of backup, user comment, installed packages...)
 
-    * batch mode
+    * support ACLs (only star subarchives)
 
-    * restore files from archive
+    * restore files from archive (by Yast2 Restore module)
 

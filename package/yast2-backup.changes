@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Feb  7 13:27:26 CET 2003 - lslezak@suse.cz
+
+- fixed root user detection
+- merged proofread text
+- updated documentation
+- version 2.7.4
+
+-------------------------------------------------------------------
 Wed Feb  5 10:50:47 CET 2003 - lslezak@suse.cz
 
 - fixed neededforbuild

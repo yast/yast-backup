@@ -18,6 +18,7 @@ Changes:
 
 <P>
 <UL>
+  <LI><B>2003-02-06:</B> Star support (ACL backup), documentation update</LI>
   <LI><B>2002-02-01:</B> Added default excluded directories and file systems</LI>
   <LI><B>2002-01-03:</B> Multi volume problems with tar utility</LI>
   <LI><B>2001-12-18:</B> Changed archive file internal structure</LI>
@@ -113,8 +114,8 @@ do not belong to any RPM package.</P>
 Currently <I>num</I> is 0 - this value is for future enhacement (backup archive
 created by package update have similar structure, so it is possible to include
 already created backup files to archive and this number can be used to differ
-file names) file extension <I>ext</I> is one of '.tar.gz', '.tar.bz2' or
-'.tar'.</P>
+file names). File extension <I>ext</I> is one of '.tar.gz', '.tar.bz2',
+'.tar' or '.star.gz', '.star.bz2', 'star' - depends on selected archiver (tar or star).</P>
 
 <P>Some additional information will be stored in subdirectory <I>info</I> in the archive.
 This directory should contain files:
@@ -160,6 +161,13 @@ system.</P>
 "nodev" flag in /proc/filesystems file (e.g. nfs, proc, tmpfs...).</P>
 
 
+<H4>Access Control Lists (ACLs)</H4>
+
+<P>Backup module can store ACLs using star archiver - in this case subarchives
+(with *.star extension) have exustar format and they are created with -acl flag
+to store ACLs.</P>
+
+
 <H4>System backup</H4>
 
 <P>System backup will be stored in <I>system</I> subdirectory in the archive. This subdirectory can contain files:
@@ -199,7 +207,7 @@ Solution: Store installation prefix
 
 <LI>What if some file is owned by more packages?
 File can be owned by multiple packages, but if in one packge it has different
-modify time (content is equal) then this file will be unnecessary backuped.
+modify time (content is equal) then this file will be unnecessary backed up.
 (This is possible if MD5 sum is not used.)
 <BR>
 Solution: Get list of files which are owned by more than one package. If a file has
@@ -232,20 +240,6 @@ is more acceptable automatic splitting.</P>
 Each volume is standalone archive - files can be extracted without need of
 other volumes (except files which were splitted to more volumes).
 </P>
-
-<!--
-<P><EM>Backup_archive.pl</EM> script can split archive to multiple parts with
-required size. Splitting archive file is done through named pipe (fifo)
-to avoid unnecessary storing whole archive to disk and splitting it later.
-Output from tar is sent to fifo which is read by compression utility, its output
-is read by <EM>backup_archive.pl</EM> script and splitted to individual volumes.
-</P>
-
-<P>(Note: It seems that tar has a bug - if output is sent to fifo and archive
-is filtered through compression utility (<EM>z</EM> or <EM>j</EM> command line
-parameters) then file read from fifo is corrupted. Solution is start tar without
-compression parameters and start compression utility connected to tar output.)</P>
--->
 
 <P>Each volume is named according to pattern <EM>&lt;volume_number&gt;_&lt;archive_name&gt;</EM>.
 If user enters archive name <EM>/tmp/archive.tar</EM> then volume names are:
@@ -285,34 +279,17 @@ displays progress of backup.
 
 <H3>Restore</H3>
 
-<P>This feature is planned for future, at first must be achieved YaST1 functionality
-(creating backup archive). Here is only small overview of restoring procedure:
-</P>
-
-<P>YaST2 backup module will use some information about system stored in backup archive 
-and will enable simple restoring of files. Restoring partition table or restoring ext2 critical areas
+<P>YaST2 retore module will use some information about system stored in backup archive 
+and will allow simple restoring of files. Restoring partition table or restoring ext2 critical areas
 are dangerous operations, therefore these operations should be done only manually by expert user.
 Restoring partition table is described in
 <A HREF="http://www.linuxdoc.org/HOWTO/mini/Partition-Rescue/x92.html#AEN95">
 Partition rescue mini HOWTO - chapter 8.1</A>
- Ext2 data are stored in image obtained by e2image utility, see 
-<A HREF="http://mesh.eecs.umich.edu/cgi-bin/man2html/usr/share/man/man8/e2image.8.gz">
-e2image man page</A>.
+ Ext2 data are stored in image obtained by e2image utility, see e2image man page.
 </P>
 
-<P>Some problems:
-<UL>
-<LI>What if file was not in any package during backup, but at restoring some package owns it?
-(In other words: no version info is stored in archive)<BR>
-Solution: Query file if it is in some package, if yes, restoring is allowed only in expert mode.
-</LI>
-<LI>Some files should not be restored from backup archive, for example files
-/var/lib/rpm/* (RPM database), because it can lead to some system
-inconsistency. If user deletes them by mistake they can be restored manually
-from the archive.
-</LI>
-</UL>
-</P>
+<P>More information about restoring can be found in Yast2 restore module documentation.</P>
+
 
 <H2>Workflow</H2>
 

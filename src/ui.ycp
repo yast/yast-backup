@@ -99,8 +99,15 @@ global define symbol ArchDialog() ``{
 
     boolean cont = false;
     symbol ret = nil;
+    boolean iamroot = false;
+    map whoami = SCR::Execute(.target.bash_output, "/usr/bin/whoami");
 
-    if (SCR::Read(.runtime.username) != "root" && root_warning_displayed == false)
+    if (whoami["exit"]:-1 == 0)
+    {
+	iamroot = (whoami["stdout"]:"" == "root\n");
+    }
+
+    if (!iamroot && root_warning_displayed == false)
     {
 	// warning popup message
 	UI::WarningPopup(_("You are not logged in as root.
@@ -140,7 +147,9 @@ be backed up by root.
 		    if (SCR::Read(.target.size, "/usr/bin/star") < 0)
 		    {
 			// YesNoPopup message text - ask to install 'star' package
-			boolean inst = UI::YesNoPopup(_("Package 'star' is required for\nselected archive type.\nDo you want to install it?"));
+			boolean inst = UI::YesNoPopup(_("Package 'star' is required for
+the selected archive type.
+Install it?"));
 
 			if (inst == true)
 			{

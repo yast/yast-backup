@@ -18,6 +18,7 @@ Changes:
 
 <P>
 <UL>
+  <LI><B>2003-02-05:</B> Documentation update</LI>
   <LI><B>2001-12-18:</B> Updated to new Backup module</LI>
   <LI><B>2001-12-05:</B> Initial version</LI>
 </UL>
@@ -28,14 +29,17 @@ Changes:
 <H2>How to use YaST2 backup module</H2>
 
 
-<P>Note: YaST2 backup module does not replace other backup utilities!</P>
+<P>Note: YaST2 backup module does not replace other backup utilities! The YaST2
+backup module is a small, easy-to-use backup program. If you need advanced
+features, such as incremental backup or network backup, you should use another
+expert tool.</P>
 
 
 <H3>How does YaST2 backup work?</H3>
 
 <P> YaST2 backup module searches system for files which should be backed up and
 creates archive from them. The archive contains modified files (which were
-modified since system installation or package upgrade), files not owned by any
+modified since system installation or package update), files not owned by any
 package can be optionally added to archive. Critical system disk areas can be
 added to archive too.</P>
 
@@ -62,21 +66,24 @@ Currently supported archive types:</P>
 
 <UL>
 
-<LI>tar with tar.gz subarchives - gzip is used to compress package archives, all files are merged to tar archive</LI>
+<LI>tar with tar-gzip subarchives - gzip is used to compress package archives,
+all files are merged to tar archive</LI>
 
-<LI>tar with tar.bz2 subarchives - bzip2 compression utility is used for package archives - it has better compression
-ratio, but it is slower</LI>
+<LI>tar with tar-bzip2 subarchives - bzip2 compression utility is used for
+package archives - it has better compression ratio, but it is slower</LI>
 
 <LI>tar with tar subarchives - no compression at all, only merging files</LI>
 
-<LI>txt - store only list of found files. This option does not make backup archive,
+<LI>tar with star-* subarchives - similar to options above, but subarchives are
+created by star archiver (ACLs will stored into archive)</LI>
+
+<LI>only list file names - This option does not create backup archive,
 but stores file names to file. This is useful to see which files were changed
 or to use another archive program.</LI>
 
 </UL>
-
-
 </P>
+
 
 <H5>Archive file options</H5>
 
@@ -148,8 +155,8 @@ files from found ones will be backed up.</P>
 
 <H4>Restoring from backup</H4>
 
-<P>Restoring from backup archive is not implemented now, but can done manually
-by unpacking files from the archive.</P>
+<P>Files can be restored from backup archive by Yast2 Restore module or
+manually using tar/star utility.</P>
 
 
 <H3>Documentation</H3>
