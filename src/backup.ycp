@@ -117,6 +117,7 @@ map sequence = $[
     "readprof" : $[
 	`edit	: "archive",
 	`start  : "do_searching",
+	`start  : "constraint",
 	`manual : "archive",
 	`cron	: "cron",
 	`abort	: `abort,
@@ -136,28 +137,18 @@ map sequence = $[
 	`abort	: `abort
     ],
     "backup" : $[
-        `next	: "exclude",
+        `next	: "constraint",
 	`next2	: "searching",
 	`xpert	: "options",
+	`abort	: `abort
+    ],
+    "constraint" : $[
+	`next	: "searching",
 	`abort	: `abort
     ],
     "options" : $[
 	`finish	: "backup",
 	`set_system : "system",
-	`abort	: `abort
-    ],
-    "exclude" : $[
-	`next	: "searching",
-	`expert : "excludefs",
-	`expert_regexp : "excludereg",
-	`abort	: `abort
-    ],
-    "excludefs" : $[
-	`ok : "exclude",
-	`abort	: `abort
-    ],
-    "excludereg" : $[
-	`next : "exclude",
 	`abort	: `abort
     ],
     "system" : $[
@@ -196,9 +187,7 @@ map aliases = $[
     "archive"	: ``(ArchDialog()),
     "backup"	: ``(BackupDialog()),
     "options"	: ``(ExpertOptionsDialog()),
-    "exclude"	: ``(ExcludeDialog()),
-    "excludefs" : ``(ExcludeFilesystemDialog()),
-    "excludereg": ``(ExcludeRegexpDialog()),
+    "constraint": ``(ConstraintDialog()),
     "system"	: ``(SystemBackupDialog()),
     "searching" : ``(PrepareSearching()),
     "do_searching"	: [ ``(SearchingModifiedDialog()), true ],
@@ -292,8 +281,4 @@ if (cron_mode != true)
 y2milestone(" *** Backup module finished *** ");
 
 }
-
-
-
-
 

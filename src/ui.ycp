@@ -26,9 +26,7 @@ import "String";
 import "NetworkPopup";
 import "Nfs";
 import "Require";
-
 import "Popup";
-include "ui/file_popups.ycp";
 
 include "backup/help_texts.ycp";
 
@@ -37,6 +35,13 @@ textdomain "backup";
 global symbol last_input = nil;
 
 global map deselected_ids = $[];
+
+// type of item (displayed in the table)
+global string filesystem_text = _("File System");
+// type of item (displayed in the table)
+global string directory_text = _("Directory");
+// type of item (displayed in the table)
+global string regexp_text = _("Reg. expression");
 
 /**
  * Update widget status in the dialog. Enable/disable widget according to
@@ -74,15 +79,11 @@ global define void update_cron_dialog() ``{
  */
 global define void update_location_dialog() ``{
     boolean nfs = (UI::QueryWidget(`id(`nfs), `Value) == true);
-//    boolean removable = (UI::QueryWidget(`id(`removable), `Value) == true);
 
     UI::ChangeWidget(`id(`nfsserver), `Enabled, nfs);
     UI::ChangeWidget(`id(`selectexport), `Enabled, nfs);
     UI::ChangeWidget(`id(`nfsexport), `Enabled, nfs);
     UI::ChangeWidget(`id(`selecthost), `Enabled, nfs);
-
-//    UI::ChangeWidget(`id(`device), `Enabled, removable);
-//    UI::ChangeWidget(`id(`devopts), `Enabled, removable);
 }
 
 /**
@@ -932,236 +933,6 @@ global define symbol BackupDialog() ``{
 
 
 /**
- * Dialog for setting excluded directories
- * @return symbol Symbol for wizard sequencer - pressed button
- */
-
-global define symbol ExcludeDialog() ``{
-
-    if (Backup::dir_list == nil)
-    {
-	Backup::dir_list = AddId(Backup::default_dir);
-	if (Backup::dir_list == nil)
-	{
-	    Backup::dir_list = [];
-	}
-    }
-
-    // initialize excluded filesystems
-    if (Backup::detected_fs == nil)
-    {
-	// dialog header
-	Wizard::SetContents("", `Label(_("Detecting file system types...")), "", false, false);
-	Backup::detected_fs = GetMountedFilesystems();
-	Backup::ExcludeNodevFS();
-    }
-
-    // dialog header
-    Wizard::SetContents( _("Exclude from Backup"),
-	`VBox(
-	    `VSpacing(1.0),
-	    // table label
-	    `Left(`Label(_("Directories excluded from search:"))),
-	    // table header
-	    `Table(`id(`dirs), `header(_("Directory")), Backup::dir_list),
-
-	    `HBox(
-		// push button label
-                `PushButton(`id(`addnew), `opt(`key_F3), _("A&dd...") ) ,
-		// push button label
-		`PushButton(`id(`edit), `opt(`key_F4), _("&Edit...") ) ,
-		// push button label
-		`PushButton(`id(`delete), `opt(`key_F5), _("De&lete") )
-	    ),
-
-	    `VSpacing(1.0),
-	    // push button label
-            `MenuButton(_("E&xpert..."), [`item(`id(`expert), _("Exclude file system...")), `item(`id(`expert_regexp), _("Exclude files..."))]),
-	    `VSpacing(1.0)
-	),
-        backup_help_exclude_dir(), true, true
-    );
-
-    // replace 'Next' buton with 'Ok'
-    Wizard::ReplaceNextButton(`PushButton(`id(`next), `opt(`default, `key_F10), Label::OKButton()));
-
-    symbol ret = nil;
-
-    while (ret != `next && ret != `back && ret != `abort && ret != `expert && ret != `expert_regexp)
-    {
-	ret = UI::UserInput();
-
-	string curr = UI::QueryWidget(`id(`dirs), `CurrentItem);
-
-	if (curr != nil)
-	{
-            if (ret == `edit)
-	    {
-		// popup dialog header
-	        map edited = ShowEditDialog(_("&Edit"), curr);
-
-		if (lookup(edited, "clicked", nil) == `ok)
-		{
-		    string txt = lookup(edited, "text", "");
-
-                    if (txt != curr)
-		    {
-			if (contains(Backup::dir_list, `item(`id(txt), txt)))
-			{
-			    // error popup message
-			    Popup::Error(sformat(_("Directory %1 is already in the list."), txt));
-			}
-			else
-			{
-			    // refresh dir_list content
-			    Backup::dir_list = maplist(`i, Backup::dir_list, ``{
-				if (select(select(i, 0, ""), 0, "") == curr)
-				{
-				    return `item(`id(txt), txt);
-				}
-				else
-				{
-				    return i;
-				}
-			    });
-
-			    UI::ChangeWidget(`id(`dirs), `Items, Backup::dir_list);
-			}
-		    }
-		}
-	    }
-
-	    if (ret == `delete)
-	    {
-		Backup::dir_list = filter(`i, Backup::dir_list, ``{return (select(select(i, 0, []), 0, nil) != curr);});
-                UI::ChangeWidget(`id(`dirs), `Items, Backup::dir_list);
-	    }
-	}
-
-	if (ret == `addnew)
-	{
-	    // dialog popup header
-	    map result = ShowEditDialog(_("&Add new directory"), "");
-
-            if (lookup(result, "clicked", nil) == `ok)
-            {
-                string new_dir = lookup(result, "text", nil);
-
-                // add new partition only if it's not empty a it isn't already in list
-                if (new_dir != "" && new_dir != nil)
-		{
-		    if (contains(Backup::dir_list, `item(`id(new_dir), new_dir)))
-		    {
-			// error poup message - %1 is a directory name
-			Popup::Error(sformat(_("Directory %1 is already in the list."), new_dir));
-		    }
-		    else
-		    {
-			Backup::dir_list = add(Backup::dir_list, `item(`id(new_dir), new_dir));
-
-			UI::ChangeWidget(`id(`dirs), `Items, Backup::dir_list);
-		    }
-		}
-            }
-	}
-
-	if (ret == `abort || ret == `cancel)
-	{
-	    ret = `abort;
-	    if (!AbortConfirmation(`changed))
-	    {
-		ret = nil;
-	    }
-	}
-    }
-
-    // Restore 'next' button
-    Wizard::RestoreNextButton();
-
-    return ret;
-}
-
-
-/**
- * Dialog for setting excluded file systems from search
- * @return symbol Symbol for wizard sequencer - pressed button
- */
-
-global define symbol ExcludeFilesystemDialog() ``{
-
-    list fs = GetListWithFlags(Backup::detected_fs, Backup::fs_exclude);
-
-    // multi selection box widget label
-    string label_multi = _("&Exclude mounted file systems");
-
-    // dialog header
-    Wizard::SetContents( _("Exclude file system from search"),
-	`VBox(
-	    `VSpacing(1.0),
-	    `ReplacePoint(`id(`repl), `MultiSelectionBox(`id(`fss), label_multi, fs)),
-	    `HBox(
-		`HStretch(),
-		// push button label
-		`HWeight(2, `PushButton(`id(`sel_all), _("&Select all") )),
-		// push button label
-		`HWeight(2, `PushButton(`id(`desel_all), _("&Deselect all") )),
-		`HStretch()
-	    ),
-	    `VSpacing(1.0)
-	),
-        backup_help_exclude_fs(), true, true
-    );
-
-    // replace 'Next' buton with 'Ok'
-    Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default, `key_F10), Label::OKButton()));
-    UI::SetFocus(`id(`ok));
-
-    symbol ret = nil;
-
-    while (ret != `ok && ret != `back && ret != `abort)
-    {
-	ret = UI::UserInput();
-
-	if (ret == `sel_all)
-	{
-	    fs = AddIdBool(fs, true);
-	    UI::ReplaceWidget(`id(`repl), `MultiSelectionBox(`id(`fss), label_multi, fs));
-	}
-	else
-	{
-	    if (ret == `desel_all)
-	    {
-		fs = AddIdBool(fs, false);
-		UI::ReplaceWidget(`id(`repl), `MultiSelectionBox(`id(`fss), label_multi, fs));
-	    }
-	    else
-	    {
-		if (ret == `abort || ret == `cancel)
-		{
-		    ret = `abort;
-		    if (!AbortConfirmation(`changed))
-		    {
-			ret = nil;	// not confirmed, uset ret
-		    }
-		}
-	    }
-	}
-    }
-
-
-    if (ret == `ok)
-    {
-	Backup::fs_exclude = UI::QueryWidget(`id(`fss), `SelectedItems);
-    }
-
-    // Restore 'next' button
-    Wizard::RestoreNextButton();
-
-    return ret;
-}
-
-
-/**
  * System area backup options
  * @return symbol Symbol for wizard sequencer - pressed button
  */
@@ -1248,7 +1019,7 @@ global define symbol SystemBackupDialog() ``{
 
             if (ret == `edit)
 	    {
-	        map edited = ShowEditDialog("&Edit", curr);
+	        map edited = ShowEditDialog("&Edit", curr, nil);
 
 		if (lookup(edited, "clicked", nil) == `ok)
 		{
@@ -1295,7 +1066,7 @@ global define symbol SystemBackupDialog() ``{
 	if (ret == `addnew)
 	{
 	    // popup dialog header
-	    map result = ShowEditDialog(_("&Add Ext2 partition"), "");
+	    map result = ShowEditDialog(_("&Add Ext2 partition"), "", Backup::detected_ext2);
 
 	    if (lookup(result, "clicked", nil) == `ok)
 	    {
@@ -3041,7 +2812,7 @@ global define symbol SelectProfileDialog() ``{
     // save profiles before quit and
     // before starting backup
     // (modifications would be lost when backup is aborted
-    if (ret == `finish || ret == `start)
+    if (ret == `finish || ret == `start || ret == `manual)
     {
 	y2milestone(" *** Storing profiles ***");
 	Backup::WriteBackupProfiles();
@@ -3060,8 +2831,9 @@ global define symbol SelectProfileDialog() ``{
  * @return symbol Symbol for wizard sequencer - `next for searching, `next2 for return to profile dialog
  */
 global define symbol PrepareSearching() ``{
+
     // if the user does not use profile, start searching
-    if( Backup::selected_profile == nil )
+    if( Backup::selected_profile == nil || Backup::no_interactive)
     {
 	return `next;
     }
@@ -3080,7 +2852,7 @@ global define symbol PrepareSearching() ``{
  */
 global define string AskNewProfileName() ``{
     // Translators: text of a popup dialog
-    map new_name = ShowEditDialog(_("Enter a name for the new profile."), "");
+    map new_name = ShowEditDialog(_("Enter a name for the new profile."), "", nil);
 
     while( lookup( new_name, "clicked", nil ) == `ok && Backup::backup_profiles[ new_name["text"]:nil ]:nil != nil  )
     {
@@ -3088,7 +2860,7 @@ global define string AskNewProfileName() ``{
 	if( ! Popup::YesNo(sformat(_("A profile '%1' already exists.
 Replace the existing profile?
 "), new_name["text"]:"")) ) {
-	    new_name = ShowEditDialog(_("Enter a name for the new profile."), "");
+	    new_name = ShowEditDialog(_("Enter a name for the new profile."), "", nil);
 	}
 	else
 	{
@@ -3450,130 +3222,304 @@ global define boolean display_free_space_warning(boolean fits, string dir) ``{
 
 
 /**
- * Dialog for setting excluded directories
+ * Dialog for setting excluded directories, file systems and reg. expressions
  * @return symbol Symbol for wizard sequencer - pressed button
  */
+global define symbol ConstraintDialog() ``{
 
-global define symbol ExcludeRegexpDialog() ``{
+    // initialize excluded directories
+    if (Backup::dir_list == nil)
+    {
+	Backup::dir_list = [];
+    }
+
+    // initialize excluded filesystems
+    if (Backup::detected_fs == nil)
+    {
+	// dialog header
+	Wizard::SetContents("", `Label(_("Detecting file system types...")), "", false, false);
+	Backup::detected_fs = GetMountedFilesystems();
+	Backup::ExcludeNodevFS();
+    }
+
+    // do not allow manual changes of configuration
+    if (Backup::no_interactive)
+    {
+	return `next;
+    }
+
+    list table = createConstraintsTable();
 
     // dialog header
-    Wizard::SetContents( _("Exclude from Backup"),
+    Wizard::SetContents( _("Search Constraints"),
 	`VBox(
 	    `VSpacing(1.0),
 	    // table label
-	    `Left(`Label(_("Files excluded from search:"))),
+	    `Left(`Label(_("Items excluded from search:"))),
 	    // table header
-	    `Table(`id(`regexs), `header(_("Files")), Backup::regexp_list),
+	    `Table(`id(`const), `header(_("Value"), _("Type")), table),
 
 	    `HBox(
 		// push button label
-                `PushButton(`id(`addnew), `opt(`key_F3), _("A&dd...") ) ,
+                `MenuButton(_("A&dd"), [
+			`item(`id(`dir), _("&Directory...")),
+			`item(`id(`fs), _("&File system...")),
+			`item(`id(`regexp), _("&Reg. expression..."))
+		    ]
+		),
 		// push button label
-		`PushButton(`id(`edit), `opt(`key_F4), _("&Edit...") ) ,
+		`PushButton(`id(`edit), `opt(`key_F4), _("&Edit...")),
 		// push button label
-		`PushButton(`id(`delete), `opt(`key_F5), _("De&lete") )
+		`PushButton(`id(`delete), `opt(`key_F5), _("De&lete"))
 	    )
 	),
-        backup_help_exclude_file(), true, true
+        backup_help_constraints(), true, true
     );
 
-    // replace 'Next' buton with 'Ok'
-    Wizard::ReplaceNextButton(`PushButton(`id(`next), `opt(`default, `key_F10), Label::OKButton()));
+    if (Backup::selected_profile != nil)
+    {
+	// replace 'Next' button with 'Ok' if profile is configured
+	Wizard::ReplaceNextButton(`PushButton(`id(`next), `opt(`default, `key_F10), Label::OKButton()));
+    }
 
     symbol ret = nil;
 
-    while (ret != `next && ret != `back && ret != `abort && ret != `expert)
+    map foundfilesystems = (map) SCR::Read(.proc.filesystems);
+    list<string> all_fss = [];
+
+    if (size(foundfilesystems) > 0)
+    {
+	foreach(string fsname, string flag, foundfilesystems, ``{
+		all_fss = add(all_fss, fsname);
+	    }
+	);
+    }
+
+
+    while (ret != `next && ret != `back && ret != `abort)
     {
 	ret = UI::UserInput();
 
-	string curr = UI::QueryWidget(`id(`regexs), `CurrentItem);
+	integer curr = UI::QueryWidget(`id(`const), `CurrentItem);
+	string type = nil;
+	string value = nil;
 
 	if (curr != nil)
 	{
-            if (ret == `edit)
+	    y2milestone("current item: %1", curr);
+
+	    term line = UI::QueryWidget(`id(`const), `Item(curr));
+	    y2milestone("current option: %1", line);
+
+	    type = select(line, 2, nil);
+	    y2milestone("type: %1", type);
+
+	    value = select(line, 1, nil);
+	    y2milestone("value: %1", value);
+	}
+
+	if (ret == `delete && type != nil && value != nil)
+	{
+	    // remove selected constraint
+	    if (type == regexp_text)
 	    {
-		// popup dialog header
-	        map edited = ShowEditDialog(_("&Edit"), curr);
+		Backup::regexp_list = filter(string i, Backup::regexp_list, ``(i != value));
+	    }
+	    else if (type == directory_text)
+	    {
+		Backup::dir_list = filter(string i, Backup::dir_list, ``(i != value));
+	    }
+	    else if (type == filesystem_text)
+	    {
+		Backup::fs_exclude = filter(string i, Backup::fs_exclude, ``(i != value));
+	    }
 
-		if (lookup(edited, "clicked", nil) == `ok)
+	    // refresh table content
+	    UI::ChangeWidget(`id(`const), `Items, createConstraintsTable());
+	}
+
+	if (ret == `edit && type != nil && value != nil)
+	{
+	    // textentry label
+	    map result = ShowEditDialog(_("&Edit"), value, (type == filesystem_text) ? all_fss : nil);
+
+            if (result["clicked"]:nil == `ok)
+            {
+                string new_txt = result["text"]:nil;
+
+		if (new_txt != nil && new_txt != value)
 		{
-		    string txt = edited["text"]:"";
-
-                    if (txt != curr)
+		    if (type == regexp_text)
 		    {
-			if (contains(Backup::regexp_list, `item(`id(txt), txt)))
+			if (contains(Backup::regexp_list, new_txt))
 			{
 			    // error popup message
-			    Popup::Error(sformat(_("Expression %1 is already in the list."), txt));
+			    Popup::Error(sformat(_("Expression %1 is already in the list."), new_txt));
 			}
 			else
 			{
 			    // refresh regexp_list content
-			    Backup::regexp_list = maplist(`i, Backup::regexp_list, ``{
-				if (select(select(i, 0, ""), 0, "") == curr)
-				{
-				    return `item(`id(txt), txt);
-				}
-				else
-				{
-				    return i;
-				}
-			    });
-
-			    UI::ChangeWidget(`id(`regexs), `Items, Backup::regexp_list);
+			    Backup::regexp_list = maplist(string i, Backup::regexp_list, ``((i == value) ? new_txt : i));
 			}
 		    }
-		}
-	    }
+		    else if (type == directory_text)
+		    {
+			if (contains(Backup::dir_list, new_txt))
+			{
+			    // error popup message
+			    Popup::Error(sformat(_("Directory %1 is already in the list."), new_txt));
+			}
+			else
+			{
+			    // refresh regexp_list content
+			    Backup::dir_list = maplist(string i, Backup::dir_list, ``((i == value) ? new_txt : i));
+			}
+		    }
+		    else if (type == filesystem_text)
+		    {
+			if (contains(Backup::fs_exclude, new_txt))
+			{
+			    // error popup message
+			    Popup::Error(sformat(_("File system %1 is already in the list."), new_txt));
+			}
+			else
+			{
+			    // refresh regexp_list content
+			    Backup::fs_exclude = maplist(string i, Backup::fs_exclude, ``((i == value) ? new_txt : i));
+			}
+		    }
 
-	    if (ret == `delete)
-	    {
-		Backup::regexp_list = filter(`i, Backup::regexp_list, ``{return (select(select(i, 0, []), 0, nil) != curr);});
-                UI::ChangeWidget(`id(`regexs), `Items, Backup::regexp_list);
+		    // refresh table content
+		    UI::ChangeWidget(`id(`const), `Items, createConstraintsTable());
+		}
 	    }
 	}
 
-	if (ret == `addnew)
+	if (ret == `regexp)
 	{
-	    // dialog popup header
-	    map result = ShowEditDialog(_("&Add new expression"), "");
+	    // textentry label
+	    map result = ShowEditDialog(_("&Add New Expression"), "", nil);
 
             if (result["clicked"]:nil == `ok)
             {
                 string new_regexp = result["text"]:nil;
 
-                // add new partition only if it's not empty a it isn't already in list
+                // add item only if it's not empty and it isn't already in list
                 if (new_regexp != "" && new_regexp != nil)
 		{
-		    if (contains(Backup::regexp_list, `item(`id(new_regexp), new_regexp)))
+		    if (contains(Backup::regexp_list, new_regexp))
 		    {
 			// error poup message - %1 is a directory name
 			Popup::Error(sformat(_("Expression %1 is already in the list."), new_regexp));
 		    }
 		    else
 		    {
-			Backup::regexp_list = add(Backup::regexp_list, `item(`id(new_regexp), new_regexp));
+			Backup::regexp_list = add(Backup::regexp_list, new_regexp);
 
-			UI::ChangeWidget(`id(`regexs), `Items, Backup::regexp_list);
+			UI::ChangeWidget(`id(`const), `Items, createConstraintsTable());
 		    }
 		}
             }
 	}
 
-	if (ret == `abort || ret == `cancel)
+	if (ret == `dir)
 	{
-	    ret = `abort;
-	    if (!AbortConfirmation(`changed))
-	    {
-		ret = nil;
-	    }
+	    // textentry label
+	    map result = ShowEditDialog(_("&Add new directory"), "", nil);
+
+            if (result["clicked"]:nil == `ok)
+            {
+                string new = result["text"]:nil;
+
+                // add item only if it's not empty and it isn't already in list
+                if (new != "" && new != nil)
+		{
+		    if (contains(Backup::dir_list, new))
+		    {
+			// error poup message - %1 is a directory name
+			Popup::Error(sformat(_("Directory %1 is already in the list."), new));
+		    }
+		    else
+		    {
+			Backup::dir_list = add(Backup::dir_list, new);
+
+			UI::ChangeWidget(`id(`const), `Items, createConstraintsTable());
+		    }
+		}
+            }
+	}
+
+	if (ret == `fs)
+	{
+	    // combobox label
+	    map result = ShowEditDialog(_("&Add New File System"), "", all_fss);
+
+            if (result["clicked"]:nil == `ok)
+            {
+                string new = result["text"]:nil;
+
+                // add item only if it's not empty and it isn't already in list
+                if (new != "" && new != nil)
+		{
+		    if (contains(Backup::fs_exclude, new))
+		    {
+			// error poup message - %1 is a directory name
+			Popup::Error(sformat(_("File system %1 is already in the list."), new));
+		    }
+		    else
+		    {
+			Backup::fs_exclude = add(Backup::fs_exclude, new);
+
+			UI::ChangeWidget(`id(`const), `Items, createConstraintsTable());
+		    }
+		}
+            }
 	}
     }
 
-    // restore default next button label
-    Wizard::RestoreNextButton();
+    if (Backup::selected_profile != nil)
+    {
+	// Restore 'next' button
+	Wizard::RestoreNextButton();
+    }
 
-    y2warning("Backup::regexp_list: %1", Backup::regexp_list);
+    return ret;
+}
+
+/**
+ * Create contstraints table content, add directories, regular expressions and
+ * file systems to exclude
+ * @return list list of items
+ */
+global define list createConstraintsTable() ``{
+    list items = [];
+
+    items = merge(items, list2items(size(items), directory_text, Backup::dir_list));
+    items = merge(items, list2items(size(items), regexp_text, Backup::regexp_list));
+    items = merge(items, list2items(size(items), filesystem_text, Backup::fs_exclude));
+
+    return items;
+}
+
+/**
+ * Convert list of strings to list of items
+ * @param start_id identification of the first item
+ * @param type description of item
+ * @param input input
+ * @return list<term> result
+ */
+global define list<term> list2items(integer start_id, string type, list<string> input) ``{
+    list<term> ret = [];
+    integer i = start_id;
+
+    if (size(input) > 0)
+    {
+	foreach(string itm, input, ``{
+		ret = add(ret, `item(`id(i), itm, type));
+		i = i + 1;
+	    }
+	);
+    }
 
     return ret;
 }

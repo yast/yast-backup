@@ -79,7 +79,7 @@ global define boolean AbortConfirmation(symbol type) ``{
  * @return map Returned map: $[ "text" : string, "clicked" : symbol ]. Value with key text is string entered by user, symbol is `ok or `cancel depending which button was pressed.
  */
 
-global define map ShowEditDialog(string label, string value) ``{
+global define map ShowEditDialog(string label, string value, list<string> values) ``{
 
     if (label == nil)
     {
@@ -91,9 +91,16 @@ global define map ShowEditDialog(string label, string value) ``{
 	value = "";
     }
 
+    list<term> combo_content = [];
+
+    if (size(values) > 0)
+    {
+	combo_content = maplist(string v, values, ``(`item(`id(v), v, v == value)));
+    }
+
     UI::OpenDialog(
 	`VBox(
-	    `TextEntry(`id(`te), label, value),
+	    ((size(combo_content) > 0) ? `ComboBox(`id(`te), `opt(`hstretch, `editable), label, combo_content) : `TextEntry(`id(`te), label, value)),
 	    `VSpacing(1.0),
 	    `HBox(
 	        `PushButton(`id(`ok), `opt(`default, `key_F10), Label::OKButton()),
