@@ -174,7 +174,8 @@ global define symbol CronDialog() ``{
 				`HStretch()
 			    ),
 			    `VSpacing(0.45),
-			    `Left(`CheckBox(`id(`mail), _("Send Summary Mail to User 'root'"), Backup::mail_summary)),
+			    // Checkbox label
+			    `Left(`CheckBox(`id(`mail), _("S&end Summary Mail to User 'root'"), Backup::mail_summary)),
 			    `VSpacing(0.45)
 			)
 		    )
@@ -391,7 +392,8 @@ global define symbol ArchDialog() ``{
 				// push button label
 				`VBox(
 				    `Label(""),
-				    `PushButton(`id(`selecthost), _("Select..."))
+				    // Pushbutton label
+				    `PushButton(`id(`selecthost), _("&Select..."))
 				)
 			    ),
 			    `HBox(
@@ -402,7 +404,8 @@ global define symbol ArchDialog() ``{
 				// push button label
 				`VBox(
 				    `Label(""),
-				    `PushButton(`id(`selectexport), _("Select..."))
+				    // Pushbutton label
+				    `PushButton(`id(`selectexport), _("S&elect..."))
 				)
 			    ),
 			    `VSpacing(0.3)
@@ -448,6 +451,7 @@ global define symbol ArchDialog() ``{
 				`HStretch()
 			    ),
 			    `VSpacing(0.5),
+			    // radiobutton label
 			    `Left(`RadioButton(`id(`only_list), `opt(`notify), _("Only Create List of Files Found")))
 			)
 		    ),
@@ -923,13 +927,6 @@ global define symbol BackupDialog() ``{
     Backup::do_md5_test = UI::QueryWidget(`id(`md5_check), `Value);
     Backup::description = UI::QueryWidget(`id(`description), `Value);
 
-
-    // set next dialog
-    if (!Backup::search && ret == `next)
-    {
-	ret = (Backup::system && Backup::archive_type != `txt) ? `next3 : `next2;
-    }
-
     return ret;
 }
 
@@ -979,16 +976,18 @@ global define symbol ExcludeDialog() ``{
 
 	    `VSpacing(1.0),
 	    // push button label
-            `PushButton(`id(`expert), `opt(`key_F7), _("E&xpert...") ),
+            `MenuButton(_("E&xpert..."), [`item(`id(`expert), _("Exclude file system...")), `item(`id(`expert_regexp), _("Exclude files..."))]),
 	    `VSpacing(1.0)
 	),
         backup_help_exclude_dir(), true, true
     );
 
+    // replace 'Next' buton with 'Ok'
+    Wizard::ReplaceNextButton(`PushButton(`id(`next), `opt(`default, `key_F10), Label::OKButton()));
 
     symbol ret = nil;
 
-    while (ret != `next && ret != `back && ret != `abort && ret != `expert)
+    while (ret != `next && ret != `back && ret != `abort && ret != `expert && ret != `expert_regexp)
     {
 	ret = UI::UserInput();
 
@@ -1075,6 +1074,9 @@ global define symbol ExcludeDialog() ``{
 	    }
 	}
     }
+
+    // Restore 'next' button
+    Wizard::RestoreNextButton();
 
     return ret;
 }
@@ -1879,7 +1881,7 @@ Backup will be aborted.
 	    }
 	);
 
-	return `next2;	// skip file selection dialog
+	return (Backup::display && !cron_mode) ? `next : `next2;	// `next2 = skip file selection dialog
     }
 }
 
@@ -1896,6 +1898,8 @@ global define symbol FilesDialog() ``{
     Wizard::SetContents("", `Label(_("Adding files to table...")), "", false, false);
 
     integer t1 = time();
+    list items = SCR::Read(.target.ycp, SCR::Read(.target.tmpdir) + "/items.ycp");
+
     // dialog header
     Wizard::SetContents( _("File selection"),
 	`VBox(
@@ -1906,7 +1910,7 @@ global define symbol FilesDialog() ``{
 		`opt(`notify),
 		// table header
 		`header(" ", _("File name"), _("Package")),
-		SCR::Read(.target.ycp, SCR::Read(.target.tmpdir) + "/items.ycp")
+		items
 	    ),
 	    `HBox(
 		// push button label
@@ -1924,6 +1928,32 @@ global define symbol FilesDialog() ``{
     integer t2 = time();
     y2milestone("UI finished after %1 seconds", t2 - t1);
 
+    // mark unselected files - use list from previous run
+    if (size(Backup::unselected_files) > 0)
+    {
+	t1 = time();
+	// suppose that number of unselected files is much lower than number of
+	// found files (otherwise we should iterate trough list of unselected
+	// files)
+
+	y2milestone("Found %1 unselected files", size(Backup::unselected_files));
+
+	foreach(term itm, items, ``{
+		string f = select(itm, 2, nil);
+		integer idx = select(select(itm, 0, nil), 0, nil);
+
+		if (contains(Backup::unselected_files, f) == true)
+		{
+		    y2debug("Found previously unselected file: %1 (idx: %2)", f, idx);
+		    deselected_ids[idx] = 1;
+		}
+	    }
+	);
+
+	t2 = time();
+	y2milestone("searching unselected files was finished after %1 seconds", t2 - t1);
+    }
+
     if (size(deselected_ids) > 0)
     {
 	y2milestone("Deselecting %1 files", size(deselected_ids));
@@ -1935,6 +1965,7 @@ global define symbol FilesDialog() ``{
     }
 
     symbol ret = nil;
+    boolean changed = false;
 
     while (ret != `next && ret != `back && ret != `abort)
     {
@@ -1990,6 +2021,8 @@ global define symbol FilesDialog() ``{
 	    {
 		UI::ChangeWidget(`id(`table), `CurrentItem, current_item);
 	    }
+
+	    changed = true;
 	}
 	else
 	{
@@ -2049,6 +2082,8 @@ global define symbol FilesDialog() ``{
 
 		// refresh table
 		UI::ChangeWidget(`id(`table), `Item(current_item, 0), current_value);
+
+		changed = true;
 	    }
 	}
     }
@@ -2056,6 +2091,12 @@ global define symbol FilesDialog() ``{
     if (ret == `abort)
     {
 	return ret;
+    }
+
+    // file selection was changed, update profile data
+    if (changed == true && Backup::selected_profile != nil)
+    {
+	Backup::StoreSettingsToBackupProfile(Backup::selected_profile);
     }
 
     return ret;
@@ -3082,7 +3123,7 @@ global define map DirPopup(string label, string dir) ``{
 		    `HSpacing(1),
 		    `VBox(
 			`Label(""),
-			`PushButton(`id(`browse), _("Browse..."))
+			`PushButton(`id(`browse), _("&Browse..."))
 		    ),
 		    `HSpacing(1.0)
 	    ),
@@ -3405,6 +3446,136 @@ global define boolean display_free_space_warning(boolean fits, string dir) ``{
     }
 
     return cont;
+}
+
+
+/**
+ * Dialog for setting excluded directories
+ * @return symbol Symbol for wizard sequencer - pressed button
+ */
+
+global define symbol ExcludeRegexpDialog() ``{
+
+    // dialog header
+    Wizard::SetContents( _("Exclude from Backup"),
+	`VBox(
+	    `VSpacing(1.0),
+	    // table label
+	    `Left(`Label(_("Files excluded from search:"))),
+	    // table header
+	    `Table(`id(`regexs), `header(_("Files")), Backup::regexp_list),
+
+	    `HBox(
+		// push button label
+                `PushButton(`id(`addnew), `opt(`key_F3), _("A&dd...") ) ,
+		// push button label
+		`PushButton(`id(`edit), `opt(`key_F4), _("&Edit...") ) ,
+		// push button label
+		`PushButton(`id(`delete), `opt(`key_F5), _("De&lete") )
+	    )
+	),
+        backup_help_exclude_file(), true, true
+    );
+
+    // replace 'Next' buton with 'Ok'
+    Wizard::ReplaceNextButton(`PushButton(`id(`next), `opt(`default, `key_F10), Label::OKButton()));
+
+    symbol ret = nil;
+
+    while (ret != `next && ret != `back && ret != `abort && ret != `expert)
+    {
+	ret = UI::UserInput();
+
+	string curr = UI::QueryWidget(`id(`regexs), `CurrentItem);
+
+	if (curr != nil)
+	{
+            if (ret == `edit)
+	    {
+		// popup dialog header
+	        map edited = ShowEditDialog(_("&Edit"), curr);
+
+		if (lookup(edited, "clicked", nil) == `ok)
+		{
+		    string txt = edited["text"]:"";
+
+                    if (txt != curr)
+		    {
+			if (contains(Backup::regexp_list, `item(`id(txt), txt)))
+			{
+			    // error popup message
+			    Popup::Error(sformat(_("Expression %1 is already in the list."), txt));
+			}
+			else
+			{
+			    // refresh regexp_list content
+			    Backup::regexp_list = maplist(`i, Backup::regexp_list, ``{
+				if (select(select(i, 0, ""), 0, "") == curr)
+				{
+				    return `item(`id(txt), txt);
+				}
+				else
+				{
+				    return i;
+				}
+			    });
+
+			    UI::ChangeWidget(`id(`regexs), `Items, Backup::regexp_list);
+			}
+		    }
+		}
+	    }
+
+	    if (ret == `delete)
+	    {
+		Backup::regexp_list = filter(`i, Backup::regexp_list, ``{return (select(select(i, 0, []), 0, nil) != curr);});
+                UI::ChangeWidget(`id(`regexs), `Items, Backup::regexp_list);
+	    }
+	}
+
+	if (ret == `addnew)
+	{
+	    // dialog popup header
+	    map result = ShowEditDialog(_("&Add new expression"), "");
+
+            if (result["clicked"]:nil == `ok)
+            {
+                string new_regexp = result["text"]:nil;
+
+                // add new partition only if it's not empty a it isn't already in list
+                if (new_regexp != "" && new_regexp != nil)
+		{
+		    if (contains(Backup::regexp_list, `item(`id(new_regexp), new_regexp)))
+		    {
+			// error poup message - %1 is a directory name
+			Popup::Error(sformat(_("Expression %1 is already in the list."), new_regexp));
+		    }
+		    else
+		    {
+			Backup::regexp_list = add(Backup::regexp_list, `item(`id(new_regexp), new_regexp));
+
+			UI::ChangeWidget(`id(`regexs), `Items, Backup::regexp_list);
+		    }
+		}
+            }
+	}
+
+	if (ret == `abort || ret == `cancel)
+	{
+	    ret = `abort;
+	    if (!AbortConfirmation(`changed))
+	    {
+		ret = nil;
+	    }
+	}
+    }
+
+    // restore default next button label
+    Wizard::RestoreNextButton();
+
+    y2warning("Backup::regexp_list: %1", Backup::regexp_list);
+
+    return ret;
 }
 
 }

@@ -265,4 +265,18 @@ free space for whole achive.</P>");
 
 }
 
+/**
+ * Help text displayed in exclude file dialog
+ * @return Translated help text
+ */
+
+global define string backup_help_exclude_file() ``{
+
+    return _("<P><BIG><B>Exclude files</B></BIG><BR>It is possible to exclude files specified by regular expession. Any file name which matches at least one of the regular expression will not be backed up.</P>")
+
+    + _("<P><B>Exclude files</B><BR>To exclude for example .bak files add a regular expression <I>\\.bak$</I></P>");
+
+}
+
+
 }

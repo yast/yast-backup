@@ -10,7 +10,7 @@ Features:
     * backup files which were changed since package installation
 
     * can backup files which do not belong to any RPM package
-      (can exclude selected filesystems/directories from search)
+      (can exclude selected filesystems/directories/files from search)
 
     * create tar backup file (with tar, tar.gz, tar.bz2 or star package archives)
              or only store list of changed files

@@ -104,6 +104,7 @@ global boolean default_perms = true;			// store RPM file if owner/permissions we
 
 global list default_default_dir = [ "/media", "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache", "/windows" ];		// default excluded directoried from search
 global list default_dir_list = nil;			// selected directoried to exclude
+global list default_regexp_list = [];
 
 // iso9660 is used on CDROM, ntfs read-only
 global list default_fs_exclude = [ "iso9660", "ntfs" ];		// selected filesystems to exclude from search
@@ -167,6 +168,8 @@ global symbol target_type = default_target_type;
 
 global list default_dir = eval( default_default_dir ); 		// default excluded directoried from search
 global list dir_list = eval( default_dir_list );		// selected directoried to exclude
+
+global list regexp_list = eval(default_regexp_list);
 
 global list fs_exclude = eval( default_fs_exclude );		// selected filesystems to exclude from search
 global list detected_fs = eval( default_detected_fs );		// detected filesystems
@@ -333,6 +336,7 @@ global define string get_search_script_parameters() ``{
     if (search)
     {
 	script_options = script_options + " --search";
+    }
 
 	y2milestone("Directories to exclude: %1", dir_list);
 
@@ -355,13 +359,34 @@ global define string get_search_script_parameters() ``{
 	    );
 	}
 
+	y2milestone("Files to exclude: %1", regexp_list);
+
+	if (size(regexp_list) > 0)
+	{
+	    foreach(term t, regexp_list,
+		``{
+		    term tmp_id = select(t, 0, nil);
+
+		    if (tmp_id != nil)
+		    {
+			string tmp_d = select(tmp_id, 0, nil);
+
+			if (tmp_d != nil)
+			{
+			    // TODO: single quotes in tmp_d need to handled properly
+			    script_options = script_options + " --exclude-files '" + tmp_d + "'";
+			}
+		    }
+		}
+	    );
+	}
+
 	y2milestone("Filesystems to exclude: %1", fs_exclude);
 
 	if (size(fs_exclude) > 0)
 	{
 	    foreach(`i, fs_exclude, ``{script_options = script_options + " --exclude-fs " + i;});
 	}
-    }
 
     // save list of installable packages and pass it to the search script
     if (size(installable_packages) > 0)
@@ -1027,6 +1052,7 @@ global define void StoreSettingsToBackupProfile( string profile_name ) ``{
 	`default_dir		: default_dir,
 	`dir_list		: dir_list,
 	`fs_exclude		: fs_exclude,
+	`regexp_list		: regexp_list,
 	`detected_fs		: detected_fs,
 	`detected_ext2		: detected_ext2,
 	`ext2_backup		: ext2_backup,
@@ -1106,6 +1132,7 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
 //    target_devices_options = profile[ `target_devices_options ]:	default_target_devices_options;
     mail_summary =	profile[ `mail_summary ]:	default_mail_summary;
     tmp_dir =		profile[ `tmp_dir ]:		default_tmp_dir;
+    regexp_list =	profile[ `regexp_list ]:	default_regexp_list;
 
     selected_files = default_selected_files;
     backup_files = default_backup_files;
@@ -1156,6 +1183,7 @@ global define void RestoreDefaultSettings() ``{
 //    target_devices_options = eval(default_target_devices_options);
     mail_summary = default_mail_summary;
     tmp_dir = default_tmp_dir;
+    regexp_list = default_regexp_list;
 
     selected_files = eval( default_selected_files );
     backup_files = eval( default_backup_files );
