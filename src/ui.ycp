@@ -2766,7 +2766,7 @@ global define symbol Test_PartitionSelection() ``{
     Wizard::SetContents( _("YaST Backup - Proposal"),
         `VBox(
             `Left(`Label(_("Available Disk Partitions") )),
-            `Table(`id(`pts), `header(" ", "Directory", "Partition", "File system"), [`item(`id(1), " ", "/boot", "/dev/hda1", "ext2"), `item(`id(1), "X", "/", "/dev/hda2", "reiserfs"), `item(`id(1), " ", "/usr", "/dev/hda3", "reiserfs")] ),
+            `Table(`id(`pts), `header("Directory", "Partition", "File system"), [`item(`id(1), "/boot", "/dev/hda1", "ext2"), `item(`id(1), "/", "/dev/hda2", "reiserfs"), `item(`id(1), "/usr", "/dev/hda3", "reiserfs")] ),
             `HBox(
 		// Push button label
                 `PushButton(`id(`add), _("Add...")),
@@ -2775,7 +2775,9 @@ global define symbol Test_PartitionSelection() ``{
 		// Push button label
                 `PushButton(`id(`delete), _("Remove from table..."))
             ),
-            `VSpacing(1.5)
+	    `VSpacing(0.5),
+	    `PushButton(`id(`expert), `opt(`key_F7), _("Expert...")),
+            `VSpacing(1.0)
         ),
         "note: in the first column is the selection mark", false, true
     );
@@ -2794,6 +2796,11 @@ global define symbol Test_PartitionSelection() ``{
 	}
 	else if (ret == `delete)
 	{
+	}
+	else if (ret == `expert)
+	{
+	    // show exclude pattern dialog
+	    Test_ExcludePatternOption();
 	}
 
 	ret = UI::UserInput();
@@ -2919,7 +2926,7 @@ global define symbol Test_LocationSelection() ``{
 		`VSpacing(0.49),
 		`HBox(
 		    `PushButton(`id(`volume), _("Volume size...")),
-		    `PushButton(`id(`expert), _("Expert..."))
+		    `PushButton(`id(`expert), `opt(`key_F7), _("Expert..."))
 		),
 		`VSpacing(0.49)
         ),
@@ -3009,6 +3016,43 @@ global define symbol Test_VolumeSizeDialog() ``{
     return input;
 }
 
+global define symbol Test_ExcludePatternOption() ``{
+
+    UI::OpenDialog(
+	`HBox(
+	    `HSpacing(1.0),
+	    `VBox(
+		`VSpacing(0.5),
+		// frame label
+		`Frame(_("Exclude files or directories"),
+		    `VBox(
+			`VSpacing(0.3),
+			`TextEntry(`id(`pat), _("&Pattern:")),
+			`VSpacing(0.5)
+		    )
+		),
+		`VSpacing(1.0),
+		`HBox(
+		    `PushButton(`id(`ok), Label::OKButton()),
+		    `PushButton(`id(`cancel), Label::CancelButton())
+		),
+		`VSpacing(0.3)
+	    ),
+	    `HSpacing(1.0)
+	)
+    );
+
+    symbol input = UI::UserInput();
+    while (input != `ok && input != `cancel)
+    {
+	input = UI::UserInput();
+    }
+    string value = UI::QueryWidget(`id(`pat), `Value);
+
+    UI::CloseDialog();
+
+    return $[ "input" : input, "value" : value ];
+}
 
 global define symbol Test_LocationExpertOptions() ``{
 
@@ -3057,7 +3101,12 @@ global define symbol Test_BackupOptions() ``{
 			`VBox(
 			    `VSpacing(0.49),
 			    // radio button label
-			    `Left(`RadioButton(`id(`system), `opt(`notify), _("Exclude unmodified RPM files"), true)),
+			    `HBox(
+				`RadioButton(`id(`system), `opt(`notify), _("Exclude unmodified RPM files"), true),
+				`HStretch(),
+				`PushButton(`id(`rpmopts), _("Options...")),
+				`HSpacing(2)
+			    ),
 			    `VSpacing(0.49),
 			    // radio button label
 			    `Left(`RadioButton(`id(`data), `opt(`notify), _("All files"), false)),
@@ -3083,6 +3132,8 @@ global define symbol Test_BackupOptions() ``{
 		)
 	    ),
 	    `VSpacing(1),
+	    `Left(`CheckBox(`id(`autoprofile), _("Create AutoYaST installation profile"), true)),
+	    `VSpacing(1),
 	    `Left(`CheckBox(`id(`lvm_snapshot), _("Use LVM snapshot if possible"))),
 	    `VSpacing(1),
 	    `Left(`CheckBox(`id(`only_test), _("Only test, don't store backup archive file"))),
@@ -3093,10 +3144,9 @@ global define symbol Test_BackupOptions() ``{
     );
 
     symbol s = nil;
-    while (s != `next && s!= `abort && s != `back && s!= `services)
+    while (s != `next && s!= `abort && s != `back && s!= `services && s != `rpmopts)
     {
 	s = UI::UserInput();
-
     }
 
     return s;
@@ -3126,7 +3176,7 @@ global define symbol Test_ServiceSelection() ``{
     UI::SetFocus(`id(`next));
 
     symbol ret = UI::UserInput();
-    while (ret != `next && ret != `abort && ret != `cancel)
+    while (ret != `next && ret != `abort && ret != `cancel && ret != `back)
     {
 	ret = UI::UserInput();
     }
@@ -3134,6 +3184,49 @@ global define symbol Test_ServiceSelection() ``{
     Wizard::RestoreNextButton();
 
     return ret;
+}
+
+
+global define symbol Test_RPMoptions() ``{
+    Wizard::SetContents( _("YaST Backup - Proposal"),
+	    `VBox(
+		`VSpacing(0.5),
+		// frame label
+		`Frame(_("RPM verification options"),
+		    `VBox(
+			`VSpacing(0.3),
+			`CheckBox(`id(`md5), `opt(`hstretch), _("&Use MD5 check sum test"), true),
+			`VSpacing(0.5),
+			`CheckBox(`id(`perms), `opt(`hstretch), _("&Check owner and file permissions"), true),
+			`VSpacing(0.5)
+		    )
+		),
+		`VSpacing(1.4),
+		// frame label
+		`Frame(_("Not owned files"),
+		    `VBox(
+			`VSpacing(0.3),
+			`CheckBox(`id(`perms), `opt(`hstretch), _("&Backup files that do not belong to any package"), true),
+			`VSpacing(0.5)
+		    )
+		),
+		`VSpacing(1.0)
+	    ),
+        "help", true, true
+    );
+
+    Wizard::ReplaceNextButton(`PushButton(`id(`next), `opt(`default, `key_F10), Label::OKButton));
+    UI::SetFocus(`id(`next));
+
+    symbol input = UI::UserInput();
+    while (input != `next && input != `abort && input != `cancel && input != `back)
+    {
+	input = UI::UserInput();
+    }
+
+    Wizard::RestoreNextButton();
+
+    return input;
 }
 
 }

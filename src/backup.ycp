@@ -117,7 +117,7 @@ if (Mode::test == true)
 map sequence = $[
     "ws_start"	: "readprof",
 
-//    "ws_start" : "test_pts",
+    "ws_start" : "test_pts",
 
     "test_pts" : $[
 	`next	: "test_opt",
@@ -130,9 +130,14 @@ map sequence = $[
     "test_opt" : $[
 	`next	: "test_loc",
 	`abort	: `abort,
-	`services : "test_srv"
+	`services : "test_srv",
+	`rpmopts : "test_rpm"
     ],
     "test_srv" : $[
+	`next	: "test_opt",
+	`abort	: `abort
+    ],
+    "test_rpm" : $[
 	`next	: "test_opt",
 	`abort	: `abort
     ],
@@ -207,6 +212,7 @@ map aliases = $[
     "test_loc"	: ``(Test_LocationSelection()),
     "test_opt"	: ``(Test_BackupOptions()),
     "test_srv"	: [ ``(Test_ServiceSelection()), true ],
+    "test_rpm"	: [ ``(Test_RPMoptions()), true ],
     "readprof"	: ``(SelectProfileDialog()),
     "cron"	: [ ``(CronDialog()), true ],
     "files"	: ``(FilesDialog()),
