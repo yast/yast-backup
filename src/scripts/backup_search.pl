@@ -38,8 +38,6 @@ my $help = 0;
 my $output_progress = 0;
 my $output_files = 0;
 my $output_default = 0;
-my $enhanced_check_nopkg = 0;
-my $disable_check_multiple = 0;
 my $no_md5 = 0;
 
 my %exclude_dirs;
@@ -49,8 +47,8 @@ my %exclude_dirs;
 GetOptions('search' => \$search_files, 'exclude-dir=s' => \@exclude_d,
     'exclude-fs=s' => \@exclude_fs,  'help' => \$help,
     'output-progress' => \$output_progress, 'output-files' => \$output_files,
-    'output-default' => \$output_default, 'enhanced-check' => \$enhanced_check_nopkg,
-    'disable-check-multiple' => \$disable_check_multiple, 'no-md5' => \$no_md5
+    'output-default' => \$output_default, 
+    'no-md5' => \$no_md5
 );
 
 if ($help)
@@ -61,15 +59,11 @@ if ($help)
 
     print "Options:\n\n";
 
-
-    print "  --disable-check-multiple   Do not check if backup is needed for changed files \
-which are in multiple packages, always backup them\n\n";
     print "  --no-md5          Do not use MD5 test in verification\n";
 
     print "  --search           Search files which do not belog to any package\n";
     print "    --exclude-dir <dir>  Exclude directory <dir> from search\n";
     print "    --exclude-fs <fs>    Exclude filesystem <fs> from search\n";
-    print "    --enhanced-check     Enhanced check of owner - slower search, but more accurate\n\n";
 
     print "  --output-files     Display only names of files to backup\n";
     print "  --output-progress  Display data for frontend\n";
@@ -110,9 +104,6 @@ if ($search_files)
     # insert excluded mountpoints to excluded directories
     foreach my $d (FsToDirs(@exclude_fs)) {$exclude_dirs{$d} = 1;}
 
-    # read list of all files in installed packages
-#   ReadAllFiles(\%packages_files);
-
     # start searching from root directory
     SearchDirectory('/', \%packages_files, \%exclude_dirs, \%package_files_inodes);
 }
@@ -126,22 +117,21 @@ sub ReadAllPackages()
     open(RPMQA, "rpm -qa |")
 	or die "Command 'rpm -qa' failed\n";
 
-    print "<installed>\n";
+    print "Reading installed packages\n";
 
     my $line;
     my @all_packages;
 
     while ($line = <RPMQA>) 
     {
-	print $line;
-
 	chomp($line);
 	push(@all_packages, $line);
     }
 
     close(RPMQA);
 
-    print "</installed>\n";
+    my $n = @all_packages;
+    print "Packages: $n\n";
 
     return @all_packages;
 }
@@ -198,7 +188,7 @@ sub VerifyPackages(@%)
 		if ($size or $mtime)
 		{
 		    # check if Mtime changed file is in more than one package
-		    if (!$disable_check_multiple and $mtime and !$size and $no_md5 and $$duplicates{$file})
+		    if ($mtime and !$size and $no_md5 and $$duplicates{$file})
 		    {
 			open(RPMQFILE, "rpm -qf $file |");
 			my @packages_list = ();
@@ -356,57 +346,19 @@ sub SearchDirectory($%%%)
 	    # is file is some package?
 	    if (!$$files{$fullname})
 	    {
-		if ($enhanced_check_nopkg)
+		my @filestat = stat($fullname);
+
+		# it seem that file is not owned by any package, but do another check - dev/inode number
+		if (!defined $inodes->{$filestat[0].$filestat[1]})
 		{
-		    # it seems that file $fullname is not any package, check this by rpm query
-		    
-		    # this double checking is needed because for example rpm -qf sax2 says that
-		    # sax2 has files in directory /var/X11R6/lib/sax, but /var/X11R6/lib is symlink
-		    # to /usr/X11R6/lib/X11, so it seems that files /usr/X11R6/lib/X11/sax/* are not
-		    # owned by any package, but rpm -qf /usr/X11R6/lib/X11/sax/* tells that files
-		    # are in package sax2
-
-		    # TODO check more files at once
-		    
-		    open(RPMQF, "rpm -qf $fullname 2> /dev/null |");
-
-		    my $line = <RPMQF>;
-
-		    if (!defined $line)	# if output is empty then file is not owned by any package
+		    if (!$output_files)
 		    {
-			if (!$output_files)
-			{
-	    		    my @filestat = stat($fullname);
-			    print "Size: $filestat[7] $fullname\n";
-			}
-			else
-			{
-			    print "$fullname\n";
-			}
+			print "Size: $filestat[7] $fullname\n";
 		    }
 		    else
 		    {
-			while (<RPMQF>){};	# read remaining output
+			print "$fullname\n";
 		    }
-		    
-		    close(RPMQF);
-		}
-		else
-		{
-		    my @filestat = stat($fullname);
-
-		    if (!defined $inodes->{$filestat[0].$filestat[1]})
-		    {
-			if (!$output_files)
-			{
-			    print "Size: $filestat[7] $fullname\n";
-			}
-			else
-			{
-			    print "$fullname\n";
-			}
-		    }
-	    
 		}
 	    }
 	}
