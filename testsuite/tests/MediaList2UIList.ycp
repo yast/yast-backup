@@ -2,12 +2,14 @@
 //
 // MediaList2UIList function tests
 //
+// testedfiles: backup/functions.ycp
+//
 // $Id$
 //
 
 {
 
-include "testsuite.ycp";
+import "Testsuite";
 
 map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
@@ -16,19 +18,19 @@ map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
 
 map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
 
-TESTSUITE_INIT([ readmap, $[], execmap ], nil);
+Testsuite::Init([ readmap, $[], execmap ], nil);
 
 include "backup/functions.ycp";
 
-DUMP( MediaList2UIList(nil) );
-DUMP( MediaList2UIList([ ]) );
-DUMP( MediaList2UIList([
+Testsuite::Dump( MediaList2UIList(nil) );
+Testsuite::Dump( MediaList2UIList([ ]) );
+Testsuite::Dump( MediaList2UIList([
     $[
 	"capacity" : 1440000
     ]
 ]) );
 
-DUMP( MediaList2UIList([
+Testsuite::Dump( MediaList2UIList([
     $[
 	"label" : "Floppy 1.44 MB",
 	"symbol" : `fd144,

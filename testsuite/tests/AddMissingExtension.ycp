@@ -2,11 +2,13 @@
 //
 // AddMissingExtension tests
 //
+// testedfiles: backup/functions.ycp
+//
 // $Id$
 //
 
 {
-include "testsuite.ycp";
+import "Testsuite";
 
 map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
@@ -15,24 +17,24 @@ map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
 
 map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
 
-TESTSUITE_INIT([ readmap, $[], execmap ], nil);
+Testsuite::Init([ readmap, $[], execmap ], nil);
 
 include "backup/functions.ycp";
 
-TEST( ``(AddMissingExtension(nil, nil) ), [ $[], $[], $[] ], nil );
-TEST( ``(AddMissingExtension("", ".tar") ), [ $[], $[], $[] ], nil );
-TEST( ``(AddMissingExtension("file", nil) ), [ $[], $[], $[] ], nil );
-TEST( ``(AddMissingExtension("file", ".ext" ) ), [ $[], $[], $[] ], nil );
-TEST( ``(AddMissingExtension("/dir/file", "") ), [ $[], $[], $[] ], nil );
-TEST( ``(AddMissingExtension("/dir/file", ".ext") ), [ $[], $[], $[] ], nil );
-TEST( ``(AddMissingExtension("file.ext", ".ext") ), [ $[], $[], $[] ], nil );
-TEST( ``(AddMissingExtension(".ext", ".ext") ), [ $[], $[], $[] ], nil );
-TEST( ``(AddMissingExtension("f", ".ext") ), [ $[], $[], $[] ], nil );
-TEST( ``(AddMissingExtension(nil, ".ext") ), [ $[], $[], $[] ], nil );
-TEST( ``(AddMissingExtension("/dir.ext/file", ".ext") ), [ $[], $[], $[] ], nil );
-TEST( ``(AddMissingExtension("/dir.ext/", ".ext") ), [ $[], $[], $[] ], nil );
-TEST( ``(AddMissingExtension("/dir.ext/file.ext", ".ext") ), [ $[], $[], $[] ], nil );
-TEST( ``(AddMissingExtension("/dir1.ext/dir2.ext/file", ".ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(AddMissingExtension(nil, nil) ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(AddMissingExtension("", ".tar") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(AddMissingExtension("file", nil) ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(AddMissingExtension("file", ".ext" ) ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(AddMissingExtension("/dir/file", "") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(AddMissingExtension("/dir/file", ".ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(AddMissingExtension("file.ext", ".ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(AddMissingExtension(".ext", ".ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(AddMissingExtension("f", ".ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(AddMissingExtension(nil, ".ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(AddMissingExtension("/dir.ext/file", ".ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(AddMissingExtension("/dir.ext/", ".ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(AddMissingExtension("/dir.ext/file.ext", ".ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(AddMissingExtension("/dir1.ext/dir2.ext/file", ".ext") ), [ $[], $[], $[] ], nil );
 
 }
 

@@ -2,12 +2,14 @@
 //
 // AddId function tests
 //
+// testedfiles: backup/functions.ycp
+//
 // $Id$
 //
 
 {
 
-include "testsuite.ycp";
+import "Testsuite";
 
 map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
@@ -15,14 +17,14 @@ map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     ];
 map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
 
-TESTSUITE_INIT([ readmap, $[], execmap ], nil);
+Testsuite::Init([ readmap, $[], execmap ], nil);
 
 include "backup/functions.ycp";
 
-DUMP( AddId(nil) );
-DUMP( AddId([]) );
-DUMP( AddId(["/dev"]) );
-DUMP( AddId(["/dev", "/proc"]) );
+Testsuite::Dump( AddId(nil) );
+Testsuite::Dump( AddId([]) );
+Testsuite::Dump( AddId(["/dev"]) );
+Testsuite::Dump( AddId(["/dev", "/proc"]) );
 
 }
 

@@ -2,11 +2,13 @@
 //
 // GetListWithFlags function tests
 //
+// testedfiles: backup/functions.ycp
+//
 // $Id$
 //
 
 {
-include "testsuite.ycp";
+import "Testsuite";
 
 map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
@@ -15,15 +17,15 @@ map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
 
 map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
 
-TESTSUITE_INIT([ readmap, $[], execmap ], nil);
+Testsuite::Init([ readmap, $[], execmap ], nil);
 
 include "backup/functions.ycp";
 
-DUMP( GetListWithFlags(nil, nil) );
-DUMP( GetListWithFlags([], []) );
-DUMP( GetListWithFlags([], ["/dev"]) );
-DUMP( GetListWithFlags(["/dev"], []) );
-DUMP( GetListWithFlags(["/dev", "/etc"], ["/etc"]));
+Testsuite::Dump( GetListWithFlags(nil, nil) );
+Testsuite::Dump( GetListWithFlags([], []) );
+Testsuite::Dump( GetListWithFlags([], ["/dev"]) );
+Testsuite::Dump( GetListWithFlags(["/dev"], []) );
+Testsuite::Dump( GetListWithFlags(["/dev", "/etc"], ["/etc"]));
 
 }
 

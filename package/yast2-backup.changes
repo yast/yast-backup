@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Jun 16 16:30:19 CEST 2004 - lslezak@suse.cz
+
+- updated testsuite (use Testsuite:: module, set testedfiles)
+- version 2.10.1
+
+-------------------------------------------------------------------
 Mon Jun 14 17:28:25 CEST 2004 - lslezak@suse.cz
 
 - backup files with backslash in file name (#40915)

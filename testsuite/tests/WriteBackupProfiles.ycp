@@ -2,12 +2,14 @@
 //
 // WriteBackupProfiles function test
 //
+// testedfiles: Backup.ycp
+//
 // $Id$
 //
 
 {
 
-include "testsuite.ycp";
+import "Testsuite";
 
 map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
@@ -16,13 +18,13 @@ map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
 
 map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
 
-TESTSUITE_INIT([ readmap, $[], execmap ], nil);
+Testsuite::Init([ readmap, $[], execmap ], nil);
 
 import "Pkg";   // override packamanager
 
 import "Backup";
 
-DUMP( Backup::backup_profiles);
+Testsuite::Dump( Backup::backup_profiles);
 
 Backup::StoreSettingsToBackupProfile( "default profile" );
 
@@ -55,7 +57,7 @@ Backup::StoreSettingsToBackupProfile( "default profile" );
 
 Backup::StoreSettingsToBackupProfile( "empty profile" );
 
-DUMP( Backup::backup_profiles);
+Testsuite::Dump( Backup::backup_profiles);
 
 }
 

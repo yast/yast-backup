@@ -2,12 +2,14 @@
 //
 // ExcludeNodevFS function test
 //
+// testedfiles: Backup.ycp
+//
 // $Id$
 //
 
 {
 
-include "testsuite.ycp";
+import "Testsuite";
 
 map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
@@ -16,24 +18,24 @@ map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
 
 map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
 
-TESTSUITE_INIT([ readmap, $[], execmap ], nil);
+Testsuite::Init([ readmap, $[], execmap ], nil);
 
 import "Pkg";   // override packamanager
 
 import "Backup";
 
 readmap = $[];
-TEST( ``(Backup::ExcludeNodevFS()), [ readmap, $[], execmap ], nil );
-DUMP(Backup::fs_exclude);
+Testsuite::Test( ``(Backup::ExcludeNodevFS()), [ readmap, $[], execmap ], nil );
+Testsuite::Dump(Backup::fs_exclude);
 
 readmap = $[ "proc" : $[ "filesystems" : $["afs":"nodev", "iso9660":"\t", "minix":"\t", "nfs":"nodev", "pipefs":"nodev", "proc":"nodev", "ramfs":"nodev", "reiserfs":"\t", "rootfs":"nodev"]]];
-TEST( ``(Backup::ExcludeNodevFS()), [ readmap, $[], execmap ], nil );
-DUMP(Backup::fs_exclude);
+Testsuite::Test( ``(Backup::ExcludeNodevFS()), [ readmap, $[], execmap ], nil );
+Testsuite::Dump(Backup::fs_exclude);
 
 readmap = $[];
 Backup::fs_exclude = [];
-TEST( ``(Backup::ExcludeNodevFS()), [ readmap, $[], execmap ], nil );
-DUMP(Backup::fs_exclude);
+Testsuite::Test( ``(Backup::ExcludeNodevFS()), [ readmap, $[], execmap ], nil );
+Testsuite::Dump(Backup::fs_exclude);
 
 }
 
