@@ -24,6 +24,8 @@ Features:
 
     * support ACLs (only star subarchives)
 
+    * write autoinstallation profile for easy system reinstallation
+
     * restore files from archive (by Yast2 Restore module)
 
     * profile manager (reuse previous setting)

@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Tue Feb 18 14:10:54 CET 2003 - lslezak@suse.de
+
+- add .tar extension to the archive name if it's missing (#23367)
+- save autoinstallation profile to <archive_name>.xml file
+  instead of fixed name (autoinst.xml)
+- new testsuites
+- ydoc comments
+- F-key shortcuts
+- version 2.7.7
+
+-------------------------------------------------------------------
 Mon Feb 17 15:54:55 CET 2003 - lslezak@suse.de
 
 - added profile manager (reuse previous settings)

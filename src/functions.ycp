@@ -513,5 +513,85 @@ global define string Ext2MountPoint(string device_name) ``{
 }
 
 
+/**
+ * Add extension to the file name if it is missing.
+ * @param file filname
+ * @param extension file extension (with dot)
+ * @return string filename with extension
+ * @example AddMissingExtension("filename", ".ext") -> "filename.ext"
+ * @example AddMissingExtension("filename.tar", ".gz") -> "filename.tar.gz"
+ * @example AddMissingExtension("filename.tar", ".tar") -> "filename.tar"
+ */
+global define string AddMissingExtension(string file, string extension)
+``{
+    // input check
+    if (file == nil)
+    {
+	return "";
+    }
+
+    if (extension == nil)
+    {
+	return file;
+    }
+
+    list(string) dirs = splitstring(file, "/");
+    string filename = dirs[size(dirs) - 1]:file;
+
+    string result = "";
+
+    // check if file can contain extension
+    if (size(filename) >= size(extension))
+    {
+	// add extension only if it is missing
+	filename = (substring(filename, size(filename) - size(extension)) != extension) ? filename + extension : filename;
+    }
+    else
+    {
+	filename = filename + extension;
+    }
+
+    dirs = remove(dirs, size(dirs) - 1);
+    dirs = add(dirs, filename);
+
+    result = mergestring(dirs, "/");
+
+    return result;
+}
+
+/**
+ * Get base file name without extension
+ * @param file file name
+ * @return string base file name
+ * @example GetBaseName("file.ext") -> "file"
+ * @example GetBaseName("file") -> "file"
+ * @example GetBaseName("dir/file.ext") -> "file"
+ */
+global define string GetBaseName(string file)
+``{
+    string result = "";
+
+    if (file == nil || file == "")
+    {
+	return result;
+    }
+
+    list(string) dirs = splitstring(file, "/");
+    string filename = dirs[size(dirs) - 1]:"";
+
+    list(string) parts = splitstring(filename, ".");
+
+    if (size(parts) > 1)
+    {
+	// remove last part (extension)
+	parts = remove(parts, size(parts) - 1);
+	filename = mergestring(parts, ".");
+    }
+
+    result = filename;
+
+    return result;
+}
+
 }
 
