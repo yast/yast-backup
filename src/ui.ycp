@@ -27,12 +27,6 @@ include "backup/help_texts.ycp";
 
 global define ArchDialog() ``{
 
-/*
-    AbortConfirmation(`not_created);
-    AbortConfirmation(`broken);
-    AbortConfirmation(`no_change);
-*/
-
     UI::SetWizardContents(_("Archive settings"),
 	`VBox(
 	    `VSpacing(0.5),
@@ -1207,7 +1201,14 @@ global define ArchivingDialog() ``{
 	    archive_options = archive_options + " --store-ptable";
 	}
 
-	list partitions = (backup_all_ext2) ? detected_ext2 : (backup_none_ext2 ? [] : ext2_backup);
+	list tmp_selected_pt = [];
+	foreach(`sel_tmp_pt, ext2_backup,	// get device names from `item(`id(XYZ), "XYZ")
+	    ``{
+		tmp_selected_pt = add(tmp_selected_pt, select(sel_tmp_pt, 1));
+	    }
+	);
+
+	list partitions = (backup_all_ext2) ? detected_ext2 : (backup_none_ext2 ? [] : tmp_selected_pt);
 
 	y2milestone("partitions: %1", partitions);
 
@@ -1590,7 +1591,6 @@ global define SummaryDialog() ``{
 	backup_help_summary(), true, true
     );
 
-    /* TODO why finish button is not default? */
     UI::ReplaceWizardNextButton(`PushButton(`id(`finish), `opt(`default), FinishButtonLabel()));
 
     symbol ret = UI::UserInput();
