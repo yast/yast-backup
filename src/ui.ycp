@@ -34,6 +34,7 @@ textdomain "backup";
 
 global define symbol ArchDialog() ``{
 
+
     Wizard::SetContents(_("Archive settings"),
 	`VBox(
 	    `VSpacing(0.5),
@@ -1371,6 +1372,9 @@ global define symbol ArchivingDialog() ``{
     stages2 = add(stages2, _("Creating package archives..."));
     stages2 = add(stages2, _("Creating target archive..."));
 
+    stages1 = add(stages1, _("Write autoinstallation profile"));
+    stages2 = add(stages1, _("Writing autoinstallation profile..."));
+
     Progress::New(_("Creating archive"), " ", num_stages, stages1, stages2, backup_help_creating_archive());
 
     y2debug("Number of selected packages: %1, selected files: %2", selected_pkg_num, selected_files_num);
@@ -1665,10 +1669,16 @@ Backup will be aborted.
 
     }
 
-    // remove incomplete backup archive file
     if (ret == `abort)
     {
+	// remove incomplete backup archive file
 	SCR::Execute(.target.remove, Backup::archive_name);
+    }
+    else
+    {
+	// write autoinstallation profile
+	Progress::NextStage();
+	profilewritten = Backup::WriteProfile(created_archive_files);
     }
 
     // remove temporary file list and file with comment
@@ -1855,8 +1865,11 @@ global define symbol SummaryDialog() ``{
 	    archive_created = _("Archive created successfully");
 	}
 
+	string profilesummary = (lookup(profilewritten, "result", false) == true) ? sformat(_("Autoinstallation profile saved to file %1"), lookup(profilewritten, "profile", "")) : (b + _("Autoinstallation profile was not saved.") + _b);
+
 	backup_result = backup_result
 	    + ((tar_result == 0) ? archive_created : em + _("Archive creation failed") + _em)
+	    + br + profilesummary + br
 	    + _p;
 
 	backup_details = backup_details + p + _("Total archived files: ") + archived_num + _p;

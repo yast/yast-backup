@@ -72,6 +72,7 @@ integer total_files = 0;	// total number of files in archive
 integer added_files = 0;
 
 boolean confirm_abort = false;	// confirm abort
+map profilewritten = $[];	// result of writing profile
 
 if (Mode::test == true)
 {
