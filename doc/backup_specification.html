@@ -240,6 +240,11 @@ e2image man page</A>.
 (In other words: no version info is stored in archive)<BR>
 Solution: Query file if it is in some package, if yes, restoring is allowed only in expert mode.
 </LI>
+<LI>Some files should not be restored from backup archive, for example files
+/var/lib/rpm/* (RPM database), because it can lead to some system
+inconsistency. If user deletes them by mistake they can be restored manually
+from the archive.
+</LI>
 </UL>
 </P>
 
