@@ -361,15 +361,12 @@ global define list<term> MediaList2UIList(list<map<string, any> > media) ``{
 
     foreach(map<string, any> v, media,
 	``{
-	    if (is(v, map))
-	    {
-		symbol i = (symbol)(v["symbol"]:nil);
-		string l = (string)(v["label"]:nil);
+	    symbol i = (symbol)(v["symbol"]:nil);
+	    string l = (string)(v["label"]:nil);
 
-		if (i != nil && l != nil)
-		{
-		    result = add(result, `item(`id(i), l));
-		}
+	    if (i != nil && l != nil)
+	    {
+		result = add(result, `item(`id(i), l));
 	    }
 	}
     );

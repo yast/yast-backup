@@ -23,6 +23,15 @@ config_DATA = backup.y2cc
 desktop_DATA = backup.desktop
 
 module_DATA = Backup.ycp
+
 include $(top_srcdir)/Makefile.am.common
+
+symlinks:
+	test -L backup || ln -sf . backup
+
+ycpchook = symlinks
+
+YCPCFLAGS=-I.
+
 
 EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(config_DATA) $(module_DATA) $(desktop_DATA)

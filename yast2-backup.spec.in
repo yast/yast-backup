@@ -1,6 +1,6 @@
 @HEADER-COMMENT@
 
-# neededforbuild  yast2-devel-packages autoyast2 autoyast2-installation yast2-xml yast2-network hwinfo yast2-bootloader yast2-installation yast2-country yast2-storage yast2-tune yast2-storage yast2-nfs-client yast2-packager
+# neededforbuild  yast2-devel-packages autoyast2 autoyast2-installation yast2-transfer yast2-xml yast2-network hwinfo yast2-bootloader yast2-installation yast2-country yast2-storage yast2-tune yast2-storage yast2-nfs-client yast2-packager
 
 @HEADER@
 
@@ -33,6 +33,7 @@ Obsoletes:	yast2-trans-backup
 @clientdir@/backup*.ycp
 @ybindir@/backup_*
 @moduledir@/Backup.ycp
+@moduledir@/Backup.ybc
 @configdir@/backup.y2cc
 @desktopdir@/backup.desktop
 %doc @docdir@
