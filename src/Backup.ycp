@@ -513,7 +513,7 @@ global define boolean WriteBackupProfiles() ``{
 
 // Store current settings into a backup profile. If the name of the profile 
 // cannot be found, create a new one
-global define boolean StoreSettingsToBackupProfile( string profile_name ) ``{
+global define void StoreSettingsToBackupProfile( string profile_name ) ``{
     
     // if there is an old profile, remove it
     if( haskey( backup_profiles, profile_name ) )
@@ -587,6 +587,8 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
     
     selected_files = default_selected_files;
     backup_files = default_backup_files;
+    
+    return true;
 }
 
 // Restore the default global settings.
