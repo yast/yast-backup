@@ -6,18 +6,16 @@
 //
 
 {
-
-include "backup/functions.ycp";
 include "testsuite.ycp";
 
-// proc.cpuinfo.value.0.flags, target.string - used in Kernel::
-// probe.has_smp - Arch::
-// probe.cdrom.manual - StorageDevices::
-// target.size - AutoInstall::
-
-TESTSUITE_INIT([ $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
+map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
-    "probe" : $["has_smp" : false, "cdrom" : $["manual" : []]]  ], $[], $[] ] ,nil);
+    "probe" : $["has_smp" : false, "cdrom" : $["manual" : []]],
+    ];
+
+map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
+
+TESTSUITE_INIT([ readmap, $[], execmap ], nil);
 
 import "Pkg";	// override packamanager
 import "Backup";
@@ -32,12 +30,12 @@ DUMP( Backup::GetCapacity([
 
 DUMP( Backup::GetCapacity([
     $[
-	"label" : _("Floppy 1.44 MB"),
+	"label" : "Floppy 1.44 MB",
 	"symbol" : `fd144,
 	"capacity" : 1440000
     ],
     $[
-	"label" : _("Floppy 1.2 MB"),
+	"label" : "Floppy 1.2 MB",
 	"symbol" : `fd12,
 	"capacity" : 1200000
     ]

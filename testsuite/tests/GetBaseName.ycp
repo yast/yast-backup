@@ -6,9 +6,18 @@
 //
 
 {
+include "testsuite.ycp";
+
+map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
+    "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
+    "probe" : $["has_smp" : false, "cdrom" : $["manual" : []]],
+    ];
+
+map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
+
+TESTSUITE_INIT([ readmap, $[], execmap ], nil);
 
 include "backup/functions.ycp";
-include "testsuite.ycp";
 
 TEST( ``(GetBaseName(nil) ), [ $[], $[], $[] ], nil );
 TEST( ``(GetBaseName("") ), [ $[], $[], $[] ], nil );
