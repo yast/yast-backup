@@ -99,15 +99,8 @@ global define symbol ArchDialog() ``{
 
     boolean cont = false;
     symbol ret = nil;
-    boolean iamroot = false;
-    map whoami = SCR::Execute(.target.bash_output, "/usr/bin/whoami");
 
-    if (whoami["exit"]:-1 == 0)
-    {
-	iamroot = (whoami["stdout"]:"" == "root\n");
-    }
-
-    if (!iamroot && root_warning_displayed == false)
+    if (SCR::Read(.runtime.username) != "root" && root_warning_displayed == false)
     {
 	// warning popup message
 	UI::WarningPopup(_("You are not logged in as root.
@@ -147,9 +140,7 @@ be backed up by root.
 		    if (SCR::Read(.target.size, "/usr/bin/star") < 0)
 		    {
 			// YesNoPopup message text - ask to install 'star' package
-			boolean inst = UI::YesNoPopup(_("Package 'star' is required for
-the selected archive type.
-Install it?"));
+			boolean inst = UI::YesNoPopup(_("Package 'star' is required for\nselected archive type.\nDo you want to install it?"));
 
 			if (inst == true)
 			{
@@ -2056,7 +2047,10 @@ global define symbol SummaryDialog() ``{
 	    `RichText(backup_result),
 	    `VSpacing(0.5),
 	    // push button label
-	    `PushButton(`id(`details), `opt(`key_F2), _("&Details...")),
+	    `HBox(
+		`PushButton(`id(`details), `opt(`key_F2), _("&Details...")),
+		`PushButton(`id(`profiles), _("&Profiles..."))
+	    ),
 	    `VSpacing(1.0)
 	),
 	backup_help_summary(), true, true
@@ -2072,7 +2066,7 @@ global define symbol SummaryDialog() ``{
 
     symbol ret = UI::UserInput();
 
-    while (ret != `finish && ret != `back)
+    while (ret != `finish && ret != `back && ret != `profiles)
     {
 	if (ret == `details)
 	{
@@ -2099,6 +2093,70 @@ global define symbol SummaryDialog() ``{
     return ret;
 }
 
+/**
+ * Dialog for setting archive options
+ * @return symbol Symbol for wizard sequencer - pressed button
+ */
+
+global define symbol SelectProfileDialog() ``{
+
+    // if there is no stored profile return `next
+    /* TODO
+    Backup::ReadProfiles();
+
+    if (size(Backup::Profiles) == 0)
+    {
+	return `next;
+    }*/
+
+    Wizard::SetContents(_("Profile Selection"),
+	`VBox(
+	    `VSpacing(1),
+	    `SelectionBox(`id(`profile), _("&Stored Profiles:"), ["profile1", "profile2", "profile3", "profile4"]),
+	    `VSpacing(1),
+	    `Frame(_("Action"),
+		`RadioButtonGroup(`id(`rb),
+		    `VBox(
+			`VSpacing(0.5),
+			`Left(`RadioButton(`id(`noprofile), _("&Don't use any profile"), true)),
+			`Left(`RadioButton(`id(`use), _("&Use values from profile"))),
+			`Left(`RadioButton(`id(`edit), _("R&ead values from profile"))),
+			`VSpacing(0.5)
+		    )
+		)
+	    ),
+	    `VSpacing(1.5)
+	),
+	profile_selection_help(), true, true
+    );
+
+    symbol ret = UI::UserInput();
+
+    return ret;
+}
+
+global define symbol ProfileDialog(boolean edit) ``{
+
+    Wizard::SetContents(_("Profiles"),
+	`VBox(
+	    `SelectionBox(`id(`profile), _("&Stored Profiles:"), ["profile1", "profile2", "profile3", "profile4"]),
+	    `HBox(
+		`PushButton(`id(`add), UI::AddButtonLabel() + "..."),
+		(edit == true) ? `PushButton(`id(`edit), UI::EditButtonLabel()) : `Empty(),
+		`PushButton(`id(`delete), UI::DeleteButtonLabel())
+	    ),
+	    `VSpacing(1.5)
+	),
+	profile_help(edit), true, true
+    );
+
+    Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
+
+    symbol ret = UI::UserInput();
+
+    Wizard::RestoreNextButton();
+    return ret;
+}
 
 }
 

@@ -110,8 +110,16 @@ if (Mode::test == true)
 
 // sequence of dialogs
 map sequence = $[
-    "ws_start"	: "archive",
+    "ws_start"	: "readprof",
 
+    "profiles" : $[
+	`ok	: "summary",
+	`abort	: `abort
+    ],
+    "readprof" : $[
+	`next	: "archive",
+	`abort	: `abort
+    ],
     "archive" : $[
         `next	: "backup",
 	`tar_opt: "tar_opt",
@@ -156,12 +164,15 @@ map sequence = $[
     ],
     "summary" : $[
 	`abort	: `abort,
+	`profiles : "profiles",
 	`finish	: `ws_finish
     ]
 ];
 
 // aliases for dialogs
 map aliases = $[
+    "readprof"	: ``(SelectProfileDialog()),
+    "profiles"	: [ ``(ProfileDialog(false)), true ],
     "files"	: ``(FilesDialog()),
     "tar_opt"	: ``(TarOptionsDialog()),
     "archive"	: ``(ArchDialog()),
