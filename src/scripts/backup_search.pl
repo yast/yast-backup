@@ -26,14 +26,15 @@ use strict;
 sub ReadAllPackages();
 sub FsToDirs(@);
 sub ReadAllFiles(%%);
-sub VerifyPackages(@%%);
+sub VerifyPackages(@%%%);
 sub SearchDirectory($%%%);
 
 # command line options
 my $search_files = 0;
 my @exclude_d = ();
 my @exclude_fs = ();
-my $start_directory = '/';
+my @start_directories = ('/');
+my %start_directories = ();
 my $help = 0;
 
 my $same_fs = 0;
@@ -55,7 +56,7 @@ GetOptions('search' => \$search_files, 'exclude-dir=s' => \@exclude_d,
     'exclude-fs=s' => \@exclude_fs,  'help' => \$help,
     'output-progress' => \$output_progress, 'output-files' => \$output_files,
     'output-default' => \$output_default, 'widget-file=s'=> \$widget_file,
-    'start-dir=s' => \$start_directory, 'same-fs' => \$same_fs,
+    'start-dir=s' => \@start_directories, 'same-fs' => \$same_fs,
     'pkg-verification' => \$pkg_verification,
     'no-md5' => \$no_md5, 'inst-src-packages=s'=> \$inst_src_packages
 );
@@ -112,6 +113,8 @@ my @installed_packages = ReadAllPackages();
 my %installed_packages_hash;
 foreach my $ip (@installed_packages) {$installed_packages_hash{$ip} = 1;}
 
+foreach my $dir (@start_directories) {$start_directories{$dir} = 1;}
+
 # get list of unavailable packages
 my %unavailable_pkgs = ();
 if ($inst_src_packages ne "")
@@ -165,7 +168,7 @@ if (!$search_files)
 
 if ($pkg_verification)
 {
-    VerifyPackages(\@installed_packages, \%unavailable_pkgs, \%dups);
+    VerifyPackages(\@installed_packages, \%start_directories, \%unavailable_pkgs, \%dups);
 }
 
 if ($search_files)
@@ -198,8 +201,11 @@ if ($search_files)
 	close(MOUNT);
     }
 
-    # start searching from root directory
-    SearchDirectory($start_directory, \%packages_files, \%exclude_dirs, \%package_files_inodes);
+    # start searching for each specified directory
+    foreach my $st_dir (@start_directories)
+    {
+	SearchDirectory($st_dir, \%packages_files, \%exclude_dirs, \%package_files_inodes);
+    }
 }
 
 if ($widget_file ne "")
@@ -248,7 +254,7 @@ sub PrintFoundFile($$$$$$)
     if (defined $file)
     {
 	# finish function if file is not in the specified directory
-	if (substr($file, 0, length($start_directory)) ne $start_directory)
+	if (!defined $$start_directory{substr($file, 0, length($start_directory))})
 	{
 	    return;
 	}
@@ -291,9 +297,9 @@ sub PrintFoundFile($$$$$$)
 }
 
 # verify each package in the list
-sub VerifyPackages(@%%)
+sub VerifyPackages(@%%%)
 {
-    my ($packages, $unavail, $duplicates) = @_;
+    my ($packages, $start_dirs, $unavail, $duplicates) = @_;
 
     foreach my $package (@$packages) {
 	if (!$output_files)
@@ -315,7 +321,7 @@ sub VerifyPackages(@%%)
 
 		if (-e $l)
 		{
-		    PrintFoundFile($l, $package, $widget_file, $widget_index, $output_files, $start_directory);
+		    PrintFoundFile($l, $package, $widget_file, $widget_index, $output_files, $start_dirs);
 		    $widget_index++;
 		}
 	    }
@@ -430,7 +436,7 @@ sub VerifyPackages(@%%)
 
 		if ($backup)
 		{
-		    PrintFoundFile($file, $package, $widget_file, $widget_index, $output_files, $start_directory);
+		    PrintFoundFile($file, $package, $widget_file, $widget_index, $output_files, $start_dirs);
 		    $widget_index++;
 		}
 	    }

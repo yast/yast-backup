@@ -128,6 +128,7 @@ global boolean default_autoprofile = true;
 global boolean default_systembackup = true;
 global symbol default_target_type = `file;
 global string default_target_device = nil;
+global map default_target_devices_options = $[];
 global string default_temporary_dir = "/var/lib/YaST2/backup/tmp";
 
 global string default_nfsserver = "";
@@ -154,6 +155,7 @@ global boolean perms = eval( default_perms );
 
 global symbol target_type = default_target_type;
 global string target_device = default_target_device;
+global map target_devices_options = default_target_devices_options;
 
 global list default_dir = eval( default_default_dir ); 		// default excluded directoried from search
 global list dir_list = eval( default_dir_list );		// selected directoried to exclude
@@ -944,7 +946,8 @@ global define void StoreSettingsToBackupProfile( string profile_name ) ``{
 	`systembackup		: systembackup,
 	`perms			: perms,
 	`target_type		: target_type,
-	`target_device		: target_device
+	`target_device		: target_device,
+	`target_devices_options	: target_devices_options
     ] ;
 
     // add the new profile
@@ -997,6 +1000,7 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
     perms =		profile[ `perms ]:		default_perms;
     target_type =	profile[ `target_type ]:	default_target_type;
     target_device =	profile[ `target_device ]:	default_target_device;
+    target_devices_options = profile[ `target_devices_options ]:	default_target_devices_options;
 
     selected_files = default_selected_files;
     backup_files = default_backup_files;
@@ -1044,6 +1048,7 @@ global define void RestoreDefaultSettings() ``{
     nfsserver = default_nfsserver;
     nfsexport = default_nfsexport;
     target_type = default_target_type;
+    target_devices_options = eval(default_target_devices_options);
 
     selected_files = eval( default_selected_files );
     backup_files = eval( default_backup_files );
@@ -1232,6 +1237,7 @@ global define map RemovableDevices(boolean only_writable) ``{
 		    string model = dev["model"]:"";
 		    string bus = dev["bus"]:"";
 		    integer sub_class_id = dev["sub_class_id"]:128;		// default is "Storage device"
+		    symbol type_symbol = `unknown;
 
 		    // use non-rewinding tape device
 		    if (size(dev_name) > 0 && sub_class_id == 1)		// check if device is tape
@@ -1248,6 +1254,8 @@ global define map RemovableDevices(boolean only_writable) ``{
 
 			    dev["dev_name"] = dev_name;
 			}
+
+			type_symbol = `tape;
 		    }
 
 		    // type of device (cdrom, disk, tape...) was not detected
@@ -1266,6 +1274,8 @@ global define map RemovableDevices(boolean only_writable) ``{
 			{
 			    dev_name = "";
 			}
+
+			type_symbol = `cd;
 		    }
 
 		    // predefined media sizes for device - initialize to all types
@@ -1276,6 +1286,7 @@ global define map RemovableDevices(boolean only_writable) ``{
 		    if (dev["dvd"]:false)
 		    {
 			type = "DVD-ROM";
+			type_symbol = `dvd;
 
 			if (only_writable)
 			{
@@ -1286,6 +1297,7 @@ global define map RemovableDevices(boolean only_writable) ``{
 		    {
 			// CD-R or CD-RW writer device
 			type = _("CD writer");
+			type_symbol = (dev["cdr"]:false) ? `cdr : `cdrw;
 			media = cd_media_descriptions;
 			preselected = `cd700;
 		    }
@@ -1293,14 +1305,17 @@ global define map RemovableDevices(boolean only_writable) ``{
 		    {
 			// DVD-R, DVD+R... writer device
 			type = _("DVD writer");
+			type_symbol = `dvdr;
 		    }
 		    else if (dev["dvdram"]:false)
 		    {
 			type = "DVD-RAM";
+			type_symbol = `dvdram;
 		    }
 		    else if (dev["zip"]:false && dev["sub_class_id"]:0 == 3)
 		    {
 			type = "ZIP";
+			type_symbol = `zip;
 			media = zip_media_descriptions;
 
 			// get medium size
@@ -1326,6 +1341,7 @@ global define map RemovableDevices(boolean only_writable) ``{
 		    // floppy
 		    else if (dev["sub_class_id"]:0 == 3)
 		    {
+			type_symbol = `floppy;
 			media = floppy_media_descriptions;
 			list sizes = dev["resource", "size"]:[];
 			integer sect_sz = 0;
@@ -1367,7 +1383,7 @@ global define map RemovableDevices(boolean only_writable) ``{
 
 		    if (size(dev_name) > 0)
 		    {
-			ret = add(ret, dev_name, $[ "model" : model, "type" : type, "bus" : bus, "media" : media, "preselected" : preselected, "user_size" : user_size ]);
+			ret = add(ret, dev_name, $[ "model" : model, "type" : type, "bus" : bus, "media" : media, "preselected" : preselected, "user_size" : user_size, "type_symbol" : type_symbol ]);
 		    }
 		}
 	    }
