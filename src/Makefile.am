@@ -20,7 +20,7 @@ include_DATA =		\
 	ui.ycp		\
 	help_texts.ycp
 
-menu_DATA = menuentry_backup.ycp
+menu_DATA = menuentry_backup.y2cc
 
 modules_DATA = Backup.ycp
 
