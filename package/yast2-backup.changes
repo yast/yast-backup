@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Aug  9 14:37:58 CEST 2004 - jsrain@suse.cz
+
+- added missing type casts
+
+-------------------------------------------------------------------
 Wed Jun 16 16:30:19 CEST 2004 - lslezak@suse.cz
 
 - updated testsuite (use Testsuite:: module, set testedfiles)

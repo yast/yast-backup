@@ -1930,8 +1930,8 @@ Backup will be aborted.
 	y2milestone("Found %1 unselected files", size(Backup::unselected_files));
 
 	foreach(term itm, items, ``{
-		string f = select(itm, 2, nil);
-		integer idx = select(select(itm, 0, nil), 0, nil);
+		string f = (string)select(itm, 2, nil);
+		integer idx = (integer)select(select(itm, 0, nil), 0, nil);
 
 		if (contains(Backup::unselected_files, f) == true)
 		{
@@ -3432,10 +3432,10 @@ Replace the existing profile?
 	    term line = (term)UI::QueryWidget(`id(`const), `Item(curr));
 	    y2milestone("current option: %1", line);
 
-	    type = select(line, 2, nil);
+	    type = (string)select(line, 2, nil);
 	    y2milestone("type: %1", type);
 
-	    value = select(line, 1, nil);
+	    value = (string)select(line, 1, nil);
 	    y2milestone("value: %1", value);
 	}
 
