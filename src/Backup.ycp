@@ -557,40 +557,40 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
 
     // return false, is there is no such profile
     if( !haskey( backup_profiles, profile_name ) ) return false;
-    
+
     // get the profile data
-    map profile = lookup( backup_profiles, profile_name, nil );
-    
+    map profile = backup_profiles[ profile_name ] : nil;
+
     // setup global settings according to profile
     // TODO: check, if all settings are valid
-    archive_name = lookup( profile, `archive_name, default_archive_name ); 
-    description = lookup( profile, `description, default_description);
-    archive_type = lookup( profile, `archive_type, default_archive_type);
-    multi_volume = lookup( profile, `multi_volume, default_multi_volume );
-    volume_size = lookup( profile, `volume_size, default_volume_size );
-    user_volume_size = lookup( profile, `user_volume_size, default_user_volume_size);
-    user_volume_unit = lookup( profile, `user_volume_unit, default_user_volume_unit );
-    search = lookup( profile, `search, default_search );
-    system = lookup( profile, `system, default_system );
-    display = lookup( profile, `display,  default_display );
-    do_md5_test = lookup( profile, `do_md5_test, default_do_md5_test );
-    default_dir = lookup( profile, `default_dir, default_default_dir );
-    dir_list = lookup( profile, `dir_list, default_dir_list );
-    fs_exclude = lookup( profile, `fs_exclude, default_fs_exclude );
-    detected_fs = lookup( profile, `detected_fs, default_detected_fs );
-    detected_ext2 = lookup( profile, `detected_ext2, default_detected_ext2 ); 
-    ext2_backup = lookup( profile, `ext2_backup, default_ext2_backup );
-    backup_pt = lookup( profile, `backup_pt, default_backup_pt );
-    backup_all_ext2 = lookup( profile, `backup_all_ext2, default_backup_all_ext2 );
-    backup_none_ext2 = lookup( profile, `backup_none_ext2, default_backup_none_ext2 );
-    backup_selected_ext2 = lookup( profile, `backup_selected_ext2, default_backup_selected_ext2 );
-    unselected_files = lookup( profile, `unselected_files, default_unselected_files );
-    
+    archive_name =	profile[ `archive_name ] :	default_archive_name; 
+    description =	profile[ `description ] :	default_description;
+    archive_type =	profile[ `archive_type ] :	default_archive_type;
+    multi_volume =	profile[ `multi_volume ] :	default_multi_volume;
+    volume_size =	profile[ `volume_size ] :	default_volume_size;
+    user_volume_size =  profile[ `user_volume_size ] :	default_user_volume_size;
+    user_volume_unit =	profile[ `user_volume_unit ] :	default_user_volume_unit;
+    search =		profile[ `search ] :		default_search;
+    system =		profile[ `system ] :		default_system;
+    display =		profile[ `display ] :		default_display;
+    do_md5_test =	profile[ `do_md5_test ] :	default_do_md5_test;
+    default_dir =	profile[ `default_dir ] :	default_default_dir;
+    dir_list =		profile[ `dir_list ] :		default_dir_list;
+    fs_exclude =	profile[ `fs_exclude ] :	default_fs_exclude;
+    detected_fs =	profile[ `detected_fs ] :	default_detected_fs;
+    detected_ext2 =	profile[ `detected_ext2 ] :	default_detected_ext2; 
+    ext2_backup =	profile[ `ext2_backup ] :	default_ext2_backup;
+    backup_pt =		profile[ `backup_pt ] :		default_backup_pt;
+    backup_all_ext2 =	profile[ `backup_all_ext2 ] :	default_backup_all_ext2;
+    backup_none_ext2 =	profile[ `backup_none_ext2 ] :	default_backup_none_ext2;
+    backup_selected_ext2 =	profile[ `backup_selected_ext2 ] :	default_backup_selected_ext2;
+    unselected_files =	profile[ `unselected_files ] :	default_unselected_files;
+
     selected_files = default_selected_files;
     backup_files = default_backup_files;
-    
+
     selected_profile = profile_name;
-    
+
     return true;
 }
 
