@@ -21,6 +21,8 @@ import "Wizard";
 import "Progress";
 import "Report";
 import "Label";
+import "Popup";
+import "NetworkPopup";
 
 import "Popup";
 include "ui/common_functions.ycp";
@@ -63,6 +65,20 @@ global define void update_cron_dialog() ``{
     }
 }
 
+global define void update_location_dialog() ``{
+//    boolean file = (UI::QueryWidget(`id(`file), `Value) == true);
+    boolean nfs = (UI::QueryWidget(`id(`nfs), `Value) == true);
+    boolean removable = (UI::QueryWidget(`id(`removable), `Value) == true);
+
+//    UI::ChangeWidget(`id(`), `Enabled, file);
+
+    UI::ChangeWidget(`id(`nfsserver), `Enabled, nfs);
+    UI::ChangeWidget(`id(`selectexport), `Enabled, nfs);
+    UI::ChangeWidget(`id(`nfsexport), `Enabled, nfs);
+    UI::ChangeWidget(`id(`selecthost), `Enabled, nfs);
+
+    UI::ChangeWidget(`id(`device), `Enabled, removable);
+}
 /**
  * Display dialog for automatic backup - set time when backup module will
  * be started at background with current selected profile.
@@ -2879,7 +2895,6 @@ global define map DirPopup(string label, string dir) ``{
 
 
 global define symbol Test_LocationSelection() ``{
-
     // detect all writable removable devices
     map removable = Backup::RemovableDevices(false);	// FIXME: false -> true
 
@@ -2924,12 +2939,12 @@ global define symbol Test_LocationSelection() ``{
 				`HBox(
 				    `HSpacing(2),
 				    // text entry label
-				    `TextEntry(`id(`nfsfilename), _("&Remote directory:"), ""),
+				    `TextEntry(`id(`nfsexport), _("&Remote directory:"), ""),
 				    `HSpacing(1),
 				    // push button label
 				    `VBox(
 					`Label(""),
-					`PushButton(`id(`selecthost), _("Select..."))
+					`PushButton(`id(`selectexport), _("Select..."))
 				    )
 				),
 				`VSpacing(0.49),
@@ -2969,18 +2984,36 @@ global define symbol Test_LocationSelection() ``{
     symbol s = nil;
     while (s != `next && s!= `abort && s!= `back)
     {
+	// update dialog (enable/disable widgets)
+	update_location_dialog();
+
 	s = UI::UserInput();
 
 	if (s == `volume)
 	{
-	    Test_VolumeSizeDialog();
+	    list vols = (UI::QueryWidget(`id(`removable), `Value) == true) ? (removable[UI::QueryWidget(`id(`device), `Value), "media"]:Backup::media_descriptions) : Backup::media_descriptions;
+
+	    map out = Test_VolumeSizeDialog(vols, sel_vol, user_vol);
+
+	    if (out["input"]:nil == `ok)
+	    {
+		sel_vol = out["symbol"]:`default_size;
+
+		if (sel_vol == `user)
+		{
+		    user_vol = out["user_size"]:(1024*1024*1024);
+		}
+
+		UI::ChangeWidget(`id(`vol_sz), `Value, symbol2string(sel_vol, user_vol));
+	    }
 	}
 	else if (s == `expert)
 	{
 	    Test_LocationExpertOptions();
 	}
-	else if (s == `device)
+	else if (s == `device || s == `removable)
 	{
+	    // preselect default volume size for device
 	    string sel_dev = UI::QueryWidget(`id(`device), `Value);
 
 	    y2milestone("sel_dev: %1, removable: %2", sel_dev, removable);
@@ -3002,6 +3035,54 @@ global define symbol Test_LocationSelection() ``{
 
 	    y2milestone("%1", sel_dev);
 	}
+	else if (s == `nfs || s == `file)
+	{
+	    sel_vol = `default_size;
+	    UI::ChangeWidget(`id(`vol_sz), `Value, symbol2string(sel_vol, user_vol));
+	}
+	// select NFS server
+	else if (s == `selecthost)
+	{
+	    string srv = NetworkPopup::NFSServer("");
+
+	    if (srv != nil)
+	    {
+		 UI::ChangeWidget(`id(`nfsserver), `Value, srv);
+	    }
+	}
+	// select NFS export
+	else if (s == `selectexport)
+	{
+	    string server = UI::QueryWidget(`id(`nfsserver), `Value);
+
+	    if (size(server) > 0)
+	    {
+		string exp = NetworkPopup::NFSExport(server, "");
+
+		if (exp != nil)
+		{
+		    UI::ChangeWidget(`id(`nfsexport), `Value, exp);
+		}
+	    }
+	    else
+	    {
+		Popup::Message(_("Server name is missing"));
+	    }
+	}
+	else if (s == `next)
+	{
+	    string archname = UI::QueryWidget(`id(`filename), `Value);
+
+	    if (size(archname) == 0)
+	    {
+
+		// warning popup message
+		Popup::Warning(_("An archive file name is required.
+Enter the file name to use.
+"));
+		s = nil;
+	    }
+	}
     }
 
     Wizard::RestoreNextButton();
@@ -3010,32 +3091,55 @@ global define symbol Test_LocationSelection() ``{
 }
 
 
-global define symbol Test_VolumeSizeDialog(/*list supported_media*/) ``{
+global define map Test_VolumeSizeDialog(list supported_media, symbol current, integer user_size) ``{
 
-/*    list media = [];
+    list media = [];
+    boolean user_found = false;
 
     foreach(map m, supported_media,
 	``{
-	    media = add(media, `item(`id(m[""]
+	    symbol sym = m["symbol"]:nil;
+	    string l = m["label"]:nil;
+
+	    if (sym != nil && l != nil)
+	    {
+		if (m["symbol"]:nil == `user)
+		{
+		    user_found = true;
+		}
+
+		media = add(media, `item(`id(sym), l, sym == current));
+	    }
 	}
     );
-*/
-    list media = [`item (`id (`fd144), "Floppy 1.44 MB"), `item (`id (`fd12), "Floppy 1.2 MB"), `item (`id (`zip100), "ZIP 100 MB"), `item (`id (`cd650), "CD-R/RW 650 MB (74 min.)"), `item (`id (`cd700), "CD-R/RW 700 MB (80 min.)"), `item (`id (`user_defined), "User-defined")];
+
+    if (user_found == false)
+    {
+	media = add(media, `item(`id(`user), _("User defined size"), current == `user));
+    }
+
+    map tmp = size2map(user_size);
+    symbol usymb = tmp["unit"]:`B;
+    user_size = tmp["size"]:0;
 
     list units = [];
 
     foreach(map unit, Backup::units_description,
 	``{
 	    symbol s = unit["symbol"]:nil;
-	    string label = unit["lable"]:nil;
+	    string label = unit["label"]:nil;
 
 	    if (s != nil && size(label) > 0)
 	    {
-		units = add(units, `item(`id(s), label));
+		units = add(units, `item(`id(s), label, s == usymb));
 	    }
 	}
     );
 
+
+    string user_size_str = (current == `user) ? sformat("%1", user_size) : "";
+
+    y2debug("Unit descriptions: %1", units);
 
     UI::OpenDialog(
 	`HBox(
@@ -3057,7 +3161,7 @@ global define symbol Test_VolumeSizeDialog(/*list supported_media*/) ``{
 				`Left(
 				    `HBox(
 					// text entry label
-					`TextEntry(`id(`user_size), _("&User-defined size:")),
+					`TextEntry(`id(`user_size), _("&User-defined size:"), user_size_str),
 					`ComboBox(`id(`user_unit), "", units),
 					`HStretch()
 				    )
@@ -3078,15 +3182,30 @@ global define symbol Test_VolumeSizeDialog(/*list supported_media*/) ``{
 	)
     );
 
-    symbol input = UI::UserInput();
+    // allow only digits in the size entry
+    UI::ChangeWidget(`id(`user_size), `ValidChars, "0123456789" );
+
+    symbol input = nil;
     while (input != `ok && input != `cancel)
     {
+	boolean enable = UI::QueryWidget(`id(`vol), `Value) == `user;
+
+	UI::ChangeWidget(`id(`user_size), `Enabled, enable);
+	UI::ChangeWidget(`id(`user_unit), `Enabled, enable);
+
 	input = UI::UserInput();
     }
 
+    symbol sel = UI::QueryWidget(`id(`vol), `Value);
+    integer sz = (sel == `user) ? tointeger(UI::QueryWidget(`id(`user_size), `Value)) : 0;
+    symbol unit = UI::QueryWidget(`id(`user_unit), `Value);
+
+    // multiple size by unit to get size in bytes
+    sz = sz * Backup::GetCapacity(Backup::units_description, unit);
+
     UI::CloseDialog();
 
-    return input;
+    return $[ "input" : input, "symbol" : sel, "user_size" : sz ];
 }
 
 global define symbol Test_ExcludePatternOption() ``{
@@ -3335,7 +3454,8 @@ global define string symbol2string(symbol s, integer user_size) ``{
 
     if (s == `user)
     {
-	return size2string(user_size);
+	map tmp = size2map(user_size);
+	return tmp["string"]:"";
     }
 
     foreach(map m, Backup::media_descriptions,
@@ -3352,7 +3472,8 @@ global define string symbol2string(symbol s, integer user_size) ``{
 
 		if (cap > 0)
 		{
-		    ret = ret + sformat(" (%1)", size2string(cap));
+		    map tmp = size2map(cap);
+		    ret = ret + sformat(" (%1)", tmp["string"]:"");
 		}
 	    }
 	}
@@ -3361,8 +3482,9 @@ global define string symbol2string(symbol s, integer user_size) ``{
     return ret;
 }
 
-global define string size2string(integer sz) ``{
+global define map size2map(integer sz) ``{
     string ret = "";
+    symbol ret_unit = `B;
     map unit_descr = $[];
 
     if (sz == nil)
@@ -3393,12 +3515,14 @@ global define string size2string(integer sz) ``{
 	    sz = sz / 1024;
 
 	    // return MiB
-	    return sformat("%1", sz) + " " + unit_descr[`MiB]:"";
+	    ret = sformat("%1", sz) + " " + unit_descr[`MiB]:"";
+	    ret_unit = `MiB;
 	}
 	else
 	{
 	    // return kiB
-	    return sformat("%1", sz) + " " + unit_descr[`kiB]:"";
+	    ret = sformat("%1", sz) + " " + unit_descr[`kiB]:"";
+	    ret_unit = `kiB;
 	}
     }
     else if (sz % 1000 == 0)
@@ -3412,20 +3536,23 @@ global define string size2string(integer sz) ``{
 	    sz = sz / 1000;
 
 	    // return MB
-	    return sformat("%1", sz) + " " + unit_descr[`MB]:"";
+	    ret = sformat("%1", sz) + " " + unit_descr[`MB]:"";
+	    ret_unit = `MB;
 	}
 	else
 	{
 	    // return kB
-	    return sformat("%1", sz) + " " + unit_descr[`kB]:"";
+	    ret = sformat("%1", sz) + " " + unit_descr[`kB]:"";
+	    ret_unit = `kB;
 	}
     }
     else
     {
 	ret = sformat("%1", sz) + " " + unit_descr[`B]:"";
+	ret_unit = `B;
     }
 
-    return ret;
+    return $[ "string" : ret, "size" : sz, "unit" : ret_unit ];
 }
 
 }

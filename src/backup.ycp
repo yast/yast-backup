@@ -118,6 +118,7 @@ map sequence = $[
     "ws_start"	: "readprof",
 
 //    "ws_start" : "test_pts",
+//    "ws_start" : "test_loc",
 
     "test_pts" : $[
 	`next	: "test_opt",

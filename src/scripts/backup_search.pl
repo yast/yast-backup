@@ -33,12 +33,15 @@ sub SearchDirectory($%%%);
 my $search_files = 0;
 my @exclude_d = ();
 my @exclude_fs = ();
+my $start_directory = '/';
 my $help = 0;
 
+my $same_fs = 0;
 my $output_progress = 0;
 my $output_files = 0;
 my $output_default = 0;
 my $no_md5 = 0;
+my $pkg_verification = 0;
 my $inst_src_packages = "";
 my %instalable_packages;
 
@@ -47,12 +50,13 @@ my $widget_index = 1;
 
 my %exclude_dirs;
 
-
 # parse command line options
 GetOptions('search' => \$search_files, 'exclude-dir=s' => \@exclude_d,
     'exclude-fs=s' => \@exclude_fs,  'help' => \$help,
     'output-progress' => \$output_progress, 'output-files' => \$output_files,
     'output-default' => \$output_default, 'widget-file=s'=> \$widget_file,
+    'start-dir=s' => \$start_directory, 'same-fs' => \$same_fs,
+    'pkg-verification' => \$pkg_verification,
     'no-md5' => \$no_md5, 'inst-src-packages=s'=> \$inst_src_packages
 );
 
@@ -74,6 +78,9 @@ if ($help)
     print "  --output-progress  Display data for frontend\n";
     print "  --output-default   Default output is in format accepted by 'backup_achive' script\n";
     print "  --inst-src-packages <file>	File with list of available packages in the installation sources.\n";
+    print "  --pkg-verification	Verify RPM packages, report changed files\n";
+    print "  --start-dir <dir>	Start search in directory <dir>, report changed package files only in subdirectory <dir>\n";
+    print "  --same-fs		Stay on the selected filesystem\n";
 
     exit 0;
 }
@@ -156,7 +163,10 @@ if (!$search_files)
     %packages_files = ();
 }
 
-VerifyPackages(\@installed_packages, \%unavailable_pkgs, \%dups);
+if ($pkg_verification)
+{
+    VerifyPackages(\@installed_packages, \%unavailable_pkgs, \%dups);
+}
 
 if ($search_files)
 {
@@ -168,8 +178,28 @@ if ($search_files)
     # insert excluded mountpoints to excluded directories
     foreach my $d (FsToDirs(@exclude_fs)) {$exclude_dirs{$d} = 1;}
 
+    # if it is required to stay on the selected file system then
+    # add all mountpoints to the exclude dirs
+    # TODO: this approach is not 100% reliable - a device can mounted after this check
+    if ($same_fs)
+    {
+	open(MOUNT, "/bin/mount |");
+
+	while (my $line = <MOUNT>) 
+	{
+	    chomp($line);
+
+	    if ($line =~ /^.* on (.*) type /)
+	    {
+		$exclude_dirs{$1} = 1;
+	    }
+	}
+
+	close(MOUNT);
+    }
+
     # start searching from root directory
-    SearchDirectory('/', \%packages_files, \%exclude_dirs, \%package_files_inodes);
+    SearchDirectory($start_directory, \%packages_files, \%exclude_dirs, \%package_files_inodes);
 }
 
 if ($widget_file ne "")
@@ -181,6 +211,7 @@ if ($widget_file ne "")
     close(WIDGETFILE2);
 }
 
+exit 0;
 # End of main part
 ######################################################
 
@@ -210,12 +241,18 @@ sub ReadAllPackages()
     return @all_packages;
 }
 
-sub PrintFoundFile($$$$$)
+sub PrintFoundFile($$$$$$)
 {
-    my ($file, $package, $widget_file, $widget_index, $output_files) = @_;
+    my ($file, $package, $widget_file, $widget_index, $output_files, $start_directory) = @_;
 
     if (defined $file)
     {
+	# finish function if file is not in the specified directory
+	if (substr($file, 0, length($start_directory)) ne $start_directory)
+	{
+	    return;
+	}
+
 	my @filestat = stat($file);
 
 	# escaping newline characters is needed because each file
@@ -278,7 +315,7 @@ sub VerifyPackages(@%%)
 
 		if (-e $l)
 		{
-		    PrintFoundFile($l, $package, $widget_file, $widget_index, $output_files);
+		    PrintFoundFile($l, $package, $widget_file, $widget_index, $output_files, $start_directory);
 		    $widget_index++;
 		}
 	    }
@@ -389,9 +426,11 @@ sub VerifyPackages(@%%)
 			$file = $1;
 		    }
 		}
+
+
 		if ($backup)
 		{
-		    PrintFoundFile($file, $package, $widget_file, $widget_index, $output_files);
+		    PrintFoundFile($file, $package, $widget_file, $widget_index, $output_files, $start_directory);
 		    $widget_index++;
 		}
 	    }
@@ -504,7 +543,7 @@ sub SearchDirectory($%%%)
 		{
 		    if (isinpackage($fullname) == 0)
 		    {
-			PrintFoundFile($fullname, '', $widget_file, $widget_index, $output_files);
+			PrintFoundFile($fullname, '', $widget_file, $widget_index, $output_files, $dir);
 			$widget_index++;
 		    }
 		}
@@ -519,7 +558,7 @@ sub SearchDirectory($%%%)
 		    # it seems that file is not owned by any package, but do another check - dev/inode number
 		    if (!defined $inodes->{$filestat[0].$filestat[1]})
 		    {
-			PrintFoundFile($fullname, '', $widget_file, $widget_index, $output_files);
+			PrintFoundFile($fullname, '', $widget_file, $widget_index, $output_files, $dir);
 			$widget_index++;
 		    }
 		}
@@ -537,7 +576,7 @@ sub SearchDirectory($%%%)
 	    # ignore sockets - they can't be archived
 	    elsif ($item ne "." and $item ne ".." and !$$files{$fullname} and !(-S $fullname))
 	    {
-		PrintFoundFile($fullname, '', $widget_file, $widget_index, $output_files);
+		PrintFoundFile($fullname, '', $widget_file, $widget_index, $output_files, $dir);
 		$widget_index++;
 	    }
 	}
