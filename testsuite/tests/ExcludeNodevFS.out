@@ -3,6 +3,7 @@ Read	.target.size "/etc/install.inf" -1
 Read	.target.tmpdir "/tmp"
 Read	.target.size "/tmp/autoinst.xml" -1
 Dir	.autoinst.menuentry.s: []
+Execute	.target.mkdir "/tmp/profile" 0
 Read	.proc.filesystems nil
 Return	nil
 Dump	["iso9660"]
