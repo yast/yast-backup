@@ -1,0 +1,36 @@
+// Backup module - testsuite
+//
+// GetCapacity function tests
+//
+// $Id$
+//
+
+{
+
+include "backup/functions.ycp";
+include "testsuite.ycp";
+
+DUMP( GetCapacity(nil, nil) );
+DUMP( GetCapacity([ ], `s) );
+DUMP( GetCapacity(["no map"], nil) );
+DUMP( GetCapacity([
+    $[
+	"capacity" : 1440000
+    ]
+], `s) );
+
+DUMP( GetCapacity([
+    $[
+	"label" : _("Floppy 1.44 MB"),
+	"symbol" : `fd144,
+	"capacity" : 1440000
+    ],
+    $[
+	"label" : _("Floppy 1.2 MB"),
+	"symbol" : `fd12,
+	"capacity" : 1200000
+    ]
+], `fd12) );
+
+}
+
