@@ -79,7 +79,7 @@ global define boolean AbortConfirmation(symbol type) ``{
     boolean ret = nil;
 
     string heading = _("Abort confirmation");
-    string question = _("Do you really want to abort backup?");
+    string question = _("Do you really want to abort the backup?");
     string yes = YesButtonLabel();	// from common_messages.ycp
     string no = NoButtonLabel();
 
