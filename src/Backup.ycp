@@ -68,7 +68,7 @@ global boolean default_backup_selected_ext2 = false;	// backup selected ext2 par
 
 global map default_backup_files = $[ ];		// all found files to backup
 global map default_selected_files = nil;	// selected files to backup
-global list default_unselected_files = nil;	// files, which user explicitly unselected
+global list default_unselected_files = [ ];	// files, which user explicitly unselected
 
 // global variables initialized to default values:
 global string archive_name = eval( default_archive_name );		// archive file name
