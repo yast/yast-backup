@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Apr  1 16:29:40 CEST 2003 - lslezak@suse.de
+
+- help texts and button labels improved, changed archive type
+  selection (#23367)
+
+-------------------------------------------------------------------
 Fri Mar 28 12:49:11 CET 2003 - lslezak@suse.de
 
 - speed improvement: create table content in backup_search.pl

@@ -31,6 +31,30 @@ global symbol last_input = nil;
 
 global map deselected_ids = $[];
 
+
+/**
+ * Refresh widget status (enable/disable) in the displayed dialog.
+ * @param enable_archive_type if true enable archive selection combo box
+ *	and option push button, select "archive" radio button.
+ *	If enable_archive_type is false then disbale widgets, select
+ *	"only list" radio button.
+ */
+
+global define void refresh_widget_status(boolean enable_archive_type) ``{
+    if (enable_archive_type == false)
+    {
+	UI::ChangeWidget(`id(`type), `Enabled, false);
+	UI::ChangeWidget(`id(`opts), `Enabled, false);
+	UI::ChangeWidget(`id(`rbgroup), `CurrentButton, `only_list);
+    }
+    else
+    {
+	UI::ChangeWidget(`id(`type), `Enabled, true);
+	UI::ChangeWidget(`id(`opts), `Enabled, true);
+	UI::ChangeWidget(`id(`rbgroup), `CurrentButton, `archive);
+    }
+}
+
 /**
  * Dialog for setting archive options
  * @return symbol Symbol for wizard sequencer - pressed button
@@ -39,10 +63,10 @@ global map deselected_ids = $[];
 global define symbol ArchDialog() ``{
 
     // do not allow manual changes of configuration
-    if( Backup::no_interactive ) 
+    if (Backup::no_interactive)
     {
 	boolean cont = true;
-	
+
 	// no multivolume and does not exists, continue
 	if (!Backup::multi_volume && SCR::Read(.target.size, Backup::archive_name) != -1)
 	{
@@ -90,7 +114,7 @@ global define symbol ArchDialog() ``{
 		cont = true;
 	    }
 	}
-	
+
 	if( cont )
 	{
 	    last_input = `next;
@@ -114,34 +138,38 @@ global define symbol ArchDialog() ``{
 	    `Frame( _("Archive type"),
 		`VBox(
 		    `VSpacing(`opt(`hstretch), 0.5),
-		    `Left(
-			`HBox(
-			    `HSpacing(2.0),
-			    `ComboBox(`id(`type), `opt(`notify),
-				// combo box label
-				_("Select archive &type:"),
-				// archive type - combo box item
-				[ `item(`id(`tgz), _("tar with tar-gzip subarchives")),
-				// archive type - combo box item
-				  `item(`id(`tbz), _("tar with tar-bzip2 subarchives")),
-				// archive type - combo box item
-				  `item(`id(`tar), _("tar with tar subarchives")),
-				// archive type - combo box item
-				  `item(`id(`stgz), _("tar with star-gzip subarchives")),
-				// archive type - combo box item
-				  `item(`id(`stbz), _("tar with star-bzip2 subarchives")),
-				// archive type - combo box item
-				  `item(`id(`star), _("tar with star subarchives")),
-				// archive type - combo box item
-				  `item(`id(`txt), _("only list file names"))
-				]
+		    `RadioButtonGroup(`id(`rbgroup),
+			`VBox(
+			    `Left(`RadioButton(`id(`archive), `opt(`notify), _("Create backup archive"))),
+			    `HBox(
+				`HSpacing(4.0),
+				`ComboBox(`id(`type), `opt(`notify),
+				    // combo box label
+				    _("Select archive &type:"),
+				    // archive type - combo box item
+				    [ `item(`id(`tgz), _("tar with tar-gzip subarchives")),
+				    // archive type - combo box item
+				      `item(`id(`tbz), _("tar with tar-bzip2 subarchives")),
+				    // archive type - combo box item
+				      `item(`id(`tar), _("tar with tar subarchives")),
+				    // archive type - combo box item
+				      `item(`id(`stgz), _("tar with star-gzip subarchives")),
+				    // archive type - combo box item
+				      `item(`id(`stbz), _("tar with star-bzip2 subarchives")),
+				    // archive type - combo box item
+				      `item(`id(`star), _("tar with star subarchives")),
+				    ]
+				),
+				`HSpacing(3.0),
+				`VBox(
+				    `VSpacing(1.0),
+				    // push button label
+				    `PushButton(`id(`opts), _("&Options..."))
+				),
+				`HStretch()
 			    ),
-			    `HSpacing(3.0),
-			    `VBox(
-				`VSpacing(1.0),
-				// push button label
-				`PushButton(`id(`opts), _("&Options..."))
-			    )
+			    `VSpacing(1),
+			    `Left(`RadioButton(`id(`only_list), `opt(`notify), _("Create only list of found files")))
 			)
 		    ),
 		    `VSpacing(0.5)
@@ -159,7 +187,12 @@ global define symbol ArchDialog() ``{
     // set values
     UI::ChangeWidget(`id(`filename), `Value, Backup::archive_name);
     UI::ChangeWidget(`id(`description), `Value, Backup::description);
-    UI::ChangeWidget(`id(`type), `Value, Backup::archive_type);
+
+    if (Backup::archive_type != `txt)
+    {
+	UI::ChangeWidget(`id(`type), `Value, Backup::archive_type);
+    }
+    refresh_widget_status(Backup::archive_type != `txt);
 
     boolean cont = false;
     symbol ret = nil;
@@ -187,7 +220,10 @@ be backed up by root.
         Backup::archive_name = UI::QueryWidget(`id(`filename), `Value);
 
 	// add extension ".tar" if it is missing
-	Backup::archive_name = AddMissingExtension(Backup::archive_name, ".tar");
+	if (Backup::archive_type != `txt)
+	{
+	    Backup::archive_name = AddMissingExtension(Backup::archive_name, ".tar");
+	}
 
 	if (ret == `type)
 	{
@@ -298,6 +334,10 @@ Enter the file name to use.
 		ret = `abort;
 		cont = AbortConfirmation(`changed);
 	    }
+	    else if (ret == `only_list || ret == `archive)
+	    {
+		refresh_widget_status(ret == `archive);
+	    }
 	    else
 	    {
 		cont = true;
@@ -307,7 +347,7 @@ Enter the file name to use.
 
     // get values
     Backup::description = UI::QueryWidget(`id(`description), `Value);
-    Backup::archive_type = UI::QueryWidget(`id(`type), `Value);
+    Backup::archive_type = (UI::QueryWidget(`id(`rbgroup), `CurrentButton) == `archive) ? UI::QueryWidget(`id(`type), `Value) : `txt;
 
     if (ret == `opts)
     {
@@ -466,20 +506,20 @@ global define symbol BackupDialog() ``{
     if( Backup::no_interactive ) return `next2;
 
     // dialog header
-    Wizard::SetContents( _("Search settings"),
+    Wizard::SetContents( _("File selection"),
         `VBox(`VSpacing(0.5),
 	    // frame label
 	    `Frame( _("Backup options"),
 	        `VBox(
 		    `VSpacing(0.5),
 		    // check box label
-                    `Left(`CheckBox(`id(`search), `opt(`notify), _("&Search files that do not belong to any package"))),
+                    `Left(`CheckBox(`id(`search), `opt(`notify), _("&Backup files that do not belong to any package"))),
 		    `VSpacing(0.5),
 		    // check box label
                     `Left(`CheckBox(`id(`system), _("Backup &hard disk system areas"))),
 		    `VSpacing(0.5),
 		    // check box label
-		    `Left(`CheckBox(`id(`display), _("Check list of files before &creating archive"))),
+		    `Left(`CheckBox(`id(`display), _("Display list of files before &creating archive"))),
 		    `VSpacing(0.5)
 		)
 	    ),
@@ -573,7 +613,7 @@ global define symbol ExcludeDialog() ``{
     }
 
     // dialog header
-    Wizard::SetContents( _("Exclude from search"),
+    Wizard::SetContents( _("Exclude from backup"),
 	`VBox(
 	    `VSpacing(1.0),
 	    // table label
@@ -1379,7 +1419,7 @@ Backup will be aborted.
 		foreach(string pak, map val, Backup::selected_files,
 		``{
 		    list changed_files = lookup(val, "changed_files", [ ]);
-		    if( contains( changed_files , file ) ) 
+		    if( contains( changed_files , file ) )
 		    {
 			changed_files = filter( string v, changed_files, ``(v != file) );
 
@@ -2255,7 +2295,7 @@ global define symbol SummaryDialog() ``{
 global define symbol SelectProfileDialog() ``{
 
     Backup::ReadBackupProfiles();
-    
+
     // if there is no stored profile return `next
     if (size(Backup::backup_profiles) == 0)
     {
@@ -2282,17 +2322,17 @@ global define symbol SelectProfileDialog() ``{
 	),
 	profile_selection_help(), true, true
     );
-    
+
     if (Backup::selected_profile != nil)
     {
 	// select the original profile in the list
         UI::ChangeWidget( `id(`profile), `CurrentItem, Backup::selected_profile );
-	
+
 	if (Backup::no_interactive)
 	{
 	    UI::ChangeWidget( `id(`rb), `CurrentButton, `use );
 	}
-	else 
+	else
 	{
 	    UI::ChangeWidget( `id(`rb), `CurrentButton, `edit );
 	}
@@ -2304,7 +2344,7 @@ global define symbol SelectProfileDialog() ``{
     }
 
     symbol ret = UI::UserInput();
-    
+
     if( ret == `next )
     {
 	symbol profile_use = UI::QueryWidget(`id(`rb), `CurrentButton);
@@ -2312,14 +2352,14 @@ global define symbol SelectProfileDialog() ``{
 	{
 	    // use the settings from profile and proceed without user intervention
 	    Backup::RestoreSettingsFromBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
-	    
+
 	    Backup::no_interactive = true;
 	}
 	else if( profile_use == `edit )
 	{
 	    // read the settings for the selected profile and continue setup
 	    Backup::RestoreSettingsFromBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
-	    
+
 	    // interactive configuration
 	    Backup::no_interactive = false;
 	}
@@ -2332,7 +2372,7 @@ global define symbol SelectProfileDialog() ``{
 	    Backup::no_interactive = false;
 	}
     }
-    
+
     return ret;
 }
 
@@ -2344,7 +2384,7 @@ global define symbol ProfileDialog() ``{
 
     Wizard::SetContents(_("Profiles"),
 	`VBox(
-	    `ReplacePoint(`id(`selectionBox), 
+	    `ReplacePoint(`id(`selectionBox),
 	    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames()  )
 	    ),
 	    `HBox(
@@ -2356,13 +2396,13 @@ global define symbol ProfileDialog() ``{
 	),
 	profile_help(), true, true
     );
-    
+
     if( size( Backup::backup_profiles ) != 0 )
     {
 	if (Backup::selected_profile != nil )
 	{
 	    // select the original profile in the list
-    	    UI::ChangeWidget( `id(`profile), `CurrentItem, Backup::selected_profile );
+	    UI::ChangeWidget( `id(`profile), `CurrentItem, Backup::selected_profile );
         }
 	else
 	{
@@ -2373,20 +2413,20 @@ global define symbol ProfileDialog() ``{
 
     Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
 
-    
+
     symbol ret = nil;
     do
     {
 	// enable correct buttons
 	UI::ChangeWidget( `id(`replace), `Enabled, (size( Backup::backup_profiles ) != 0) );
 	UI::ChangeWidget( `id(`delete), `Enabled, (size( Backup::backup_profiles ) != 0) );
-	
+
 	ret = UI::UserInput();
-	
+
 	if( ret == `add )
 	{
 	    // add a new profile with the current settings
-	    
+
 	    // Translators: text of a popup dialog
 	    map new_name = ShowEditDialog(_("Enter a name for the new profile."), "");
 
@@ -2402,14 +2442,14 @@ Enter a different name."), new_name["text"]:""));
 	    if( lookup( new_name, "clicked", nil ) == `ok )
 	    {
 		Backup::StoreSettingsToBackupProfile( lookup( new_name, "text", "" ) );
-		UI::ReplaceWidget( `id(`selectionBox), 
+		UI::ReplaceWidget( `id(`selectionBox),
 		    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames() ) );
-		
+
 		// select the profile in the list
-        	UI::ChangeWidget( `id(`profile), `CurrentItem, new_name["text"]:"" );
+		UI::ChangeWidget( `id(`profile), `CurrentItem, new_name["text"]:"" );
 	    }
-	} 
-	else if( ret == `replace ) 
+	}
+	else if( ret == `replace )
 	{
 	    // replace the selected profile with the current settings
 	    Backup::StoreSettingsToBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
@@ -2420,11 +2460,11 @@ Enter a different name."), new_name["text"]:""));
 	    if ( UI::YesNoPopup ( _("Remove the selected profile?") ) )
 	    {
 		Backup::RemoveBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
-		UI::ReplaceWidget( `id(`selectionBox), 
+		UI::ReplaceWidget( `id(`selectionBox),
 		    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames() ) );
-		
+
 		// select the first profile in the list
-        	UI::ChangeWidget( `id(`profile), `CurrentItem, select( Backup::BackupProfileNames(), 0, nil ) );
+		UI::ChangeWidget( `id(`profile), `CurrentItem, select( Backup::BackupProfileNames(), 0, nil ) );
 	    }
 	}
 	else if( ret == `abort )
@@ -2435,9 +2475,9 @@ Enter a different name."), new_name["text"]:""));
 		ret = nil;
 	    }
 	}
-	
+
     } while( ret != `ok && ret != `cancel && ret != `abort && ret != `back );
-    
+
     if( ret == `ok )
     {
 	y2milestone(" *** Storing profiles ***");
