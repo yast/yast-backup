@@ -139,11 +139,16 @@ map sequence = $[
         `next	: "exclude",
 	`next2	: "searching",
 	`next3	: "system",
+	`xpert	: "options",
+	`abort	: `abort
+    ],
+    "options" : $[
+	`finish	: "backup",
+	`set_system : "system",
 	`abort	: `abort
     ],
     "exclude" : $[
-        `next	: "system",
-	`next2	: "searching",
+	`next	: "searching",
 	`expert : "excludefs",
 	`abort	: `abort
     ],
@@ -152,7 +157,7 @@ map sequence = $[
 	`abort	: `abort
     ],
     "system" : $[
-	`next : "searching",
+	`finish : "options",
 	`abort	: `abort
     ],
     "searching"	: $[
@@ -186,6 +191,7 @@ map aliases = $[
     "tar_opt"	: ``(TarOptionsDialog()),
     "archive"	: ``(ArchDialog()),
     "backup"	: ``(BackupDialog()),
+    "options"	: ``(ExpertOptionsDialog()),
     "exclude"	: ``(ExcludeDialog()),
     "excludefs" : ``(ExcludeFilesystemDialog()),
     "system"	: ``(SystemBackupDialog()),

@@ -127,6 +127,7 @@ my $files_info = '';
 my $comment_file = '';
 my $complete_backup = '';
 my $multi_volume = undef;
+my $temp_dir = '/tmp';
 
 # parse command line options
 GetOptions('archive-name=s' => \$archive_name, 
@@ -134,7 +135,7 @@ GetOptions('archive-name=s' => \$archive_name,
     'store-ptable' => \$store_pt, 'store-ext2=s' => \@ext2_parts,
     'verbose' => \$verbose, 'files-info=s' => \$files_info,
     'comment-file=s'=> \$comment_file, 'multi-volume=i' => \$multi_volume,
-    'complete-backup=s' => \$complete_backup
+    'complete-backup=s' => \$complete_backup, 'tmp-dir=s' => \$temp_dir
 );
 
 
@@ -154,9 +155,10 @@ if ($help or $files_info eq '' or $archive_name eq '')
     print "  --verbose             Print progress information\n";
     print "  --store-ptable        Add partition tables information to archive\n";
     print "  --store-ext2 <device> Store Ext2 system area from device\n";
-    print "  --files-info <file>         Data file from backup_search script\n";
+    print "  --files-info <file>	Data file from backup_search script\n";
     print "  --complete-backup <file>	Read list of completly backed up packages from a file\n";
-    print "  --comment-file <file> Use comment stored in file\n\n";
+    print "  --temp-dir <directory>     Temporary directory to use (default is /tmp)\n";
+    print "  --comment-file <file>	Use comment stored in file\n\n";
         
     exit 0;
 }
@@ -207,7 +209,10 @@ if ($archive_type eq 'txt')
     exit 0;
 }
 
-my $tmp_dir_root = tempdir(CLEANUP => 1);	# remove directory content at exit
+# create parent temporary directory
+system("/bin/mkdir -p $temp_dir");
+
+my $tmp_dir_root = tempdir($temp_dir."/backup_tmp_XXXXXXXX", CLEANUP => 1);	# remove directory content at exit
 
 my $tmp_dir = $tmp_dir_root."/tmp";
 if (!mkdir($tmp_dir))

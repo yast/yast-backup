@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Wed Oct 22 09:31:10 CEST 2003 - lslezak@suse.cz
+
+- exclude /media and /windows directories, exclude ntfs file
+  system (it's readonly, cannot be restored) (#20192)
+- new expert options dialog (temporary directory location (#30042),
+  system area backup)
+- small workflow changes
+- testsuite update
+- version 2.9.0
+
+-------------------------------------------------------------------
 Thu Sep 25 13:31:40 CEST 2003 - lslezak@suse.cz
 
 - use Require module (#31673)
