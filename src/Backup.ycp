@@ -110,7 +110,7 @@ global list<string> default_regexp_list = [];
 global list<string> default_fs_exclude = [ "iso9660", "ntfs" ];		// selected filesystems to exclude from search
 global list<string> default_detected_fs = nil;			// detected filesystems
 
-global list<map> default_detected_ext2 = nil;		// detected mounted ext2 filesystems
+global list< map<string,any> > default_detected_ext2 = nil;		// detected mounted ext2 filesystems
 global list<term> default_ext2_backup = [];			// selected ext2 filesystems to backup
 
 global boolean default_backup_pt = true;		// backup partition table
@@ -174,7 +174,7 @@ global list<string> regexp_list = default_regexp_list;
 global list<string> fs_exclude = default_fs_exclude;		// selected filesystems to exclude from search
 global list<string> detected_fs = default_detected_fs;		// detected filesystems
 
-global list<map> detected_ext2 = default_detected_ext2;	// detected mounted ext2 filesystems
+global list< map<string,any> > detected_ext2 = default_detected_ext2;	// detected mounted ext2 filesystems
 global list<term> ext2_backup = default_ext2_backup;		// selected ext2 filesystems to backup
 
 global boolean backup_pt = default_backup_pt;		// backup partition table
@@ -223,7 +223,7 @@ map detected_mpoints = nil;
 // media description - capacity is maximum file size which fits
 // to formatted medium using widely used file system (FAT on floppies)
 
-global list<map> cd_media_descriptions = [
+global list< map<string,any> > cd_media_descriptions = [
     $[
 	"label" : _("CD-R/RW 650 MB (74 min.)"),
 	"symbol" : `cd650,
@@ -236,7 +236,7 @@ global list<map> cd_media_descriptions = [
     ]
 ];
 
-global list<map> floppy_media_descriptions = [
+global list< map<string,any> > floppy_media_descriptions = [
     $[
 	"label" : _("Floppy 1.44 MB"),
 	"symbol" : `fd144,
@@ -249,7 +249,7 @@ global list<map> floppy_media_descriptions = [
     ]
 ];
 
-global list<map> zip_media_descriptions = [
+global list< map<string,any> > zip_media_descriptions = [
     $[
 	"label" : _("ZIP 100 MB"),
 	"symbol" : `zip100,
@@ -262,7 +262,7 @@ global list<map> zip_media_descriptions = [
     ],*/
 ];
 
-global list<map> misc_descriptions = [
+global list< map<string,any> > misc_descriptions = [
 /*    $[
 	"label" : _("Default Volume Size"),
 	"symbol" : `default_size,
@@ -270,9 +270,9 @@ global list<map> misc_descriptions = [
     ]*/
 ];
 
-global list<map> media_descriptions = (list<map>) merge(merge(merge(cd_media_descriptions, floppy_media_descriptions), zip_media_descriptions), misc_descriptions);
+global list< map<string,any> > media_descriptions = (list< map<string,any> >) merge(merge(merge(cd_media_descriptions, floppy_media_descriptions), zip_media_descriptions), misc_descriptions);
 
-global list<map> units_description = [
+global list< map<string,any> > units_description = [
     $[
 	"label" : _("bytes"),
 	"capacity" : 1,
@@ -700,6 +700,7 @@ global define map WriteProfile(list volumes) ``{
 
     // create and save autoinstallation profile
     boolean res = CloneSystem(profilefile, ["lan"], "restore", restore);
+    y2milestone("Clone result: %1", res);
 
     if (target_type == `nfs)
     {
@@ -1021,7 +1022,7 @@ global define void WriteCronSettings() ``{
 
 	    y2milestone("name: %1", name);
 	    y2milestone("setting: %1", setting);
-	    y2milestone("cron_settings: %1", opts[`cron_settings]:"");
+	    y2milestone("cron_settings: %1", opts[`cron_settings]:$[]);
 
 	    if (setting != "" && setting != nil)
 	    {
@@ -1164,7 +1165,11 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
     any read_dir_list = profile[ `dir_list ]:		default_dir_list;
 
     // convert list of items to list of strings
-	if (is(read_dir_list, list<term>))
+	if (is(read_dir_list, list<string>))
+	{
+	    dir_list = (list<string>) read_dir_list;
+	}
+	else if (is(read_dir_list, list<term>))
 	{
 	    // convert dir list from the old format
 	    list<string> new_dir_list = [];
@@ -1186,10 +1191,6 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
 	    );
 
 	    dir_list = new_dir_list;
-	}
-	else if (is(read_dir_list, list<string>))
-	{
-	    dir_list = (list<string>) read_dir_list;
 	}
 	else
 	{
