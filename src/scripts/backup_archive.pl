@@ -23,7 +23,8 @@ use Getopt::Long;
  
 use POSIX qw(tmpnam strftime);
 
-
+# return all harddisks present in system
+#TODO: contains /proc/partitions file only HDD entiries or other devices (CD-ROM, ZIP,...) are listed??
 sub harddisks()
 {
     my @disks = ();
@@ -46,6 +47,21 @@ sub harddisks()
     return @disks;
 }
 
+# create temporary FIFO
+sub create_fifo()
+{
+    my $tmp_fifo_name = tmpnam();
+    do
+    {
+	while (-e $tmp_fifo_name)
+	{
+	    $tmp_fifo_name = tmpnam();
+	}
+    }
+    until (!system("mkfifo -m 0600 $tmp_fifo_name"));
+
+    return $tmp_fifo_name;
+}
 
 # command line options
 my $archive_name = '';
@@ -56,13 +72,14 @@ my @ext2_parts = ();
 my $verbose = '0';
 my $files_info = '';
 my $comment_file = '';
+my $multi_volume = '0';
 
 # parse command line options
 GetOptions('archive-name=s' => \$archive_name, 
     'archive-type=s' => \$archive_type, 'help' => \$help,
     'store-ptable' => \$store_pt, 'store-ext2=s' => \@ext2_parts,
     'verbose' => \$verbose, 'files-info=s' => \$files_info,
-    'comment-file=s'=> \$comment_file
+    'comment-file=s'=> \$comment_file, 'multi-volume=s' => \$multi_volume
 );
 
 
@@ -78,8 +95,9 @@ if ($help or $files_info eq '' or $archive_name eq '')
     print "  --help                Display this help\n\n";
     print "  --archive-name <file> Target archive file name\n";
     print "  --archive-type <type> Type of compression used by tar, type can be 'tgz' - compressed by gzip, 'tbz2' - compressed by bzip2 or 'tar' - no compression, default is 'tgz'\n";
+    print "  --multi-volume <size> Create multiple volume archive, size is volume size in bytes\n";
     print "  --verbose             Print progress information\n";
-    print "  --store-ptable        Add partition table information to archive\n";
+    print "  --store-ptable        Add partition tables information to archive\n";
     print "  --store-ext2 <device> Store Ext2 system area from device\n";
     print "  --files-info          Data file from backup_search script\n";
     print "  --comment-file <file> Use comment stored in file\n\n";
@@ -204,8 +222,8 @@ if ($store_pt)
     foreach my $disk (@disks)
     {
 	my $stored = 0;
-	
-	if (system("/sbin/fdisk -l /dev/$disk > $tmp_dir/partition_table_$disk.txt 2> /dev/null") >> 8 == 0)
+
+	if (system("/sbin/sfdisk -d /dev/$disk > $tmp_dir/partition_table_$disk.txt 2> /dev/null") >> 8 == 0)
 	{
 	    if (system("dd if=/dev/$disk of=$tmp_dir/partition_table_$disk bs=512 count=1") >> 8 == 0)
 	    {
@@ -235,6 +253,8 @@ open(FILES_INFO, "> $tmp_dir/files_info")
 
 if (defined open(FILES, $files_info))
 {
+# TODO: do not copy package descriptions if no file can be backuped
+    
     while (my $line = <FILES>)
     {
 	chomp($line);
@@ -340,27 +360,123 @@ if ($verbose)
 #  -C <dir>		change to dir befor archiving
 #  -S			store sparse files efficiently (for e2images)
 
-my $tar_command = "tar -c -f $archive_name --files-from $tmp_dir_root/files --ignore-failed-read -C $tmp_dir_root -S";
+my $tar_command = "tar -c --files-from $tmp_dir_root/files --ignore-failed-read -C $tmp_dir_root -S";
 
 if ($verbose)
 {
     $tar_command .= ' -v';
 }
 
-if ($archive_type eq 'tgz')
+
+if ($multi_volume > 0)
 {
-    $tar_command .= ' -z';
+    # split archive to multi volume
+    # fifo is used to avoid storing whole file
+    
+    my $fifo_out = create_fifo();
+    $tar_command .= " -f $fifo_out &";
+
+    my $packer_command = "cat $fifo_out";
+    if ($archive_type eq 'tgz')
+    {
+	$packer_command .= ' | gzip -c |';
+    }
+    else
+    {
+	if ($archive_type eq 'tbz2')
+	{
+	    $packer_command .= ' | bzip2 -c |';
+	}
+	else
+	{
+	    $packer_command .= ' |';
+	}
+    }
+
+    # start tar
+    system($tar_command);
+    
+    my $volume = 1;
+
+    # start packing utility
+    open(PACKER, $packer_command)
+	or die "Can not start program ($packer_command): \n";
+
+    my $buffer;
+    my $written;
+    my $block_size = 32768;
+    my $len = 0;
+
+    my $output_directory;
+    my $output_filename;
+
+    use File::Spec::Functions "splitpath";
+    (my $dummy, $output_directory, $output_filename) = File::Spec->splitpath($archive_name);
+
+    # if directory part is empty set it to current path
+    if ($output_directory eq "")
+    {
+	$output_directory = '.';
+    }
+
+    while(!eof(PACKER))
+    {
+	my $volume_string = sprintf("%02d", $volume);
+	
+	open(OUTPUT, '>'.$output_directory.'/'.$volume_string.'_'.$output_filename)
+	    or die "Can not open target file: ";
+
+	$written = 0;
+	    
+	while ($written + $block_size < $multi_volume && !eof(PACKER))
+	{
+	    $len = read(PACKER, $buffer, $block_size);
+
+	    if ($len > 0)
+	    {
+		$written += $len;
+		print OUTPUT $buffer;
+	    }
+	}
+
+	if (!eof(PACKER))
+	{
+	    $len = read(PACKER, $buffer, $multi_volume - $written);
+
+	    if ($len > 0)
+	    {
+		print OUTPUT $buffer;
+	    }
+	}
+
+	close(OUTPUT);
+
+	$volume++;
+    }
+
+    close(PACKER);
+
+    unlink($fifo_out);
 }
 else
 {
-    if ($archive_type eq 'tbz2')
+    $tar_command .= " -f $archive_name";
+
+    if ($archive_type eq 'tgz')
     {
-	$tar_command .= ' -j';
+	$tar_command .= ' -z';
     }
+    else
+    {
+	if ($archive_type eq 'tbz2')
+	{
+	    $tar_command .= ' -j';
+	}
+    }
+    
+    system($tar_command.' 2> /dev/null');
 }
 
-
-system($tar_command.' 2> /dev/null');
 
 if ($verbose)
 {

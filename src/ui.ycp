@@ -41,9 +41,9 @@ global define ArchDialog() ``{
 			`HBox(
 			    `HSpacing(2.0),
 			    `ComboBox(`id(`type), _("Select archive type:"),
-				[ `item(`id(`tgz), "Gzipped tar (*.tar.gz)"),
-				  `item(`id(`tbz), "Bzipped tar (*.tar.bz2)"),
-				  `item(`id(`tar), "Tar (*.tar)"),
+				[ `item(`id(`tgz), "gzip (*.tar.gz)"),
+				  `item(`id(`tbz), "bzip2 (*.tar.bz2)"),
+				  `item(`id(`tar), "tar (*.tar)"),
 				]
 			    ),
 			    `HSpacing(3.0),
@@ -73,9 +73,10 @@ global define ArchDialog() ``{
     boolean cont = false;
     symbol ret = nil;
 
-    if (SCR::Read(.runtime.username) != "root")
+    if (SCR::Read(.runtime.username) != "root" && root_warning_displayed == false)
     {
-	UI::WarningPopup(_("Only user root can backup all files"));
+	UI::WarningPopup(_("You are not logged as root,\nsome files may not be backuped."));
+	root_warning_displayed = true;
     }
 
 
@@ -92,14 +93,7 @@ global define ArchDialog() ``{
 	    }
 	    else
 	    {
-		if (find(archive_name, "/") != 0)
-		{
-		    UI::WarningPopup(_("Archive file name must be entered\nwith absolute path,\nfor example /tmp/archive.tar.gz"));
-		}
-		else
-		{
-		    cont = true;
-		}
+		cont = true;
 	    }
 	}
 	else
@@ -124,27 +118,37 @@ global define ArchDialog() ``{
 }
 
 
+/**
+ * Setting multi volume archive options
+ */
+
 global define TarOptionsDialog() ``{
+
+    list description_combo = MediaList2UIList(media_descriptions);
+    description_combo = add(description_combo, `item(`id(`user_defined), _("User defined")));
+
+    list description_combo_units = MediaList2UIList(units_description);
+
     UI::SetWizardContents( _("Archive file options"),
 	`VBox(
 	    `VSpacing(0.5),
 	    `Frame(_("Multi volume archive"),
 		`VBox(
 		    `VSpacing(`opt(`hstretch), 0.5),
-		    `Left(`CheckBox(`id(`multi_volume), _("Create multi volume archive"), false)),
+		    `Left(`CheckBox(`id(`multi_volume), `opt(`notify), _("Create multi volume archive"), multi_volume)),
 		    `VSpacing(0.5),
 
 		    `HBox(
 			`HSpacing(3.5),
 
 			`VBox(
-			    `Left(`ComboBox(`id(`vol), _("Volume size:"), [`item(`id(`fd144), _("Floppy 1.44 MB")), `item(`id(`fd12), _("Floppy 1.2 MB")), `item(`id(`zip100), _("ZIP 100 MB")), `item(`id(`zip250), _("ZIP 250 MB")), `item(`id(`cd650), _("CD-R 650 MB")), `item(`id(`user), _("User defined"))])),
+			    `Left(`ComboBox(`id(`vol), `opt(`notify), _("Volume size:"), description_combo)),
 			    `VSpacing(0.5),
 
 			    `Left(
 				`HBox(
 				    `TextEntry(`id(`user_size), _("User defined size:")),
-				    `ComboBox(`id(`user_unit), "", [`item(`id(`B), _("bytes")), `item(`id(`kB), _("kB")), `item(`id(`kiB), _("kiB")), `item(`id(`MB), _("MB")), `item(`id(`MiB), _("MiB"))]),
+				    `ComboBox(`id(`user_unit), "", description_combo_units),
 				    `HStretch()
 				)
 			    ),
@@ -162,26 +166,68 @@ global define TarOptionsDialog() ``{
     // replace 'Next' buton with 'Ok'
     UI::ReplaceWizardNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
 
-    symbol ret = UI::UserInput();
+    SetMultiWidgetsState();
 
-    while (ret != `ok && ret != `back && ret != `abort)
+    if (volume_size == nil)
     {
-	ret = UI::UserInput();
+	volume_size = `fd144;
+    }
+    UI::ChangeWidget(`id(`vol), `Value, volume_size);
+
+    string tmp_size = "";
+    if (user_volume_size != nil)
+    {
+	tmp_size = user_volume_size;
+    }
+    UI::ChangeWidget(`id(`user_size), `Value, tmp_size);
+
+    if (user_volume_unit == nil)
+    {
+	user_volume_unit = `B;
+    }
+    UI::ChangeWidget(`id(`user_unit), `Value, user_volume_unit);
+
+    boolean cont = false;
+    symbol ret = nil;
+
+    while (!cont)
+    {
+        ret = UI::UserInput();
+
+	if (ret == `ok)
+	{
+	    if (UI::QueryWidget(`id(`multi_volume), `Value) == true && UI::QueryWidget(`id(`vol), `Value) == `user_defined && tointeger(UI::QueryWidget(`id(`user_size), `Value)) <= 0)
+	    {
+		UI::WarningPopup(_("Bad volume size"));
+	    }
+	    else
+	    {
+		cont = true;
+
+		multi_volume = UI::QueryWidget(`id(`multi_volume), `Value);
+		volume_size = UI::QueryWidget(`id(`vol), `Value);
+		user_volume_size = UI::QueryWidget(`id(`user_size), `Value);
+		user_volume_unit = UI::QueryWidget(`id(`user_unit), `Value);
+	    }
+	}
+	else
+	{
+	    if (ret == `multi_volume || ret == `vol)
+	    {
+		SetMultiWidgetsState();
+	    }
+	    else
+	    {
+		cont = true;
+	    }
+	}
     }
 
-
-    /* TODO: 'Back' doesn't save dialog content, is it right?? */
-/*    if (ret == `ok)
-    {
-	fs_exclude = UI::QueryWidget(`id(`fss), `SelectedItems);
-    }
-*/
     // Restore 'next' button
     UI::RestoreWizardNextButton();
 
     return ret;
 }
-
 
 
 /**
@@ -257,7 +303,6 @@ global define BackupDialog() ``{
 
     return ret;
 }
-
 
 
 /**
@@ -1131,6 +1176,22 @@ global define ArchivingDialog() ``{
 	}
     }
 
+    if (multi_volume)
+    {
+	if (volume_size == `user_defined)
+	{
+	    integer vol_size = tointeger(user_volume_size);
+
+	    if (vol_size > 0)
+	    {
+		archive_options = archive_options + " --multi-volume " + (vol_size * GetCapacity(units_description, user_volume_unit));
+	    }
+	}
+	else
+	{
+	    archive_options = archive_options + " --multi-volume " + GetCapacity(media_descriptions, volume_size);
+	}
+    }
 
     y2debug("Archive script options: %1", archive_options);
 
@@ -1175,7 +1236,7 @@ global define ArchivingDialog() ``{
 		{
 		    tar_result = tointeger(substring(line, size(id_tar_exit)));
 		}
-		else
+		else	/* TODO: update archive name in progress bar if new volume was created */
 		{
 		    archived_num = archived_num + 1;
 		    UI::ChangeWidget(`id(`pbar), `Value, archived_num);

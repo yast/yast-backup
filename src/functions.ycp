@@ -23,8 +23,7 @@
  * @return list List of items
  */
 
-global define MapToTableItems(boolean check)
-``{
+global define MapToTableItems(boolean check) ``{
     integer idx = 0;
     list items = [];
 
@@ -309,6 +308,76 @@ global define MapFilesToString() ``{
 }
 
 
+/**
+ * Convert media description list to ComboBox items list
+ * @param media Medium descriptions - list of maps with keys (and values): "label" (description string), "symbol" (identification symbol), "capacity" (size of free space on empty medium)
+ * @return list Items list for UI widgets
+ */
+
+global define MediaList2UIList(list media) ``{
+    list result = [];
+
+    if (media == nil)
+    {
+	return [];
+    }
+
+    foreach(`v, media,
+	``{
+	    if (is(v, map))
+	    {
+		symbol i = lookup(v, "symbol", nil);
+		string l = lookup(v, "label", nil);
+
+		if (i != nil && l != nil)
+		{
+		    result = add(result, `item(`id(i), l));
+		}
+	    }
+	}
+    );
+
+    return result;
 }
 
+
+/**
+ * Set state of depending widgets in Multiple volume options dialog
+ */
+
+global define SetMultiWidgetsState() ``{
+    boolean tmp_multi = UI::QueryWidget(`id(`multi_volume), `Value);
+    UI::ChangeWidget(`id(`vol), `Enabled, tmp_multi);
+
+    boolean user = (tmp_multi && UI::QueryWidget(`id(`vol), `Value) == `user_defined);
+    UI::ChangeWidget(`id(`user_size), `Enabled, user);
+    UI::ChangeWidget(`id(`user_unit), `Enabled, user);
+}
+
+
+/**
+ * Return capacity of required medium
+ * @param media Medium descriptions
+ * @param m Identification of required medium
+ */
+
+global define GetCapacity(list media, symbol m) ``{
+    integer result = nil;
+
+    if (media != nil)
+    {
+	foreach(`val, media,
+	    ``{
+		if (is(val, map) && lookup(val, "symbol", nil) == m)
+		{
+		    result = lookup(val, "capacity", nil);
+		}
+	    }
+	);
+    }
+
+    return result;
+}
+
+}
 

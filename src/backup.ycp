@@ -31,8 +31,7 @@ include "ui/common_popups.ycp";
 include "ui/common_functions.ycp";
 
 include "backup/functions.ycp";
-//TODO: restore this: include "backup/ui.ycp";
-include "./ui.ycp";
+include "backup/ui.ycp";
 
 
 /* TODO move user setting to map?? But some big variables should remain global... */
@@ -48,6 +47,77 @@ string script_create_archive = "/usr/lib/YaST2/bin/backup_archive.pl";
 string archive_name = "";		// archive file name
 string description = "";		// user comment
 symbol archive_type = `tgz;		// archive type
+
+boolean root_warning_displayed = false;
+
+boolean multi_volume = false;
+symbol volume_size = `fd144;
+string user_volume_size = "";
+symbol user_volume_unit = nil;
+
+
+// media description - capacity is maximum file size which fits
+// to formatted medium using any widely used file system (FAT, Ext2 - any other?)
+
+// TODO: real freespaces
+list media_descriptions = [
+    $[
+	"label" : _("Floppy 1.44 MB"),
+	"symbol" : `fd144,
+	"capacity" : 1457664
+    // free space using FAT fs (Ext2 free size is smaller),
+    // write to Ext2 floppy takes much more time than to FAT (approx. 10x)
+    // so only FAT floppies are supported
+    ],
+/*    $[
+	"label" : _("Floppy 1.2 MB"),
+	"symbol" : `fd12,
+	"capacity" : ?????
+    ],
+    $[
+	"label" : _("ZIP 100 MB"),
+	"symbol" : `zip100,
+	"capacity" : ?????
+    ],
+    $[
+	"label" : _("ZIP 250 MB"),
+	"symbol" : `zip250,
+	"capacity" : ?????
+    ],*/
+    $[
+	"label" : _("CD-R 650 MB"),
+	"symbol" : `cd650,
+	"capacity" : 649*1024*1024	// 649MB
+    ]
+];
+
+list units_description = [
+    $[
+	"label" : _("bytes"),
+	"capacity" : 1,
+	"symbol"   : `B
+    ],
+    $[
+	"label" : _("kB"),
+	"capacity" : 1000,
+	"symbol"   : `kB
+    ],
+    $[
+	"label" : _("kiB"),
+	"capacity" : 1024,
+	"symbol"   : `kiB
+    ],
+    $[
+	"label" : _("MB"),
+	"capacity" : 1000000,
+	"symbol"   : `MB
+    ],
+    $[
+	"label" : _("MiB"),
+	"capacity" : 1024*1024,
+	"symbol"   : `MiB
+    ],
+];
 
 boolean search = true;			// search files which do not belong to any package
 boolean system = false;			// backup system areas
@@ -168,6 +238,9 @@ UI::CreateWizardDialog();
 
 // start wizard sequencer
 WizardSequencer(aliases, sequence);
+
+// close dialog
+UI::CloseDialog();
 
 y2milestone("Backup module finished.");
 
