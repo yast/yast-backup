@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Jan 14 13:51:07 CET 2002 - lslezak@suse.cz
+
+- help text paragraph parts joined to one string
+- version 2.5.9
+
+-------------------------------------------------------------------
 Thu Jan  3 14:58:52 CET 2002 - lslezak@suse.cz
 
 - small bugfixes
