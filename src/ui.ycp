@@ -1082,7 +1082,7 @@ Enter the file name to use.
 	    {
 	        map edited = ShowEditDialog("&Edit", curr, nil);
 
-		if (lookup(edited, "clicked", nil) == `ok)
+		if (edited["clicked"]:nil == `ok)
 		{
 		    string txt = (string)(edited["text"]:"");
 		    string dir = Ext2MountPoint(txt);
@@ -1098,7 +1098,8 @@ Enter the file name to use.
 			{
 			    // refresh ext2_backup content
 			    Backup::ext2_backup = maplist(term i, Backup::ext2_backup, ``{
-				if (select(select(i, 0, []), 0, nil) == curr)
+				list tmp = i[0]:[];
+				if (tmp[0]:nil == curr)
 				{
 				    return `item(`id(txt), txt, dir);
 				}
@@ -1119,7 +1120,10 @@ Enter the file name to use.
 
 	    if (ret == `delete)
 	    {
-		Backup::ext2_backup = filter(term i, Backup::ext2_backup, ``{return (select(select(i, 0, []), 0, nil) != curr);});
+		Backup::ext2_backup = filter(term i, Backup::ext2_backup, ``{
+		    list tmp = i[0]:[];
+		    return (tmp[0]:nil != curr);
+		});
 		UI::ChangeWidget(`id(`par), `Items, Backup::ext2_backup);
 	    }
 	}
@@ -1415,7 +1419,7 @@ Backup will be aborted.
 
 	while (size(script_out) > 0)
 	{
-	    line = select(script_out, 0, nil);		// read line
+	    line = script_out[0]:nil;			// read line
 	    script_out = remove(script_out, 0);		// remove line
 
 	    if (reading_installed_packages)
@@ -1707,7 +1711,7 @@ Backup will be aborted.
 
 	    while (lineidx < script_out_size)
 	    {
-		line = select(script_out, lineidx, nil);	// read line
+		line = script_out[lineidx]:nil;		// read line
 		lineidx = lineidx + 1;
 
 		if (substring(line, 0, size(id_file)) == id_file)
@@ -1849,7 +1853,7 @@ Backup will be aborted.
 
 			// construct new package description
 			val = $[ "changed_files" : changed_files,
-			         "install_prefixes" : lookup(val, "install_prefixes", [ ] ) ];
+			         "install_prefixes" : val["install_prefixes"]:[] ];
 		    }
 		    new_selected = add( new_selected, pak, val );
 		}
@@ -1865,7 +1869,7 @@ Backup will be aborted.
 
 	foreach(string pak, map val, Backup::selected_files,
 	    ``{
-		selected_files_num = selected_files_num + size(lookup(val, "changed_files", []));
+		selected_files_num = selected_files_num + size( val["changed_files"]:[] );
 	    }
 	);
 
@@ -1927,8 +1931,9 @@ Backup will be aborted.
 	y2milestone("Found %1 unselected files", size(Backup::unselected_files));
 
 	foreach(term itm, items, ``{
-		string f = (string)select(itm, 2, nil);
-		integer idx = (integer)select(select(itm, 0, nil), 0, nil);
+		string f = (string)itm[2]:nil;
+		term tmp = (term) itm[0]:nil;
+		integer idx = (integer) tmp[0]:nil;
 
 		if (contains(Backup::unselected_files, f) == true)
 		{
@@ -2018,9 +2023,9 @@ Backup will be aborted.
 	    {
 		term table_item = (term)UI::QueryWidget(`id(`table), `Item(current_item));
 
-		string current_value = (string)select(table_item, 1, nocheckmark);
-		string file_name = (string)select(table_item, 2, "unknown file");
-		string package_name = (string)select(table_item, 3, "unknown package");
+		string current_value = (string)table_item[1]:nocheckmark;
+		string file_name = (string)table_item[2]:"unknown file";
+		string package_name = (string)table_item[3]:"unknown package";
 
 		if (current_value == checkmark)
 		{
@@ -2299,7 +2304,7 @@ Backup will be aborted.
 
 	while (size(script_out) > 0)
 	{
-	    string line = select(script_out, 0, nil);	// read line
+	    string line = script_out[0]:nil;		// read line
 	    script_out = remove(script_out, 0);		// remove line
 
 	    y2debug("Archive script output: %1", line);
@@ -2308,6 +2313,7 @@ Backup will be aborted.
 	    {
 		if (line == id_storing_list)
 		{
+		    // ?
 		}
 		else
 		{
@@ -2720,11 +2726,15 @@ Replace the existing profile?
 
 		foreach(boolean r, e2image_results,
 		    ``{
+			term tmp = (term) Backup::ext2_backup[index]:nil;
+			tmp = (term) tmp[0]:nil;
+			string partition_name = (string) tmp[0]:"";
+
 			if (r)
 			{
 			    backup_details = backup_details
 				// For translators: %1 is partition name e.g. /dev/hda1 - part of summary text
-				+ sformat(_("Ext2 image of %1 stored successfully"), select(select(select(Backup::ext2_backup, index, nil), 0, nil), 0, "")) + br;
+				+ sformat(_("Ext2 image of %1 stored successfully"), partition_name) + br;
 
 			    added_files = added_files + 1;
 			}
@@ -2732,7 +2742,7 @@ Replace the existing profile?
 			{
 			    backup_details = backup_details + em
 				// For translators: %1 is partition name e.g. /dev/hda1 - part of summary text
-				+ sformat(_("Storing Ext2 image of %1 failed"), select(select(select(Backup::ext2_backup, index, nil), 0, nil), 0, "")) + _em + br;
+				+ sformat(_("Storing Ext2 image of %1 failed"), partition_name) + _em + br;
 			}
 
 			index = index + 1;
@@ -3001,7 +3011,7 @@ Replace the existing profile?
         profile_help(), false, true
     );
 
-    string sel_prof = (Backup::selected_profile == nil) ? (string)(select( Backup::BackupProfileNames(), 0, nil )) : Backup::selected_profile;
+    string sel_prof = (Backup::selected_profile == nil) ? (string) Backup::BackupProfileNames()[0]:nil : Backup::selected_profile;
 
     if (sel_prof != nil)
     {
@@ -3072,7 +3082,7 @@ Replace the existing profile?
 		    `Table(`id(`profile), `header(tableheader1, tableheader2, tableheader3), Backup::BackupProfileDescriptions() ));
 
 		// select the first profile in the list
-		UI::ChangeWidget( `id(`profile), `CurrentItem, (string)select( Backup::BackupProfileNames(), 0, nil ) );
+		UI::ChangeWidget( `id(`profile), `CurrentItem, (string) Backup::BackupProfileNames()[0]:nil );
 	    }
 	}
 	else if( ret == `manual )
@@ -3448,10 +3458,10 @@ Replace the existing profile?
 	    term line = (term)UI::QueryWidget(`id(`const), `Item(curr));
 	    y2milestone("current option: %1", line);
 
-	    type = (string)select(line, 2, nil);
+	    type = (string) line[2]:nil;
 	    y2milestone("type: %1", type);
 
-	    value = (string)select(line, 1, nil);
+	    value = (string) line[1]:nil;
 	    y2milestone("value: %1", value);
 	}
 
