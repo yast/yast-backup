@@ -223,10 +223,9 @@ can be set in this dialog. Usually there is no need to modify the default values
 	// For translators: help text in backup expert options dialog - part 3/3
 	+ _("<P>System areas (partition table, ext2 image) can be added to the backup archive. These system areas can only be restored from an archive manually.</P>")
 	// For translators: help text in backup expert options dialog - part 2/3
-	+ _("<P><B>Temporary Directory</B><BR>You can change location in which parts
-of the archive are stored before final archive is created. The temporary directory should have enough
-free space for the entire achive.</P>
-");
+	+ _("<P><B>Temporary Directory</B><BR>You can change the location in which parts
+of the archive are stored before the final archive is created. The temporary directory should have enough
+free space for the entire achive.</P>\n");
 
 }
 

@@ -112,8 +112,20 @@ if ($widget_file ne "")
     print WIDGETFILE2 "[\n";
 }
 
+# directory names with slash
+my @exclude_dir_slash = ();
+
 # convert array to hash
-foreach my $d (@exclude_d) {$exclude_dirs{$d} = 1;}
+foreach my $d (@exclude_d) {
+    $exclude_dirs{$d} = 1;
+
+    if (defined $d && substr($d, -1, 1) ne "/")
+    {
+	$d = $d.'/';
+    }
+
+    push(@exclude_dir_slash, $d);
+}
 
 # verify installed packages
 my @installed_packages = ReadAllPackages();
@@ -279,6 +291,15 @@ sub PrintFoundFile($$$$$$)
 	# check wheter file matches any of the specified regular expression
 	foreach my $reg (@exclude_reg_comp) {
 	    if (defined $reg && $file =~ $reg)
+	    {
+		# finish function if a match is found
+		return;
+	    }
+	}
+
+	# check wheter file matches any of the specified direcory name
+	foreach my $ex_d (@exclude_dir_slash) {
+	    if (defined $ex_d && $file =~ "^$ex_d")
 	    {
 		# finish function if a match is found
 		return;
