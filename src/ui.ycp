@@ -2796,11 +2796,41 @@ Do you want to replace the existing profile?"), new_name["text"]:"")) ) {
     }
 }
 
+global define void refreshtable(map devs, string current) ``{
+    // refresh table content
+    content = MpointTableContents(Backup::selected_directories, Backup::all_entered_dirs, devs);
+
+    UI::ReplaceWidget(`id(`rp),
+	`Table(`id(`pts), `opt(`notify), `header(" ", "Directory", "Partition", "File system"), content )
+    );
+
+    if (current != nil)
+    {
+	UI::ChangeWidget(`id(`pts), `CurrentItem, current);
+    }
+}
+
 global define symbol Test_PartitionSelection() ``{
+
+    map devs = Backup::DetectedMountPoints();
+    list detected_dirs = [];
+    foreach(string dd, map info, devs,
+	``{
+	    string mpoint = info["mpoint"]:"";
+
+	    if (size(mpoint) > 0 && !contains(detected_dirs, mpoint))
+	    {
+		detected_dirs = add(detected_dirs, mpoint);
+	    }
+	}
+    );
+
+    list content = MpointTableContents(Backup::selected_directories, Backup::all_entered_dirs, devs);
+
     Wizard::SetContents( _("YaST Backup - Proposal"),
         `VBox(
             `Left(`Label(_("Available Disk Partitions") )),
-            `Table(`id(`pts), `header(" ", "Directory", "Partition", "File system"), [`item(`id(1), " ", "/boot", "/dev/hda1", "ext2"), `item(`id(1), "X", "/", "/dev/hda2", "reiserfs"), `item(`id(1), "X", "/usr", "/dev/hda3", "reiserfs")] ),
+	    `ReplacePoint(`id(`rp), `Table(`id(`pts), `opt(`notify), `header(" ", "Directory", "Partition", "File system"), content )),
             `HBox(
 		// Push button label
                 `PushButton(`id(`add), _("Add...")),
@@ -2816,28 +2846,108 @@ global define symbol Test_PartitionSelection() ``{
         "note: in the first column is the selection mark", false, true
     );
 
-    symbol ret = UI::UserInput();
+    symbol ret = nil;
 
     while (ret != `next && ret != `abort && ret != `back)
     {
+	ret = UI::UserInput();
+
+	// refresh button statuses
+	string current_dir = UI::QueryWidget(`id(`pts), `CurrentItem);
+	boolean enable = (!contains(detected_dirs, current_dir));
+
 	if (ret == `add)
 	{
 	    map res = DirPopup(_("Directory selection"), "");
+
+	    if (res["input"]:nil == `ok)
+	    {
+		string dir = res["dir"]:nil;
+
+		if (dir != nil && size(dir) > 0)
+		{
+		    if (!contains(Backup::selected_directories, dir))
+		    {
+			Backup::selected_directories = add(Backup::selected_directories, dir);
+		    }
+
+		    if (!contains(Backup::all_entered_dirs, dir))
+		    {
+			Backup::all_entered_dirs = add(Backup::all_entered_dirs, dir);
+		    }
+
+		    refreshtable(devs, dir);
+		}
+	    }
 	}
 	else if (ret == `edit)
 	{
-	    map res = DirPopup(_("Directory selection"), "");
+	    if (enable == false)
+	    {
+		Popup::Message(_("Predefined mount points cannot be edited"));
+	    }
+	    else
+	    {
+		map res = DirPopup(_("Directory selection"), current_dir);
+
+		if (res["input"]:nil == `ok)
+		{
+		    string d = res["dir"]:nil;
+
+		    if (size(d) > 0)
+		    {
+			// remove old value from selected and entered
+			Backup::all_entered_dirs = filter(string d, Backup::all_entered_dirs, ``(d != current_dir));
+			Backup::selected_directories = filter(string d, Backup::selected_directories, ``(d != current_dir));
+
+			// add the new value to selected and entered
+			Backup::all_entered_dirs = add(Backup::all_entered_dirs, d);
+			Backup::selected_directories = add(Backup::selected_directories, d);
+
+			refreshtable(devs, d);
+		    }
+		}
+	    }
 	}
 	else if (ret == `delete)
 	{
+	    if (enable == false)
+	    {
+		Popup::Message(_("Predefined mount points cannot be removed"));
+	    }
+	    else
+	    {
+		Backup::all_entered_dirs = filter(string d, Backup::all_entered_dirs, ``(d != current_dir));
+		refreshtable(devs, nil);
+	    }
+	}
+	else if (ret == `pts)
+	{
+	    y2milestone("current_dir: %1", current_dir);
+
+	    if (size(current_dir) > 0)
+	    {
+		if (contains(Backup::selected_directories, current_dir))
+		{
+		    // remove
+		    Backup::selected_directories = filter(string d, Backup::selected_directories, ``(d != current_dir));
+		}
+		else
+		{
+		    // add
+		    Backup::selected_directories = add(Backup::selected_directories, current_dir);
+		    y2milestone("Backup::selected_directories: %1", Backup::selected_directories);
+		}
+
+		// refresh table content
+		refreshtable(devs, current_dir);
+	    }
 	}
 	else if (ret == `expert)
 	{
 	    // show exclude pattern dialog
 	    Test_ExcludePatternOption();
 	}
-
-	ret = UI::UserInput();
     }
 
     return ret;
@@ -2851,7 +2961,7 @@ global define map DirPopup(string label, string dir) ``{
 	    `VSpacing(0.5),
 		`HBox(
 		    `HSpacing(1.0),
-		    `TextEntry(`id(`dir), _("&Directory:")),
+		    `TextEntry(`id(`dir), _("&Directory:"), dir),
 		    `HSpacing(1),
 		    `VBox(
 			`Label(""),

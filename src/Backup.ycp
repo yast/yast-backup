@@ -114,10 +114,12 @@ global boolean default_backup_all_ext2 = false;		// backup all mounted ext2 part
 global boolean default_backup_none_ext2 = true;		// backup none ext2 partitions
 global boolean default_backup_selected_ext2 = false;	// backup selected ext2 partitions
 
+global list default_all_entered_dirs = [];
 
 global map default_backup_files = $[ ];		// all found files to backup
 global map default_selected_files = nil;	// selected files to backup
 global list default_unselected_files = [ ];	// files, which user explicitly unselected
+global list default_selected_directories = [];	// default directories to backup
 
 // global variables initialized to default values:
 global string archive_name = eval( default_archive_name );		// archive file name
@@ -156,6 +158,9 @@ global map backup_files = eval( default_backup_files );		// all found files to b
 global map selected_files = eval( default_selected_files );	// selected files to backup
 global list unselected_files = eval( default_unselected_files );	// files, which user explicitly unselected
 
+global list selected_directories = default_selected_directories;
+global list all_entered_dirs = default_all_entered_dirs;
+
 global boolean no_interactive = false; 	// whether the user should setup configuration manually
 global string selected_profile = nil;   // name of the selected profile, nil for no selected profile (default settings)
 
@@ -163,6 +168,9 @@ global string selected_profile = nil;   // name of the selected profile, nil for
 global integer undetected_volume_size = 1024*1024*1024;
 
 global list installable_packages = [];
+
+// cached detected mount points
+map detected_mpoints = nil;
 // end of global settings
 
 // media description - capacity is maximum file size which fits
@@ -903,7 +911,9 @@ global define void StoreSettingsToBackupProfile( string profile_name ) ``{
 	`backup_all_ext2	: backup_all_ext2,
 	`backup_none_ext2	: backup_none_ext2,
 	`backup_selected_ext2	: backup_selected_ext2,
-	`unselected_files 	: unselected_files
+	`unselected_files 	: unselected_files,
+	`all_entered_dirs	: all_entered_dirs,
+	`selected_directories	: selected_directories
     ] ;
 
     // add the new profile
@@ -947,6 +957,8 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
     backup_none_ext2 =	profile[ `backup_none_ext2 ]:	default_backup_none_ext2;
     backup_selected_ext2 =	profile[ `backup_selected_ext2 ]:	default_backup_selected_ext2;
     unselected_files =	profile[ `unselected_files ]:	default_unselected_files;
+    all_entered_dirs =	profile[ `all_entered_dirs ]:	default_all_entered_dirs;
+    selected_directories = profile[ `selected_directories ]:	default_selected_directories;
 
     selected_files = default_selected_files;
     backup_files = default_backup_files;
@@ -984,6 +996,8 @@ global define void RestoreDefaultSettings() ``{
     backup_none_ext2 = eval( default_backup_none_ext2 );
     backup_selected_ext2 = eval( default_backup_selected_ext2 );
     unselected_files = eval( default_unselected_files );
+    all_entered_dirs =	eval( default_all_entered_dirs );
+    selected_directories = eval( default_selected_directories );
 
     selected_files = eval( default_selected_files );
     backup_files = eval( default_backup_files );
@@ -1319,6 +1333,16 @@ global define map RemovableDevices(boolean only_writable) ``{
 
 global define void ReadInstallablePackages() ``{
     installable_packages = GetInstallPackages();
+}
+
+global define map DetectedMountPoints() ``{
+    // return cached value if available
+    if (detected_mpoints == nil)
+    {
+	detected_mpoints = DetectMountpoints();
+    }
+
+    return detected_mpoints;
 }
 
 }
