@@ -25,9 +25,9 @@ use strict;
 #function prototypes
 sub ReadAllPackages();
 sub FsToDirs(@);
-sub ReadAllFiles(%);
+sub ReadAllFiles(%%);
 sub VerifyPackages(@%);
-sub SearchDirectory($%%);
+sub SearchDirectory($%%%);
 
 # command line options
 my $search_files = 0;
@@ -43,6 +43,7 @@ my $disable_check_multiple = 0;
 my $no_md5 = 0;
 
 my %exclude_dirs;
+
 
 # parse command line options
 GetOptions('search' => \$search_files, 'exclude-dir=s' => \@exclude_d,
@@ -93,7 +94,9 @@ foreach my $d (@exclude_d) {$exclude_dirs{$d} = 1;}
 my @installed_packages = ReadAllPackages();
 
 my %packages_files;
-my %dups = ReadAllFiles(\%packages_files);
+my %package_files_inodes;
+
+my %dups = ReadAllFiles(\%packages_files, \%package_files_inodes);
 
 VerifyPackages(\@installed_packages, \%dups);
 
@@ -111,7 +114,7 @@ if ($search_files)
 #   ReadAllFiles(\%packages_files);
 
     # start searching from root directory
-    SearchDirectory('/', \%packages_files, \%exclude_dirs);
+    SearchDirectory('/', \%packages_files, \%exclude_dirs, \%package_files_inodes);
 }
 
 ######################################################
@@ -273,9 +276,9 @@ sub VerifyPackages(@%)
 
 
 # read all files which belong to packages
-sub ReadAllFiles(%) 
+sub ReadAllFiles(%%) 
 {
-    my ($all_files) = @_;
+    my ($all_files, $pkg_inodes) = @_;
     my %duplicates;
     
     open(RPMQAL, "rpm -qal |")
@@ -290,13 +293,19 @@ sub ReadAllFiles(%)
     {
 	chomp($line);
 
-	if (exists $$all_files{$line} and -f $line)
+	if (-r $line)
 	{
-	    $duplicates{$line} = 1;
-	}
-	else
-	{	
-	    $$all_files{$line} = 1;
+	    if (exists $$all_files{$line})
+	    {
+		$duplicates{$line} = 1;
+	    }
+	    else
+	    {
+		my @st = stat($line);
+		$pkg_inodes->{$st[0].$st[1]} = 1;	# store device and inode number
+
+		$all_files->{$line} = 1;
+	    }
 	}
     }
 
@@ -311,9 +320,9 @@ sub ReadAllFiles(%)
 }
 
 # search files which do not belong to any package
-sub SearchDirectory($%%)
+sub SearchDirectory($%%%)
 {
-    my ($dir, $files, $exclude) = @_;
+    my ($dir, $files, $exclude, $inodes) = @_;
 
     if ($output_progress)
     {
@@ -384,14 +393,18 @@ sub SearchDirectory($%%)
 		}
 		else
 		{
-		    if (!$output_files)
+		    my @filestat = stat($fullname);
+
+		    if (!defined $inodes->{$filestat[0].$filestat[1]})
 		    {
-			my @filestat = stat($fullname);
-			print "Size: $filestat[7] $fullname\n";
-		    }
-		    else
-		    {
-			print "$fullname\n";
+			if (!$output_files)
+			{
+			    print "Size: $filestat[7] $fullname\n";
+			}
+			else
+			{
+			    print "$fullname\n";
+			}
 		    }
 	    
 		}
@@ -404,7 +417,7 @@ sub SearchDirectory($%%)
 	    {
 		if (!$$exclude{$fullname})
 		{
-		    SearchDirectory($fullname, $files, $exclude);
+		    SearchDirectory($fullname, $files, $exclude, $inodes);
 		}
 	    }
 	}
@@ -435,5 +448,6 @@ sub FsToDirs(@)
 
     return @dirs;
 }
+
 
 
