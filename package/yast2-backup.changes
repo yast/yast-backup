@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Thu Jan 30 15:16:47 CET 2003 - lslezak@suse.cz
+
+- star archiver related bugfixes
+- install star only if it is needed (removed from Requires:)
+- use .star suffix for star archives
+- version 2.7.1
+
+-------------------------------------------------------------------
 Fri Jan 17 16:12:01 CET 2003 - lslezak@suse.cz
 
 - star archiver support (ACLs backup)

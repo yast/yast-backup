@@ -132,6 +132,33 @@ be backed up by root.
 	{
 	    if (ret == `next)
 	    {
+		symbol type = UI::QueryWidget(`id(`type), `Value);
+
+		// check if star is installed for star subarchive type
+		if (type == `star || type == `stgz || type == `stbz)
+		{
+		    if (SCR::Read(.target.size, "/usr/bin/star") < 0)
+		    {
+			// YesNoPopup message text - ask to install 'star' package
+			boolean inst = UI::YesNoPopup(_("Package 'star' is required for\nselected archive type.\nDo you want to install it?"));
+
+			if (inst == true)
+			{
+			    // install star - use require.ycp function
+			    include "require.ycp";
+
+			    inst = DoInstallAndRemove(["star"], []);
+			}
+
+			// if star is still not installed start new UI cycle
+			if (!inst)
+			{
+			    y2debug("star package wasn't installed");
+			    continue;
+			}
+		    }
+		}
+
 		if (size(Backup::archive_name) == 0)
 		{
 		    // warning popup message
