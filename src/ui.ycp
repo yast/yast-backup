@@ -2302,15 +2302,18 @@ global define symbol ProfileDialog() ``{
 	profile_help(), true, true
     );
     
-    if (Backup::selected_profile != nil )
+    if( size( Backup::backup_profiles ) != 0 )
     {
-	// select the original profile in the list
-        UI::ChangeWidget( `id(`profile), `CurrentItem, Backup::selected_profile );
-    }
-    else
-    {
-	// select the first profile in the list
-        UI::ChangeWidget( `id(`profile), `CurrentItem, select( Backup::BackupProfileNames(), 0, nil ) );
+	if (Backup::selected_profile != nil )
+	{
+	    // select the original profile in the list
+    	    UI::ChangeWidget( `id(`profile), `CurrentItem, Backup::selected_profile );
+        }
+	else
+	{
+	    // select the first profile in the list
+            UI::ChangeWidget( `id(`profile), `CurrentItem, select( Backup::BackupProfileNames(), 0, nil ) );
+	}
     }
 
     Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
@@ -2319,6 +2322,10 @@ global define symbol ProfileDialog() ``{
     symbol ret = nil;
     do
     {
+	// enable correct buttons
+	UI::ChangeWidget( `id(`replace), `Enabled, (size( Backup::backup_profiles ) != 0) );
+	UI::ChangeWidget( `id(`delete), `Enabled, (size( Backup::backup_profiles ) != 0) );
+	
 	ret = UI::UserInput();
 	
 	if( ret == `add )
@@ -2333,6 +2340,11 @@ global define symbol ProfileDialog() ``{
 		Backup::StoreSettingsToBackupProfile( lookup( new_name, "text", "" ) );
 		UI::ReplaceWidget( `id(`selectionBox), 
 		    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames() ) );
+		if( size( Backup::backup_profiles ) == 1 )
+		{
+		    // select the first profile in the list
+        	    UI::ChangeWidget( `id(`profile), `CurrentItem, select( Backup::BackupProfileNames(), 0, nil ) );
+		}
 	    }
 	} 
 	else if( ret == `replace ) 
@@ -2350,6 +2362,15 @@ global define symbol ProfileDialog() ``{
 		    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames() ) );
 	    }
 	}
+	else if( ret == `abort )
+	{
+	    if ( !AbortConfirmation(`changed) )
+	    {
+		// we don't want to abort
+		ret = nil;
+	    }
+	}
+	
     } while( ret != `ok && ret != `cancel && ret != `abort && ret != `back );
     
     if( ret == `ok )

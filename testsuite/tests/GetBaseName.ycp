@@ -1,0 +1,26 @@
+// Backup module - testsuite
+//
+// GetBaseName tests
+//
+// $Id$
+//
+
+{
+
+include "backup/functions.ycp";
+include "testsuite.ycp";
+
+TEST( ``(GetBaseName(nil) ), [ $[], $[], $[] ], nil );
+TEST( ``(GetBaseName("") ), [ $[], $[], $[] ], nil );
+TEST( ``(GetBaseName("file") ), [ $[], $[], $[] ], nil );
+TEST( ``(GetBaseName("file.ext") ), [ $[], $[], $[] ], nil );
+TEST( ``(GetBaseName("/") ), [ $[], $[], $[] ], nil );
+TEST( ``(GetBaseName("/file") ), [ $[], $[], $[] ], nil );
+TEST( ``(GetBaseName("/file.ext") ), [ $[], $[], $[] ], nil );
+TEST( ``(GetBaseName("/dir/") ), [ $[], $[], $[] ], nil );
+TEST( ``(GetBaseName("/dir/dir2/file.ext") ), [ $[], $[], $[] ], nil );
+TEST( ``(GetBaseName("/dir.1/dir.2/file") ), [ $[], $[], $[] ], nil );
+TEST( ``(GetBaseName("/dir.1/dir.2/file.ext") ), [ $[], $[], $[] ], nil );
+
+}
+

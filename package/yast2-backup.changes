@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Mon Feb 24 09:40:32 CET 2003 - lslezak@suse.de
+
+- fixed [abort] button in profile dialog (#24064)
+- disable [replace] and [delete] buttons if there is
+  no stored profile (#24063)
+- version 2.7.9
+
+-------------------------------------------------------------------
 Thu Feb 20 09:33:24 CET 2003 - lslezak@suse.de
 
 - fixed root user detection (#23880)
