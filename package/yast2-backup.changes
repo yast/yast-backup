@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Sep  2 10:55:15 CEST 2003 - lslezak@suse.cz
+
+- fixed testsuite (constructor was changed in imported module)
+- version 2.8.10
+
+-------------------------------------------------------------------
 Mon Sep  1 16:04:02 CEST 2003 - lslezak@suse.de
 
 - added missing imports and file descriptions
