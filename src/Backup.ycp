@@ -18,7 +18,10 @@
 {
 
 module	"Backup";
+
 import "AIClone";
+import "Lan";
+import "Progress";
 
 textdomain "backup";
 
@@ -328,6 +331,7 @@ global define map WriteProfile(list volumes) ``{
     integer pos = findlastof(archive, "/");
     string dir = "";
     string file = archive;
+    boolean store_network = false;
 
     if (pos != nil && pos > 0)
     {
@@ -367,6 +371,8 @@ global define map WriteProfile(list volumes) ``{
 		    y2milestone("NFS server: %1, directory: %2", server, remdir);
 
 		    prefix = "nfs://";
+		    // archive is located on NFS - store network config to profile
+		    store_network = true;
 		    dir = server + ":" + remdir + "/";
 		}
 	    }
@@ -413,7 +419,23 @@ global define map WriteProfile(list volumes) ``{
 
     map restore = $[ "archives" : volumestrings ];
     configure["restore"] = restore;
+
+    // store network configuration if archive will be read from NFS
+    if (store_network == true)
+    {
+	Progress::off();
+
+	Lan::Read();
+	map network_config = Lan::Export();
+
+	y2milestone("Storing network config to profile: %1", network_config);
+	configure["networking"] = network_config;
+	Progress::on();
+    }
+
+
     AIClone::Profile["configure"] = configure;
+
 
     if (directory == "")
     {
