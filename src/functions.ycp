@@ -92,7 +92,7 @@ global define map ShowEditDialog(string label, string value, list<string> values
 
     list<term> combo_content = [];
 
-    if (size(values) > 0)
+    if (values != nil && size(values) > 0)
     {
 	combo_content = maplist(string v, values, ``(`item(`id(v), v, v == value)));
     }
@@ -159,7 +159,7 @@ global define symbol waitForUserOrProcess(integer wait, symbol abort_question) `
 
 	    if (AbortConfirmation(abort_question))
 	    {
-		SCR::Execute(.background.kill, nil);
+		SCR::Execute(.background.kill, "");
 		break;
 	    }
 	    else
@@ -209,9 +209,9 @@ global define list<string> GetMountedFilesystems() ``{
  * @example Ext2Filesystems() -> [ "/dev/hda1", "/dev/hda4" ]
  */
 
-global define list<map> Ext2Filesystems() ``{
+global define list<map<string, any> > Ext2Filesystems() ``{
     list<map<string, any> > mounted = (list<map<string, any> >) SCR::Read(.proc.mounts);
-    list<map> ext2mountpoints = [ ];
+    list<map<string, any> > ext2mountpoints = [ ];
     list tmp_parts = [];
 
     if (mounted != nil)
@@ -262,14 +262,14 @@ global define list<map> Ext2Filesystems() ``{
  * @example GetListWithFlags(["/dev", "/etc"], ["/etc"]) -> [`item (`id ("/dev"), "/dev", false), `item (`id ("/etc"), "/etc", true)]
  */
 
-global define list GetListWithFlags(list in, list selected) ``{
+global define list<term> GetListWithFlags(list<string> in, list<string> selected) ``{
 
     if (in == nil)
     {
 	return [];
     }
 
-    return maplist(`i, in, ``{
+    return maplist(string i, in, ``{
 	return `item(`id(i), i, (contains(selected, i) ? true : false));
     });
 }
@@ -317,10 +317,10 @@ global define list<term> AddIdBool(list in, boolean val) ``{
  * @example AddId("abc", "123") -> [`item(`id("abc"), "abc"), `item(`id("123"), "123")]
  */
 
-global define list AddId(list in) ``{
+global define list<term> AddId(list<string> in) ``{
     if (in == nil) return [];
 
-    return maplist(`i, in, ``{
+    return maplist(string i, in, ``{
 	return `item(`id(i), i);
     });
 }

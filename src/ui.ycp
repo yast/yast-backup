@@ -1474,7 +1474,7 @@ Backup will be aborted.
 
 			// escape newlines in file name
 			// double backslashes
-			list parts = splitstring(found_file, "\\");
+			list<string> parts = splitstring(found_file, "\\");
 			string escaped = mergestring(parts, "\\\\");
 
 			// change newline to \n
@@ -2431,8 +2431,9 @@ Backup will be aborted.
 							}
 							else
 							{
-							    if (line == id_storing_installed_pkgs)
+							    if (substring(line, 0, size(id_storing_installed_pkgs)) == id_storing_installed_pkgs)
 							    {
+								y2milestone(id_storing_installed_pkgs);
 							    }
 							    else
 							    {
@@ -2524,7 +2525,7 @@ global define string AskNewProfileName() ``{
     // Translators: text of a popup dialog
     map new_name = ShowEditDialog(_("Enter a name for the new profile."), "", nil);
 
-    while( (symbol)(new_name["clicked"]:nil) == `ok && Backup::backup_profiles[ new_name["text"]:nil ]:nil != nil  )
+    while( (symbol)(new_name["clicked"]:nil) == `ok && Backup::backup_profiles[ (string)(new_name["text"]:nil) ]:nil != nil  )
     {
 	// Translators: error popup, %1 is profile name
 	if( ! Popup::YesNo(sformat(_("A profile '%1' already exists.
@@ -2959,8 +2960,13 @@ global define symbol SelectProfileDialog() ``{
         profile_help(), false, false
     );
 
-    // select the first profile in the list
-    UI::ChangeWidget( `id(`profile), `CurrentItem, (Backup::selected_profile == nil) ? select( Backup::BackupProfileNames(), 0, nil ) : Backup::selected_profile);
+    string sel_prof = (Backup::selected_profile == nil) ? (string)(select( Backup::BackupProfileNames(), 0, nil )) : Backup::selected_profile;
+
+    if (sel_prof != nil)
+    {
+	// select the first profile in the list
+	UI::ChangeWidget( `id(`profile), `CurrentItem, sel_prof);
+    }
 
     symbol ret = nil;
     Backup::no_interactive = false;
