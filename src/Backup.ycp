@@ -508,7 +508,9 @@ global define boolean ReadBackupProfiles() ``{
 global define boolean WriteBackupProfiles() ``{
     if( !SCR::Write (.target.ycp, "/var/adm/YaST/backup/profiles", backup_profiles ) )
     {
-	y2error( "Unable to write profiles ino a file" );
+	y2error( "Unable to write profiles into a file" );
+	UI::ErrorPopup( _("Could not store profiles to disk.
+The profile changes will be lost.") );
 	return false;
     }
     return true;
@@ -520,12 +522,6 @@ global define boolean WriteBackupProfiles() ``{
  * @param profile_name name of a profile to be stored into
  */
 global define void StoreSettingsToBackupProfile( string profile_name ) ``{
-    
-    // if there is an old profile, remove it
-    if( haskey( backup_profiles, profile_name ) )
-    {
-	remove( backup_profiles, profile_name );
-    }
     
     map new_profile = $[
 	`archive_name 		: archive_name, 
@@ -565,7 +561,7 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
 
     // return false, is there is no such profile
     if( !haskey( backup_profiles, profile_name ) ) return false;
-
+    
     // get the profile data
     map profile = backup_profiles[profile_name]:nil;
 
@@ -645,6 +641,16 @@ global define list BackupProfileNames() ``{
     list result = maplist( `key, `value, backup_profiles, ``(key) );
     if( result == nil ) return [];
     else return sort( result );
+}
+
+// helper function to extract the list of currently available profiles
+global define list BackupProfileDescriptions() ``{
+    list result = maplist( string key, map value, backup_profiles,
+        ``( `item( `id( key ), key, lookup(value, `description, default_description ) ) )
+        );
+
+    if( result == nil ) return [];
+    else return result;
 }
 
 /**
