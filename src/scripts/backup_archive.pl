@@ -1,4 +1,5 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
+
 #
 #  File:
 #    backup_archive.pl
@@ -17,11 +18,10 @@
 #
 
 use Getopt::Long;
-#TODO use strict;
+use strict;
 
-#use File::Temp qw/ tempfile tempdir /;  # not in perl 5.6.0
- 
-use POSIX qw(tmpnam strftime);
+use File::Temp qw( tempdir );
+use POSIX qw( strftime );
 
 # return all harddisks present in system
 sub harddisks($)
@@ -29,7 +29,7 @@ sub harddisks($)
     my @disks = ();
     my ($verbose) = @_;
 
-    if (defined open(SFD, 'sfdisk -s |'))
+    if (defined open(SFD, '/sbin/sfdisk -s 2> /dev/null |'))
     {
 	while (my $sfline = <SFD>)
 	{
@@ -45,27 +45,11 @@ sub harddisks($)
 
 	if ($verbose)
 	{
-	    print "Partition tables info read\n"
+	    print "Partition tables info read\n";
 	}
     }
 
     return @disks;
-}
-
-# create temporary FIFO
-sub create_fifo()
-{
-    my $tmp_fifo_name = tmpnam();
-    do
-    {
-	while (-e $tmp_fifo_name)
-	{
-	    $tmp_fifo_name = tmpnam();
-	}
-    }
-    until (!system("mkfifo -m 0600 $tmp_fifo_name"));
-
-    return $tmp_fifo_name;
 }
 
 # command line options
@@ -122,24 +106,19 @@ if ($archive_type ne 'tgz' && $archive_type ne 'tbz2' && $archive_type ne 'tar')
 # for security reasons set permissions only to owner
 umask(0077);
 
-my $tmp_dir_root = tmpnam();
-
-do 
-{
-    while (-e $tmp_dir_root)
-    {
-	$tmp_dir_root = tmpnam();
-    }
-}
-until mkdir($tmp_dir_root, 0700);
-
+my $tmp_dir_root = tempdir(CLEANUP => 1);	# remove directory content at extit
 
 my $tmp_dir = $tmp_dir_root."/tmp";
-mkdir($tmp_dir);
+if (!mkdir($tmp_dir))
+{
+    die "Can not create directory $tmp_dir\n";
+}
 
 $tmp_dir .= "/YaST2-backup";
-mkdir($tmp_dir);
-
+if (!mkdir($tmp_dir))
+{
+    die "Can not create directory $tmp_dir\n";
+}
 
 my $files_num = 0;
 
@@ -338,7 +317,7 @@ foreach my $part (@ext2_parts)
 
     my $output_name = $tmp_dir."/e2image".$tr_dev_name;
 
-    system("/sbin/e2image $part $output_name");
+    system("/sbin/e2image $part $output_name 2> /dev/null");
 
     if (-s $output_name)
     {
@@ -392,7 +371,14 @@ if ($multi_volume > 0)
     # split archive to multi volume
     # fifo is used to avoid storing whole file
     
-    my $fifo_out = create_fifo();
+    my $fifo_out = "$tmp_dir_root/fifo";
+
+    if (system("mkfifo -m 0600 $fifo_out 2> /dev/null") != 0)
+    {
+	die "Can not create FIFO $fifo_out\n";
+    }
+
+    
     $tar_command .= " -f $fifo_out &";
 
     my $packer_command = "cat $fifo_out";
@@ -419,7 +405,7 @@ if ($multi_volume > 0)
 
     # start packing utility
     open(PACKER, $packer_command)
-	or die "Can not start program ($packer_command): \n";
+	or die "Can not start program: $packer_command\n";
 
     my $buffer;
     my $written;
@@ -506,43 +492,5 @@ if ($verbose)
 {
     print "/Tar result: $?\n";
 }
-
-
-# delete contents of temporary directory
-# TODO: better cleanup - unlink only created files, no blind unlink of possibly created files...
-
-unlink($tmp_dir.'/hostname');
-unlink($tmp_dir.'/date');
-unlink($tmp_dir.'/comment');
-unlink($tmp_dir.'/partition_table');
-unlink($tmp_dir.'/files_info');
-unlink($tmp_dir_root.'/files');
-
-
-foreach my $part (@ext2_parts)
-{
-    # transliterate all '/' characters to '_' in device name
-    my $tr_dev_name = $part;
-    $tr_dev_name =~ tr/\//_/;
-
-    unlink($tmp_dir.'/e2image'.$tr_dev_name);
-}
-
-my $index = 0;
-
-foreach my $pt_result (@disks_results)
-{
-    if ($pt_result)
-    {
-	unlink($tmp_dir.'/partition_table_'.$disks[$index].'.txt');
-	unlink($tmp_dir.'/partition_table_'.$disks[$index]);
-    }
-    
-    $index++;
-}
-
-rmdir($tmp_dir);
-rmdir($tmp_dir_root.'/tmp');
-rmdir($tmp_dir_root);
 
 
