@@ -332,8 +332,8 @@ sub VerifyPackages(@%%)
 	{
 	    my $md5_param = ($no_md5) ? "--nomd5" : "";
 
-	    # verification of the package - do not check package dependencies, do not run verify scripts
-	    open(RPMV, "export LC_ALL=C; rpm -V $package $md5_param --noscripts --nodeps |")
+	    # verification of the package - do not check package dependencies
+	    open(RPMV, "export LC_ALL=C; rpm -V $package $md5_param --nodeps |")
 		or die "Verification of package $package failed.";
 
 	    while (my $line = <RPMV>)
@@ -398,7 +398,7 @@ sub VerifyPackages(@%%)
 				# so all files in package are verified
 				# in this verification is not MD5 test excluded
 				# TODO LATER: don't grep but cache results of all files from package
-				open(RPMVRF, "rpm -V $pack --nodeps --noscripts | grep $file |");
+				open(RPMVRF, "rpm -V $pack --nodeps | grep $file |");
 				
 				my $fl = <RPMVRF>;
 				
