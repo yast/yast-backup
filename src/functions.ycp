@@ -18,6 +18,8 @@
 
 include "ui/common_messages.ycp";
 
+import "Report";
+
 textdomain "backup";
 
 
@@ -566,5 +568,135 @@ global define string GetBaseName(string file)
     return result;
 }
 
+global define boolean SendMail(string user, string subject, string message) ``{
+    // check user
+    if (user == "" || user == nil)
+    {
+	return false;
+    }
+
+    string d = SCR::Read(.target.tmpdir);
+    if (d == "" || d == nil)
+    {
+	y2security("Using /tmp directory for temporary files!");
+	d = "/tmp";
+    }
+
+    string mail_file = d + "/mail";
+
+    // write mail body
+    if (SCR::Write(.target.string, mail_file, body) == false)
+    {
+	return false;
+    }
+
+    // send mail
+    return (SCR::Execute(.target.bash, "/bin/cat " + mail_file + " | /usr/bin/mail " + user + " -s '" + subject + "'") == 0);
 }
 
+global define string CreateUnderLine(string input, string ch) ``{
+    integer len = size(input);
+    string ret = "";
+
+    while(len > 0)
+    {
+	ret = ret + ch;
+	len = len - 1;
+    }
+
+    return ret;
+}
+
+global define boolean SendSummary() ``{
+    // e-mail - subject
+    string subject = _("YaST2 Automatic Backup");
+
+    // get all warnings and errors from Report module
+    string reported = Report::GetMessages((Report::NumWarnings() > 0), (Report::NumErrors() > 0), false);
+    // TODO: remove richtext tags
+
+    if (Report::NumErrors() > 0)
+    {
+	// text added to the subject if an error occured
+	subject = subject + _(" - FAILED");
+    }
+
+    string summary_heading = _("Summary:");
+    string detail_heading = _("Details:");
+
+    string body = sformat(_("BACKUP REPORT - Profile '%1'"), cron_profile) + br + br + br
+	+ ((size(reported) > 0) ? _("Some problems occured during automatic backup:") + br + reported + br + br : "")
+	+ summary_heading + br + CreateUnderLine(summary_heading) + br + br
+	+ backup_result + br + br + detail_heading + br + CreateUnderLine(detail_heading)
+	+ br + br + backup_details;
+
+    if (SendMail("root", subject, body) == false)
+    {
+	y2error("Cannot send report");
+	return false;
+    }
+
+    return true;
+}
+
+global define boolean RemoveOldArchives(string name, integer max) ``{
+
+    if (name == "" || name == nil)
+    {
+	return true;
+    }
+
+    // check whether archive already exists
+    integer sz = SCR::Read(.target.size, name);
+
+    if (sz < 0)
+    {
+	// file doesn't exist, success
+	return true;
+    }
+
+    // check wheter older archives exist
+    list parts = splitstring(name, "/");
+    string fname = parts[size(parts) - 1]:"";
+    string dir = mergestring(remove(parts, size(parts) - 1), "/");
+
+    if (size(fname) == 0)
+    {
+	return true;
+    }
+
+    string command = "/bin/ls -1 -t " + dir + "/*-" + fname;
+
+    map result = SCR::Execute(.target.bash_output, command);
+    if (result["exit"]:-1 != 0)
+    {
+	// error
+    }
+
+    list(string) files = splitstring(result["stdout"]:"", "\n");
+
+    // use regexp
+    files = filter(string file, files, ``(regexpmatch(file, d + "/[0-9]+-" + fname)));
+
+    if (size(files) >= max && max >= 0)
+    {
+	// remove the old archives
+	while(size(files) >= max)
+	{
+	    command = "/bin/rm -f " + files[size(files) - 1]:"__DUMMY__";
+	    result = SCR::Execute(.target.bash_output, command);
+	    files = remove(files, size(files) - 1);
+	}
+    }
+
+    map stat = SCR::Read(.target.stat, name);
+    integer ctime = stat["ctime"]:0;
+
+    // rename existing archive
+    command = "/bin/mv -f name " + dir + "/" + ctime + "fname";
+    result = SCR::Execute(.target.bash_output, command);
+
+    return true;
+}
+
+}

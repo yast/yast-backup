@@ -11,33 +11,21 @@
 #    Ladislav Slezak <lslezak@suse.cz>
 #
 #  Description:
+#    Start backup module - use predefined profile
+#    This script is called from cron
 #
 # $Id$
 #
 
-# argument check
-PROFILE=$1;
+PROFILE=$1
 
+# check profile name
 if [ "$PROFILE" == "" ]; then
     echo "Missing profile name";
-    exit -1;
+    exit 1;
 fi
 
-TMPDIR=`mktemp -d /tmp/backup_cron-$$.XXXXXX` || (echo "Cannot create temporary directory"; exit 1)
-
-# create fifo
-mkfifo $TMPDIR/fifo
-
-# start writer process
-nice -n 15 /bin/bash -c "while (true); do echo '(true)'; done" > $TMPDIR/fifo &
-PID=$!
-
-# start backup
-nice -n 15 /usr/lib/YaST2/bin/y2base backup '("cron")' '("'$PROFILE'")' stdio > /dev/null < $TMPDIR/fifo
-
-# stop writer process
-kill $PID
-
-# remove temporary directory
-rm -rf $TMPDIR
+# start backup - set cron mode, set nice level to not slowdown other processes
+# set server component testsuite to parse UI requests 
+nice -n 15 /usr/lib/YaST2/bin/y2base backup '("cron")' '("'$PROFILE'")' testsuite > /dev/null
 

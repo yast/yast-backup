@@ -2277,6 +2277,16 @@ global define symbol SummaryDialog() ``{
     string em = "<B>";
     string _em = "</B>";
 
+    if (cron_mode == true)
+    {
+	br = "\n";
+	p = "";
+	_p = "\n";
+
+	em = "";
+	_em = "";
+    }
+
     string backup_result = "";
     string backup_details = "";
 
@@ -2496,7 +2506,8 @@ global define symbol SummaryDialog() ``{
     // cron mode
     if (cron_mode == true)
     {
-	// TODO: store summary
+	SendSummary();
+
 	return `finish;
     }
 
