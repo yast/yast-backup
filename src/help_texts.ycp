@@ -17,6 +17,8 @@
 
 {
 
+textdomain "backup";
+
 /**
  * Help text for archive dialog
  */
@@ -26,7 +28,7 @@ global define backup_help_archive_settings() ``{
     return _("<P><B><BIG>Backup module</BIG></B><BR>")
 
     // For translators: help text in archive setting dialog - part 2/4
-    + _("This YaST2 module searches files on your system and creates backup archive from them.</P><BR>")
+    + _("This YaST2 module searches files on your system and creates backup archive from them.<BR></P>")
 
     // For translators: help text in archive setting dialog - part 3/4
     + _("<P><B>System backup</B><BR>")
@@ -70,7 +72,7 @@ global define backup_help_backup_setting() ``{
     return _("<P><B><BIG>Search</BIG></B><BR>")
 
     // For translators: help text in backup settings dialog - part 2/
-    + _("Here you can select which parts of the system will be searched and backuped.</P><BR>")
+    + _("Here you can select which parts of the system will be searched and backuped.<BR></P>")
 
     // For translators: help text in backup settings dialog - part 3/
     + _("<P><B>Search options</B><BR>")
@@ -92,7 +94,7 @@ global define backup_help_exclude_dir() ``{
     return _("<P><B><BIG>Exclude</BIG></B><BR>")
 
     // For translators: help text in exclude directory dialog - part 2/6
-    + _("Here is a list of directories which will be excluded from searching of files not owned by any package.</P><BR>")
+    + _("Here is a list of directories which will be excluded from searching of files not owned by any package.<BR></P>")
 
     // For translators: help text in exclude directory dialog - part 3/6
     + _("<P><B>Editing list</B><BR>")
@@ -101,7 +103,7 @@ global define backup_help_exclude_dir() ``{
     + _("List of excluded directories can be edited by <B>Add</B>, <B>Edit</B> and <B>Delete</B> buttons.</P>")
 
     // For translators: help text in exclude directory dialog - part 5/6
-    + _("<P><B>Excluding directory</B><BR>")
+    + _("<P><B>Excluding file system</B><BR>")
 
     // For translators: help text in exclude directory dialog - part 6/6
     + _("To exclude file system types from searching press <B>Expert...</B> button.</P>");
@@ -117,7 +119,7 @@ global define backup_help_exclude_fs() ``{
     return _("<P><B><BIG>Exclude</BIG></B><BR>")
 
     // For translators: help text in exclude file system dialog - part 2/5
-    + _("File systems can be excluded from searching instead of excluding directories where they are mounted.</P><BR>")
+    + _("File systems can be excluded from searching instead of excluding directories where they are mounted.<BR></P>")
 
     // For translators: help text in exclude file system dialog - part 3/5
     + _("<P><B>Excluding file system</B><BR>")
@@ -171,7 +173,7 @@ global define backup_help_searching_files() ``{
     return _("<P><B><BIG>Searching</BIG></B><BR>")
 
     // For translators: help text in searching files dialog - part 2/4
-    + _("Now searching of files which do not belong to any package is in progress.</P>")
+    + _("Searching files which do not belong to any package is in progress.</P>")
 
     // For translators: help text in searching files dialog - part 3/4
     + _("<P>This will take several minutes depending on speed of your system and file system size.</P>")
