@@ -124,7 +124,7 @@ boolean display = false;		// display files before creating archive
 boolean enhanced_check_owner = false;	// enhanced check if file is owned by package
 boolean check_multiple_packages = true;	// check if it is necessary to backup file, which owned by multiple packages
 
-list default_dir = [ "/dev", "/proc", "/tmp", "/var/adm", "/var/lock", "/var/run", "/var/spool", "/var/tmp", "/var/cache", "/var/log", "/var/lib/rpm", "/local", "/etc/opt", "/etc/usbmgr" ];		// default excluded directoried from search
+list default_dir = [ "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache" ];		// default excluded directoried from search
 list dir_list = nil;			// selected directoried to exclude
 
 list fs_exclude = [ ];			// selected filesystems to exclude from search
@@ -143,6 +143,8 @@ integer modified_num = 0;		// number of modified files
 integer modified_size = 0;		// size
 integer nopkg_num = 0;			// number of found files which do not belong to any package
 integer nopkg_size = 0;			// size
+
+list list_of_installed_packages = [];	// names of all installed packages
 
 map backup_files = $[ ];		// all found files to backup
 map selected_files = nil;		// selected files to backup
