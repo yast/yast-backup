@@ -418,7 +418,6 @@ global define map WriteProfile(list volumes) ``{
     }
 
     map restore = $[ "archives" : volumestrings ];
-    configure["restore"] = restore;
 
     // store network configuration if archive will be read from NFS
     if (store_network == true)
@@ -433,6 +432,19 @@ global define map WriteProfile(list volumes) ``{
 	Progress::on();
     }
 
+    // add default selection - select all packages to restore
+    map packages_sel = $[];
+
+    foreach(string pkg, map info, selected_files, ``{
+	    // get package base name
+	    pkg = regexpsub(pkg, "(.*)-.*-.*", "\\1");
+	    packages_sel[pkg] = $["sel_type" : "X"];
+	}
+    );
+
+    restore["selection"] = packages_sel;
+
+    configure["restore"] = restore;
 
     AIClone::Profile["configure"] = configure;
 
