@@ -73,7 +73,7 @@ if ($help)
     print "  --output-files     Display only names of files to backup\n";
     print "  --output-progress  Display data for frontend\n";
     print "  --output-default   Default output is in format accepted by 'backup_achive' script\n";
-    print "  --inst_src_packages <file>	File with list of available packages in the installation souorses.\n";
+    print "  --inst-src-packages <file>	File with list of available packages in the installation sources.\n";
 
     exit 0;
 }
