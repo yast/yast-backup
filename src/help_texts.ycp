@@ -204,21 +204,15 @@ global define string profile_selection_help() ``{
     return _("<P><B>Profile found</B><BR>Backup module found at least one stored profile. Each profile contains previously used settings.</P>")
 
         // For translators: help text in profile selection dialog - part 2/3
-	+ _("<P><B>Use profile</B><BR>Select profile from list and choose action to perform:<BR>
-<B>Use</B> - read values and start backup immediately<BR>
-<B>Read</B> - start workflow with values from profile.</P>")
-
-	// For translators: help text in profile selection dialog - part 3/3
-	+ _("<P>It is possible to not use any profile and start with default values. In this case select action <B>Don't use any profile</B>.</P>");
+	+ _("<P><B>Don't use profile</B><BR>Select this option if Backup module should not use any profile.<BR>	<B>Use profile without changes</B><BR>Select this option for starting the backup immediately using values defined in the profile.<BR><B>Allow changes before use</B><BR>This option will start workflow based on the values from profile.</P>");
 }
 
-global define string profile_help(boolean edit) ``{
+global define string profile_help() ``{
 
-    return _("<P><B>Profiles</B><BR>Here are displayed all stored profiles.</P>")
-	+ _("<P><B>Actions</B><BR>Press button <B>Add</B> to store current settings to profile. Press <B>Delete</B> to remove selected profile.</P>")
-	+ ((edit == true) ? _("<P>Press <B>Edit</B> to edit profile settings.") : "")
-	+ _("<P>Press <B>Back</B> to cancel all changes.");
-
+    return _("<P><B>Profiles</B><BR>Here you can save the current values into profiles.</P>")
+	+ _("<P><B>Actions</B><BR>Press button <B>Add...</B> to store current settings into a new profile. Press <B>Delete</B> to remove selected profile.</P>")
+	+ _("<P>Press <B>Replace</B> to store the values into the selected profile.</P>")
+	+ _("<P>Press <B>Back</B> to cancel all changes.</P>");
 }
 
 }
