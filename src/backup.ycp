@@ -17,12 +17,10 @@
 
 {
 
-/* TODO: check for configuration changes, avoid unnecessary searches */
-
 y2milestone(" *** Backup module started *** ");
 
 import "Wizard";
-import "Mode";
+//import "Mode";
 import "Backup";
 import "Report";
 
@@ -78,7 +76,7 @@ boolean cron_mode = false;
 string cron_profile = "";
 map remove_result = $[];
 
-if (Mode::test == true)
+if (false/*Mode::test == true*/)
 {
     // set test data
     root_warning_displayed = true;	// do not display 'non-root' warning
@@ -222,7 +220,7 @@ if (cron_mode != true)
     Wizard::CreateDialog();
 }
 
-if (Mode::test == true)
+if (false/*Mode::test == true*/)
 {
     // display all dialogs
     ArchDialog();
@@ -263,8 +261,12 @@ else
 
 	map sel_profile = eval(Backup::backup_profiles[cron_profile]:$[]);
 
+	// prepare backup - e.g. mount NFS share
+	Backup::PrepareBackup();
+
 	// check existing archive, remove old archives
-	remove_result = RemoveOldArchives(Backup::archive_name, sel_profile[`cron_settings, "old"]:100000, Backup::multi_volume);
+	string localfilename = Backup::GetLocalArchiveName();
+	remove_result = RemoveOldArchives(localfilename, sel_profile[`cron_settings, "old"]:100000, Backup::multi_volume);
     }
 
     // start wizard sequencer
