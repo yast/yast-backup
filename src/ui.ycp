@@ -251,9 +251,9 @@ textdomain "backup";
 	backup_help_cron_dialog(), true, true
     );
 
-    // replace 'Next' buton with 'Ok'
-    Wizard::ReplaceNextButton(`PushButton(`id(`next), `opt(`default, `key_F10), Label::OKButton()));
-    UI::SetFocus(`id(`next));
+    // replace 'Next' button with 'Ok'
+    Wizard::SetNextButton(`next, Label::OKButton() );
+    Wizard::SetFocusToNextButton();
 
     // set initial widget states
     update_cron_dialog();
@@ -839,9 +839,9 @@ Enter the file name to use.
 	backup_help_archive_options(), true, true
     );
 
-    // replace 'Next' buton with 'Ok'
-    Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default, `key_F10), Label::OKButton()));
-    UI::SetFocus(`id(`ok));
+    // replace 'Next' button with 'Ok'
+    Wizard::SetNextButton(`ok, Label::OKButton() );
+    Wizard::SetFocusToNextButton();
 
     // allow only digits in the text entry
     UI::ChangeWidget(`id(`user_size), `ValidChars, "0123456789" );
@@ -1063,7 +1063,7 @@ Enter the file name to use.
 	backup_help_system_backup(), true, true
     );
 
-    Wizard::ReplaceNextButton(`PushButton(`id(`finish), `opt(`default), Label::OKButton()));
+    Wizard::SetNextButton(`finish, Label::OKButton() );
 
     UI::ChangeWidget(`id(`par), `Enabled, Backup::backup_selected_ext2);
     UI::ChangeWidget(`id(`addnew), `Enabled, Backup::backup_selected_ext2);
@@ -2823,8 +2823,8 @@ Replace the existing profile?
 	UI::ChangeWidget(`id(`details), `Enabled, false);
     }
 
-    Wizard::ReplaceNextButton(`PushButton(`id(`finish), `opt(`default), Label::OKButton()));
-    UI::SetFocus(`id(`finish));
+    Wizard::SetNextButton(`finish, Label::OKButton() );
+    Wizard::SetFocusToNextButton();
 
     symbol ret = (symbol)UI::UserInput();
 
@@ -2901,9 +2901,8 @@ Replace the existing profile?
 	UI::ChangeWidget(`id(`set_system), `Enabled, Backup::system);
     }
 
-    Wizard::ReplaceNextButton(`PushButton(`id(`finish), `opt(`default), Label::OKButton()));
-
-    UI::SetFocus(`id(`finish));
+    Wizard::SetNextButton(`finish, Label::OKButton() );
+    Wizard::SetFocusToNextButton();
 
     symbol ret = nil;
 
@@ -2934,7 +2933,7 @@ Replace the existing profile?
  */
  define symbol SelectProfileDialog() ``{
 
-    Wizard::ReplaceNextButton (`PushButton(`id(`finish), Label::CloseButton()));
+    Wizard::SetNextButton(`finish, Label::CloseButton() );
     Wizard::HideBackButton();
 
     string tableheader1 = _("Name");
@@ -3378,8 +3377,8 @@ Replace the existing profile?
 
     if (Backup::selected_profile != nil)
     {
-	// replace 'Next' button with 'Ok' if profile is configured
-	Wizard::ReplaceNextButton(`PushButton(`id(`next), `opt(`default, `key_F10), Label::OKButton()));
+	// replace 'Next' button with 'OK' if profile is configured
+	Wizard::SetNextButton(`next, Label::OKButton() );
     }
 
     symbol ret = nil;
