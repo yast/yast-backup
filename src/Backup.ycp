@@ -164,7 +164,21 @@ global define string get_search_script_parameters() ``{
     {
 	script_options = script_options + " --search";
 
-	foreach(`i, dir_list, ``{script_options = script_options + " --exclude-dir " + select(select(i, 0), 0);});
+	foreach(`i, dir_list,
+	    ``{
+		term tmp_id = select(i, 0, nil);
+
+		if (tmp_id != nil)
+		{
+		    string tmp_d = select(tmp_id, 0, nil);
+
+		    if (tmp_d != nil)
+		    {
+			script_options = script_options + " --exclude-dir " + tmp_d;
+		    }
+		}
+	    }
+	);
 	foreach(`i, fs_exclude, ``{script_options = script_options + " --exclude-fs " + i;});
     }
 
@@ -201,7 +215,12 @@ global define string get_archive_script_parameters(string file_list, string file
 	list tmp_selected_pt = [];
 	foreach(`sel_tmp_pt, ext2_backup,	// get device names from `item(`id(XYZ), "XYZ")
 	    ``{
-		tmp_selected_pt = add(tmp_selected_pt, select(sel_tmp_pt, 1));
+		string tmp = select(sel_tmp_pt, 1, nil);
+
+		if (tmp != nil)
+		{
+		    tmp_selected_pt = add(tmp_selected_pt, tmp);
+		}
 	    }
 	);
 

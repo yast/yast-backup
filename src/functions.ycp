@@ -292,7 +292,18 @@ global define list AddIdBool(list in, boolean val) ``{
     }
 
     return maplist(`i, in, ``{
-        return (is(i, term)) ? `item(select(i, 0), select(i, 1), val) : nil;
+	term tmp_id = nil;
+	string tmp_s = nil;
+
+	boolean isterm = is(i,term);
+
+	if (isterm)
+	{
+	    tmp_id = select(i, 0, nil);
+	    tmp_s = select(i, 1, nil);
+	}
+
+        return (isterm && tmp_id != nil && tmp_s != nil) ? `item(tmp_id, tmp_s, val) : nil;
     });
 }
 

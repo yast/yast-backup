@@ -388,7 +388,7 @@ global define symbol ExcludeDialog() ``{
 
             if (ret == `edit)
 	    {
-	        map edited = ShowEditDialog(_("Edit"), curr);
+	        map edited = ShowEditDialog(_("&Edit"), curr);
 
 		if (lookup(edited, "clicked", nil) == `ok)
 		{
@@ -400,7 +400,7 @@ global define symbol ExcludeDialog() ``{
 
                         // refresh dir_list content
                         Backup::dir_list = maplist(`i, Backup::dir_list, ``{
-                            if (select(select(i, 0), 0) == curr)
+                            if (select(select(i, 0, ""), 0, "") == curr)
                             {
                                 return `item(`id(txt), txt);
                             }
@@ -415,14 +415,14 @@ global define symbol ExcludeDialog() ``{
 
 	    if (ret == `delete)
 	    {
-		Backup::dir_list = filter(`i, Backup::dir_list, ``{return (select(select(i, 0), 0) != curr);});
+		Backup::dir_list = filter(`i, Backup::dir_list, ``{return (select(select(i, 0, []), 0, nil) != curr);});
                 UI::ChangeWidget(`id(`dirs), `Items, Backup::dir_list);
 	    }
 	}
 
 	if (ret == `addnew)
 	{
-	    map result = ShowEditDialog(_("Add new directory"), "");
+	    map result = ShowEditDialog(_("&Add new directory"), "");
 
             if (lookup(result, "clicked", nil) == `ok)
             {
@@ -606,7 +606,7 @@ global define symbol SystemBackupDialog() ``{
 
             if (ret == `edit)
 	    {
-	        map edited = ShowEditDialog("Edit", curr);
+	        map edited = ShowEditDialog("&Edit", curr);
 
 		if (lookup(edited, "clicked", nil) == `ok)
 		{
@@ -618,7 +618,7 @@ global define symbol SystemBackupDialog() ``{
 
 			// refresh ext2_backup content
 			Backup::ext2_backup = maplist(`i, Backup::ext2_backup, ``{
-			    if (select(select(i, 0), 0) == curr)
+			    if (select(select(i, 0, []), 0, nil) == curr)
 			    {
 				return `item(`id(txt), txt);
 			    }
@@ -633,14 +633,14 @@ global define symbol SystemBackupDialog() ``{
 
 	    if (ret == `delete)
 	    {
-		Backup::ext2_backup = filter(`i, Backup::ext2_backup, ``{return (select(select(i, 0), 0) != curr);});
+		Backup::ext2_backup = filter(`i, Backup::ext2_backup, ``{return (select(select(i, 0, []), 0, nil) != curr);});
 		UI::ChangeWidget(`id(`par), `Items, Backup::ext2_backup);
 	    }
 	}
 
 	if (ret == `addnew)
 	{
-	    map result = ShowEditDialog(_("Add Ext2 partition"), "");
+	    map result = ShowEditDialog(_("&Add Ext2 partition"), "");
 
 	    if (lookup(result, "clicked", nil) == `ok)
 	    {
@@ -731,7 +731,7 @@ global define symbol SearchingModifiedDialog() ``{
 
 	while (size(script_out) > 0)
 	{
-	    line = select(script_out, 0);		// read line
+	    line = select(script_out, 0, nil);		// read line
 	    script_out = remove(script_out, 0);		// remove line
 
 	    if (reading_installed_packages)
@@ -938,7 +938,7 @@ global define symbol SearchingModifiedDialog() ``{
 
 	    while (size(script_out) > 0)
 	    {
-		line = select(script_out, 0);		// read line
+		line = select(script_out, 0, nil);	// read line
 		script_out = remove(script_out, 0);	// remove line
 
 		y2debug("Script output:", line);
@@ -1079,7 +1079,7 @@ global define symbol FilesDialog() ``{
 	{
 	    if (ret == `table || ret == `sel_file)
 	    {
-		string current_value = select(UI::QueryWidget(`id(`table), `Item(current_item)), 1);
+		string current_value = select(UI::QueryWidget(`id(`table), `Item(current_item)), 1, nocheckmark);
 
 		if (current_value == checkmark)
 		{
@@ -1118,10 +1118,10 @@ global define symbol FilesDialog() ``{
     {
 	term table_item = UI::QueryWidget(`id(`table), `Item(idx));
 
-	if (select(table_item, 1) == checkmark)
+	if (select(table_item, 1, nocheckmark) == checkmark)
 	{
-	    string package_name = select(table_item, 3);
-	    string file_name = select(table_item, 2);
+	    string package_name = select(table_item, 3, "unknown package");
+	    string file_name = select(table_item, 2, "unknown file");
 
 	    selected_files_num = selected_files_num + 1;
 
@@ -1244,7 +1244,7 @@ global define symbol ArchivingDialog() ``{
 
 	while (size(script_out) > 0)
 	{
-	    string line = select(script_out, 0);	// read line
+	    string line = select(script_out, 0, nil);	// read line
 	    script_out = remove(script_out, 0);		// remove line
 
 	    y2debug("Archive script output: %1", line);
@@ -1512,14 +1512,14 @@ global define symbol SummaryDialog() ``{
 			if (r)
 			{
 			    backup_details = backup_details
-				+ sformat(_("Ext2 image %1 stored successfully"), select(select(select(Backup::ext2_backup, index), 0) ,0)) + br;
+				+ sformat(_("Ext2 image %1 stored successfully"), select(select(select(Backup::ext2_backup, index, nil), 0, nil), 0, "")) + br;
 
 			    added_files = added_files + 1;
 			}
 			else
 			{
 			    backup_details = backup_details + em
-				+ sformat(_("Storing Ext2 image %1 failed"), select(select(select(Backup::ext2_backup, index), 0) ,0)) + _em + br;
+				+ sformat(_("Storing Ext2 image %1 failed"), select(select(select(Backup::ext2_backup, index, nil), 0, nil), 0, "")) + _em + br;
 			}
 
 			index = index + 1;
