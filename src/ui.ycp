@@ -274,6 +274,8 @@ global define symbol BackupDialog() ``{
                     `Left(`CheckBox(`id(`multi_check), _("&Extra check files in multiple packages"))),
 		    `VSpacing(0.5),
                     `Left(`CheckBox(`id(`enh_check), _("Enhanced check of file &owner"))),
+		    `VSpacing(0.5),
+                    `Left(`CheckBox(`id(`md5_check), _("Check MD&5 instead of time/size checking"))),
 		    `VSpacing(0.5)
 		)
 	    ),
@@ -293,6 +295,7 @@ global define symbol BackupDialog() ``{
     UI::ChangeWidget(`id(`enh_check), `Value, Backup::enhanced_check_owner);
     UI::ChangeWidget(`id(`enh_check), `Enabled, UI::QueryWidget(`id(`search), `Value));
     UI::ChangeWidget(`id(`multi_check), `Value, Backup::check_multiple_packages);
+    UI::ChangeWidget(`id(`md5_check), `Value, Backup::do_md5_test);
 
     symbol ret = nil;
 
@@ -322,6 +325,7 @@ global define symbol BackupDialog() ``{
     Backup::display = UI::QueryWidget(`id(`display), `Value);
     Backup::enhanced_check_owner = UI::QueryWidget(`id(`enh_check), `Value);
     Backup::check_multiple_packages = UI::QueryWidget(`id(`multi_check), `Value);
+    Backup::do_md5_test = UI::QueryWidget(`id(`md5_check), `Value);
 
 
     // set next dialog

@@ -106,6 +106,7 @@ global boolean system = false;			// backup system areas
 global boolean display = false;		// display files before creating archive
 global boolean enhanced_check_owner = false;	// enhanced check if file is owned by package
 global boolean check_multiple_packages = true;	// check if it is necessary to backup file, which owned by multiple packages
+global boolean do_md5_test = true;
 
 global list default_dir = [ "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache" ];		// default excluded directoried from search
 global list dir_list = nil;			// selected directoried to exclude
@@ -177,6 +178,11 @@ global define string get_search_script_parameters() ``{
     if (!check_multiple_packages)
     {
 	script_options = script_options + " --disable-check-multiple";
+    }
+
+    if (!do_md5_test)
+    {
+	script_options = script_options + " --no-md5";
     }
 
     y2debug("Search script options: %1", script_options);
