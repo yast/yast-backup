@@ -92,7 +92,7 @@ global define string backup_help_exclude_dir() ``{
 
 global define string backup_help_exclude_fs() ``{
     // For translators: help text in exclude file system dialog - part 1/3
-    return _("<P><B><BIG>Exclude</BIG></B><BR>File systems can be excluded from searching instead of excluding directories where they are mounted.</P>")
+    return _("<P><B><BIG>Exclude</BIG></B><BR>File systems themselves can be excluded from the search without needing to specify the directories to which they are mounted.</P>")
 
     // For translators: help text in exclude file system dialog - part 2/3
     + _("<P><B>Excluding file systems</B><BR>To exclude all directories on a certain file system, check the box with name of the file system.</P>")
