@@ -16,24 +16,30 @@
 
 {
 
+import "Backup";
+import "Wizard";
+
 include "ui/common_popups.ycp";
 include "ui/common_functions.ycp";
 
 include "backup/help_texts.ycp";
 
+textdomain "backup";
+
 /**
  * Dialog for setting archive options
+ * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define ArchDialog() ``{
+global define symbol ArchDialog() ``{
 
-    UI::SetWizardContents(_("Archive settings"),
+    Wizard::SetContents(_("Archive settings"),
 	`VBox(
 	    `VSpacing(0.5),
-	    `TextEntry(`id(`filename), _("Archive file name:")),
+	    `TextEntry(`id(`filename), _("Archive file na&me:")),
 
 	    `VSpacing(0.5),
-	    `MultiLineEdit(`id(`description), _("Archive description:")),
+	    `MultiLineEdit(`id(`description), _("Archive &description:")),
 
 	    `VSpacing(0.5),
 	    `Frame( _("Archive type"),
@@ -42,7 +48,7 @@ global define ArchDialog() ``{
 		    `Left(
 			`HBox(
 			    `HSpacing(2.0),
-			    `ComboBox(`id(`type), _("Select archive type:"),
+			    `ComboBox(`id(`type), _("Select archive &type:"),
 				[ `item(`id(`tgz), "gzip (*.tar.gz)"),
 				  `item(`id(`tbz), "bzip2 (*.tar.bz2)"),
 				  `item(`id(`tar), "tar (*.tar)"),
@@ -51,7 +57,7 @@ global define ArchDialog() ``{
 			    `HSpacing(3.0),
 			    `VBox(
 				`VSpacing(1.0),
-				`PushButton(`id(`opts), _("Options..."))
+				`PushButton(`id(`opts), _("&Options..."))
 			    )
 			)
 		    ),
@@ -64,13 +70,13 @@ global define ArchDialog() ``{
         backup_help_archive_settings(), true, true
     );
 
-    if (archive_type == nil)
-	archive_type = `tgz;
+    if (Backup::archive_type == nil)
+	Backup::archive_type = `tgz;
 
     // set values
-    UI::ChangeWidget(`id(`filename), `Value, archive_name);
-    UI::ChangeWidget(`id(`description), `Value, description);
-    UI::ChangeWidget(`id(`type), `Value, archive_type);
+    UI::ChangeWidget(`id(`filename), `Value, Backup::archive_name);
+    UI::ChangeWidget(`id(`description), `Value, Backup::description);
+    UI::ChangeWidget(`id(`type), `Value, Backup::archive_type);
 
     boolean cont = false;
     symbol ret = nil;
@@ -86,11 +92,11 @@ global define ArchDialog() ``{
     while (!cont)
     {
         ret = UI::UserInput();
-        archive_name = UI::QueryWidget(`id(`filename), `Value);
+        Backup::archive_name = UI::QueryWidget(`id(`filename), `Value);
 
 	if (ret == `next)
 	{
-	    if (size(archive_name) == 0)
+	    if (size(Backup::archive_name) == 0)
 	    {
 		UI::WarningPopup(_("Archive file name can not be empty\nPlease enter archive file name"));
 	    }
@@ -106,12 +112,12 @@ global define ArchDialog() ``{
     }
 
     // get values
-    description = UI::QueryWidget(`id(`description), `Value);
-    archive_type = UI::QueryWidget(`id(`type), `Value);
+    Backup::description = UI::QueryWidget(`id(`description), `Value);
+    Backup::archive_type = UI::QueryWidget(`id(`type), `Value);
 
     if (ret == `opts)
     {
-	if (archive_type == `tar || archive_type == `tgz || archive_type == `tbz)
+	if (Backup::archive_type == `tar || Backup::archive_type == `tgz || Backup::archive_type == `tbz)
 	{
 	    ret = `tar_opt;
 	}
@@ -123,34 +129,35 @@ global define ArchDialog() ``{
 
 /**
  * Setting multi volume archive options
+ * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define TarOptionsDialog() ``{
+global define symbol TarOptionsDialog() ``{
 
-    list description_combo = MediaList2UIList(media_descriptions);
+    list description_combo = MediaList2UIList(Backup::media_descriptions);
     description_combo = add(description_combo, `item(`id(`user_defined), _("User defined")));
 
-    list description_combo_units = MediaList2UIList(units_description);
+    list description_combo_units = MediaList2UIList(Backup::units_description);
 
-    UI::SetWizardContents( _("Archive file options"),
+    Wizard::SetContents( _("Archive file options"),
 	`VBox(
 	    `VSpacing(0.5),
 	    `Frame(_("Multi volume archive"),
 		`VBox(
 		    `VSpacing(`opt(`hstretch), 0.5),
-		    `Left(`CheckBox(`id(`multi_volume), `opt(`notify), _("Create multi volume archive"), multi_volume)),
+		    `Left(`CheckBox(`id(`multi_volume), `opt(`notify), _("&Create multi volume archive"), Backup::multi_volume)),
 		    `VSpacing(0.5),
 
 		    `HBox(
 			`HSpacing(3.5),
 
 			`VBox(
-			    `Left(`ComboBox(`id(`vol), `opt(`notify), _("Volume size:"), description_combo)),
+			    `Left(`ComboBox(`id(`vol), `opt(`notify), _("&Volume size:"), description_combo)),
 			    `VSpacing(0.5),
 
 			    `Left(
 				`HBox(
-				    `TextEntry(`id(`user_size), _("User defined size:")),
+				    `TextEntry(`id(`user_size), _("&User defined size:")),
 				    `ComboBox(`id(`user_unit), "", description_combo_units),
 				    `HStretch()
 				)
@@ -167,28 +174,28 @@ global define TarOptionsDialog() ``{
     );
 
     // replace 'Next' buton with 'Ok'
-    UI::ReplaceWizardNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
+    Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
 
     SetMultiWidgetsState();
 
-    if (volume_size == nil)
+    if (Backup::volume_size == nil)
     {
-	volume_size = `fd144;
+	Backup::volume_size = `fd144;
     }
-    UI::ChangeWidget(`id(`vol), `Value, volume_size);
+    UI::ChangeWidget(`id(`vol), `Value, Backup::volume_size);
 
     string tmp_size = "";
-    if (user_volume_size != nil)
+    if (Backup::user_volume_size != nil)
     {
-	tmp_size = user_volume_size;
+	tmp_size = Backup::user_volume_size;
     }
     UI::ChangeWidget(`id(`user_size), `Value, tmp_size);
 
-    if (user_volume_unit == nil)
+    if (Backup::user_volume_unit == nil)
     {
-	user_volume_unit = `B;
+	Backup::user_volume_unit = `B;
     }
-    UI::ChangeWidget(`id(`user_unit), `Value, user_volume_unit);
+    UI::ChangeWidget(`id(`user_unit), `Value, Backup::user_volume_unit);
 
     boolean cont = false;
     symbol ret = nil;
@@ -207,10 +214,10 @@ global define TarOptionsDialog() ``{
 	    {
 		cont = true;
 
-		multi_volume = UI::QueryWidget(`id(`multi_volume), `Value);
-		volume_size = UI::QueryWidget(`id(`vol), `Value);
-		user_volume_size = UI::QueryWidget(`id(`user_size), `Value);
-		user_volume_unit = UI::QueryWidget(`id(`user_unit), `Value);
+		Backup::multi_volume = UI::QueryWidget(`id(`multi_volume), `Value);
+		Backup::volume_size = UI::QueryWidget(`id(`vol), `Value);
+		Backup::user_volume_size = UI::QueryWidget(`id(`user_size), `Value);
+		Backup::user_volume_unit = UI::QueryWidget(`id(`user_unit), `Value);
 	    }
 	}
 	else
@@ -234,7 +241,7 @@ global define TarOptionsDialog() ``{
     }
 
     // Restore 'next' button
-    UI::RestoreWizardNextButton();
+    Wizard::RestoreNextButton();
 
     return ret;
 }
@@ -242,18 +249,19 @@ global define TarOptionsDialog() ``{
 
 /**
  * Dialog for setting backup options
+ * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define BackupDialog() ``{
+global define symbol BackupDialog() ``{
 
-    UI::SetWizardContents( _("Search settings"),
+    Wizard::SetContents( _("Search settings"),
         `VBox(`VSpacing(0.5),
 	    `Frame( _("Backup options"),
 	        `VBox(
 		    `VSpacing(0.5),
-                    `Left(`CheckBox(`id(`search), `opt(`notify), _("Search files which do not belong to any package"))),
+                    `Left(`CheckBox(`id(`search), `opt(`notify), _("&Search files which do not belong to any package"))),
 		    `VSpacing(0.5),
-                    `Left(`CheckBox(`id(`system), _("Backup hard disk system areas"))),
+                    `Left(`CheckBox(`id(`system), _("Backup &hard disk system areas"))),
 		    `VSpacing(0.5)
 		)
 	    ),
@@ -263,15 +271,15 @@ global define BackupDialog() ``{
 	    `Frame( _("Search options"),
 		`VBox(
 		    `VSpacing(0.5),
-                    `Left(`CheckBox(`id(`multi_check), _("Extra check files in multiple packages"))),
+                    `Left(`CheckBox(`id(`multi_check), _("&Extra check files in multiple packages"))),
 		    `VSpacing(0.5),
-                    `Left(`CheckBox(`id(`enh_check), _("Enhanced check of file owner"))),
+                    `Left(`CheckBox(`id(`enh_check), _("Enhanced check of file &owner"))),
 		    `VSpacing(0.5)
 		)
 	    ),
 
 	    `VSpacing(1.0),
-	    `Left(`CheckBox(`id(`display), _("Check list of files before creating archive"))),
+	    `Left(`CheckBox(`id(`display), _("Check list of files before &creating archive"))),
 
 	    `VSpacing(1.0)
 	),
@@ -279,12 +287,12 @@ global define BackupDialog() ``{
     );
 
     // set values
-    UI::ChangeWidget(`id(`search), `Value, search);
-    UI::ChangeWidget(`id(`system), `Value, system);
-    UI::ChangeWidget(`id(`display), `Value, display);
-    UI::ChangeWidget(`id(`enh_check), `Value, enhanced_check_owner);
+    UI::ChangeWidget(`id(`search), `Value, Backup::search);
+    UI::ChangeWidget(`id(`system), `Value, Backup::system);
+    UI::ChangeWidget(`id(`display), `Value, Backup::display);
+    UI::ChangeWidget(`id(`enh_check), `Value, Backup::enhanced_check_owner);
     UI::ChangeWidget(`id(`enh_check), `Enabled, UI::QueryWidget(`id(`search), `Value));
-    UI::ChangeWidget(`id(`multi_check), `Value, check_multiple_packages);
+    UI::ChangeWidget(`id(`multi_check), `Value, Backup::check_multiple_packages);
 
     symbol ret = nil;
 
@@ -309,17 +317,17 @@ global define BackupDialog() ``{
     }
 
     // get values
-    search = UI::QueryWidget(`id(`search), `Value);
-    system = UI::QueryWidget(`id(`system), `Value);
-    display = UI::QueryWidget(`id(`display), `Value);
-    enhanced_check_owner = UI::QueryWidget(`id(`enh_check), `Value);
-    check_multiple_packages = UI::QueryWidget(`id(`multi_check), `Value);
+    Backup::search = UI::QueryWidget(`id(`search), `Value);
+    Backup::system = UI::QueryWidget(`id(`system), `Value);
+    Backup::display = UI::QueryWidget(`id(`display), `Value);
+    Backup::enhanced_check_owner = UI::QueryWidget(`id(`enh_check), `Value);
+    Backup::check_multiple_packages = UI::QueryWidget(`id(`multi_check), `Value);
 
 
     // set next dialog
-    if (!search && ret == `next)
+    if (!Backup::search && ret == `next)
     {
-	ret = (system) ? `next3 : `next2;
+	ret = (Backup::system) ? `next3 : `next2;
     }
 
     return ret;
@@ -328,33 +336,34 @@ global define BackupDialog() ``{
 
 /**
  * Dialog for setting excluded directories
+ * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define ExcludeDialog() ``{
+global define symbol ExcludeDialog() ``{
 
-    if (dir_list == nil)
+    if (Backup::dir_list == nil)
     {
-	dir_list = AddId(default_dir);
-	if (dir_list == nil)
+	Backup::dir_list = AddId(Backup::default_dir);
+	if (Backup::dir_list == nil)
 	{
-	    dir_list = [];
+	    Backup::dir_list = [];
 	}
     }
 
-    UI::SetWizardContents( _("Exclude from search"),
+    Wizard::SetContents( _("Exclude from search"),
 	`VBox(
 	    `VSpacing(1.0),
 	    `Left(`Label(_("Directories excluded from search:"))),
-	    `Table(`id(`dirs), `header(_("Directory")), dir_list),
+	    `Table(`id(`dirs), `header(_("Directory")), Backup::dir_list),
 
 	    `HBox(
-                `PushButton(`id(`addnew), _("Add...") ) ,
-		`PushButton(`id(`edit), _("Edit...") ) ,
-		`PushButton(`id(`delete), _("Delete") )
+                `PushButton(`id(`addnew), _("A&dd...") ) ,
+		`PushButton(`id(`edit), _("&Edit...") ) ,
+		`PushButton(`id(`delete), _("De&lete") )
 	    ),
 
 	    `VSpacing(1.0),
-            `PushButton(`id(`expert), _("Expert...") ),
+            `PushButton(`id(`expert), _("E&xpert...") ),
 	    `VSpacing(1.0)
 	),
         backup_help_exclude_dir(), true, true
@@ -379,12 +388,12 @@ global define ExcludeDialog() ``{
 		{
 		    string txt = lookup(edited, "text", "");
 
-                    if (txt != curr && !contains(dir_list, `item(`id(txt), txt)))
+                    if (txt != curr && !contains(Backup::dir_list, `item(`id(txt), txt)))
                     {
                         UI::ChangeWidget(`id(`dirs), `Item(curr, 0), txt);
 
                         // refresh dir_list content
-                        dir_list = maplist(`i, dir_list, ``{
+                        Backup::dir_list = maplist(`i, Backup::dir_list, ``{
                             if (select(select(i, 0), 0) == curr)
                             {
                                 return `item(`id(txt), txt);
@@ -400,8 +409,8 @@ global define ExcludeDialog() ``{
 
 	    if (ret == `delete)
 	    {
-		dir_list = filter(`i, dir_list, ``{return (select(select(i, 0), 0) != curr);});
-                UI::ChangeWidget(`id(`dirs), `Items, dir_list);
+		Backup::dir_list = filter(`i, Backup::dir_list, ``{return (select(select(i, 0), 0) != curr);});
+                UI::ChangeWidget(`id(`dirs), `Items, Backup::dir_list);
 	    }
 	}
 
@@ -414,11 +423,11 @@ global define ExcludeDialog() ``{
                 string new_dir = lookup(result, "text", nil);
 
                 // add new partition only if it's not empty a it isn't already in list
-                if (new_dir != "" && new_dir != nil && !contains(dir_list, `item(`id(new_dir), new_dir)))
+                if (new_dir != "" && new_dir != nil && !contains(Backup::dir_list, `item(`id(new_dir), new_dir)))
                 {
-                    dir_list = add(dir_list, `item(`id(new_dir), new_dir));
+                    Backup::dir_list = add(Backup::dir_list, `item(`id(new_dir), new_dir));
 
-                    UI::ChangeWidget(`id(`dirs), `Items, dir_list);
+                    UI::ChangeWidget(`id(`dirs), `Items, Backup::dir_list);
                 }
             }
 	}
@@ -432,7 +441,7 @@ global define ExcludeDialog() ``{
 	}
     }
 
-    if (!system && ret == `next)
+    if (!Backup::system && ret == `next)
 	ret = `next2;
 
     return ret;
@@ -441,26 +450,28 @@ global define ExcludeDialog() ``{
 
 /**
  * Dialog for setting excluded file systems from search
+ * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define ExcludeFilesystemDialog() ``{
+global define symbol ExcludeFilesystemDialog() ``{
 
-    if (detected_fs == nil)
+    if (Backup::detected_fs == nil)
     {
-	UI::SetWizardContents("", `Label("Detecting filesystems types..."), "", false, false);
-	detected_fs = GetMountedFilesystems();
+	Wizard::SetContents("", `Label(_("Detecting filesystems types...")), "", false, false);
+	Backup::detected_fs = GetMountedFilesystems();
     }
 
-    list fs = GetListWithFlags(detected_fs, fs_exclude);
+    list fs = GetListWithFlags(Backup::detected_fs, Backup::fs_exclude);
+    string label_multi = _("Exclude mounted filesystems:");
 
-    UI::SetWizardContents( _("Exclude filesystem from search"),
+    Wizard::SetContents( _("Exclude filesystem from search"),
 	`VBox(
 	    `VSpacing(1.0),
-	    `ReplacePoint(`id(`repl), `MultiSelectionBox(`id(`fss), _("Exclude mounted filesystems:"), fs)),
+	    `ReplacePoint(`id(`repl), `MultiSelectionBox(`id(`fss), label_multi, fs)),
 	    `HBox(
 		`HStretch(),
-		`HWeight(2, `PushButton(`id(`sel_all), _("Select all") )),
-		`HWeight(2, `PushButton(`id(`desel_all), _("Deselect all") )),
+		`HWeight(2, `PushButton(`id(`sel_all), _("&Select all") )),
+		`HWeight(2, `PushButton(`id(`desel_all), _("&Deselect all") )),
 		`HStretch()
 	    ),
 	    `VSpacing(1.0)
@@ -469,7 +480,7 @@ global define ExcludeFilesystemDialog() ``{
     );
 
     // replace 'Next' buton with 'Ok'
-    UI::ReplaceWizardNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
+    Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
 
     symbol ret = nil;
 
@@ -480,14 +491,14 @@ global define ExcludeFilesystemDialog() ``{
 	if (ret == `sel_all)
 	{
 	    fs = AddIdBool(fs, true);
-	    UI::ReplaceWidget(`id(`repl), `MultiSelectionBox(`id(`fss), "Exclude mounted filesystems:", fs));
+	    UI::ReplaceWidget(`id(`repl), `MultiSelectionBox(`id(`fss), label_multi, fs));
 	}
 	else
 	{
 	    if (ret == `desel_all)
 	    {
 		fs = AddIdBool(fs, false);
-		UI::ReplaceWidget(`id(`repl), `MultiSelectionBox(`id(`fss), "Exclude mounted filesystems:", fs));
+		UI::ReplaceWidget(`id(`repl), `MultiSelectionBox(`id(`fss), label_multi, fs));
 	    }
 	    else
 	    {
@@ -503,14 +514,13 @@ global define ExcludeFilesystemDialog() ``{
     }
 
 
-    /* TODO: 'Back' doesn't save dialog content, is it right?? */
     if (ret == `ok)
     {
-	fs_exclude = UI::QueryWidget(`id(`fss), `SelectedItems);
+	Backup::fs_exclude = UI::QueryWidget(`id(`fss), `SelectedItems);
     }
 
     // Restore 'next' button
-    UI::RestoreWizardNextButton();
+    Wizard::RestoreNextButton();
 
     return ret;
 }
@@ -518,24 +528,25 @@ global define ExcludeFilesystemDialog() ``{
 
 /**
  * System area backup options
+ * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define SystemBackupDialog() ``{
+global define symbol SystemBackupDialog() ``{
 
-    if (detected_ext2 == nil)
+    if (Backup::detected_ext2 == nil)
     {
-	UI::SetWizardContents("", `Label(_("Detecting mounted ext2 filesystems...")), "", false, false);
-	detected_ext2 = GetMountedExt2Filesystems();
-	ext2_backup = AddId(detected_ext2);
+	Wizard::SetContents("", `Label(_("Detecting mounted ext2 filesystems...")), "", false, false);
+	Backup::detected_ext2 = GetMountedExt2Filesystems();
+	Backup::ext2_backup = AddId(Backup::detected_ext2);
     }
 
-    UI::SetWizardContents( _("System area backup"),
+    Wizard::SetContents( _("System area backup"),
 	`VBox(
 	    `VSpacing(0.5),
 	    `Frame( _("Partition table"),
 		`VBox(
 		    `VSpacing(0.4),
-		    `CheckBox(`id(`pt), `opt(`hstretch), _("Backup partition tables"), backup_pt),
+		    `CheckBox(`id(`pt), `opt(`hstretch), _("Ba&ckup partition tables"), Backup::backup_pt),
 		    `VSpacing(0.4)
 		)
 	    ),
@@ -545,22 +556,22 @@ global define SystemBackupDialog() ``{
 	        `RadioButtonGroup(`id(`rbg),
 	            `VBox(
 		        `VSpacing(0.3),
-			`Left(`RadioButton(`id(`allmounted), `opt(`notify), _("All mounted"), backup_all_ext2)),
+			`Left(`RadioButton(`id(`allmounted), `opt(`notify), _("All &mounted"), Backup::backup_all_ext2)),
 			`VSpacing(0.3),
-			`Left(`RadioButton(`id(`none), `opt(`notify), _("None"), backup_none_ext2)),
+			`Left(`RadioButton(`id(`none), `opt(`notify), _("N&one"), Backup::backup_none_ext2)),
 			`VSpacing(0.3),
 
-			`Left(`RadioButton(`id(`selected), `opt(`notify), _("Selected:"), backup_selected_ext2)),
+			`Left(`RadioButton(`id(`selected), `opt(`notify), _("&Selected:"), Backup::backup_selected_ext2)),
 			`HBox(
 			    `HSpacing(3.0),
-			    `Table(`id(`par), `header(_("Ext2 partition")), ext2_backup),
+			    `Table(`id(`par), `header(_("Ext2 partition")), Backup::ext2_backup),
 			    `HSpacing(2.0)
 			),
 
 			`HBox(
-			    `PushButton(`id(`addnew), _("Add...") ) ,
-			    `PushButton(`id(`edit), _("Edit...") ) ,
-			    `PushButton(`id(`delete), _("Delete") )
+			    `PushButton(`id(`addnew), _("A&dd...") ) ,
+			    `PushButton(`id(`edit), _("&Edit...") ) ,
+			    `PushButton(`id(`delete), _("De&lete") )
 		        ),
 		        `VSpacing(0.4)
 		    )
@@ -571,10 +582,10 @@ global define SystemBackupDialog() ``{
 	backup_help_system_backup(), true, true
     );
 
-    UI::ChangeWidget(`id(`par), `Enabled, backup_selected_ext2);
-    UI::ChangeWidget(`id(`addnew), `Enabled, backup_selected_ext2);
-    UI::ChangeWidget(`id(`edit), `Enabled, backup_selected_ext2);
-    UI::ChangeWidget(`id(`delete), `Enabled, backup_selected_ext2);
+    UI::ChangeWidget(`id(`par), `Enabled, Backup::backup_selected_ext2);
+    UI::ChangeWidget(`id(`addnew), `Enabled, Backup::backup_selected_ext2);
+    UI::ChangeWidget(`id(`edit), `Enabled, Backup::backup_selected_ext2);
+    UI::ChangeWidget(`id(`delete), `Enabled, Backup::backup_selected_ext2);
 
 
     symbol ret = nil;
@@ -595,12 +606,12 @@ global define SystemBackupDialog() ``{
 		{
 		    string txt = lookup(edited, "text", "");
 
-		    if (txt != curr && !contains(ext2_backup, `item(`id(txt), txt)))
+		    if (txt != curr && !contains(Backup::ext2_backup, `item(`id(txt), txt)))
 		    {
 			UI::ChangeWidget(`id(`par), `Item(curr, 0), txt);
 
 			// refresh ext2_backup content
-			ext2_backup = maplist(`i, ext2_backup, ``{
+			Backup::ext2_backup = maplist(`i, Backup::ext2_backup, ``{
 			    if (select(select(i, 0), 0) == curr)
 			    {
 				return `item(`id(txt), txt);
@@ -616,8 +627,8 @@ global define SystemBackupDialog() ``{
 
 	    if (ret == `delete)
 	    {
-		ext2_backup = filter(`i, ext2_backup, ``{return (select(select(i, 0), 0) != curr);});
-		UI::ChangeWidget(`id(`par), `Items, ext2_backup);
+		Backup::ext2_backup = filter(`i, Backup::ext2_backup, ``{return (select(select(i, 0), 0) != curr);});
+		UI::ChangeWidget(`id(`par), `Items, Backup::ext2_backup);
 	    }
 	}
 
@@ -631,11 +642,11 @@ global define SystemBackupDialog() ``{
 		string new_par = lookup(result, "text", nil);
 
 		// add new partition only if it's not empty a it isn't already in list
-		if (new_par != "" && new_par != nil && !contains(ext2_backup, `item(`id(new_par), new_par)))
+		if (new_par != "" && new_par != nil && !contains(Backup::ext2_backup, `item(`id(new_par), new_par)))
 		{
-		    ext2_backup = add(ext2_backup, `item(`id(new_par), new_par));
+		    Backup::ext2_backup = add(Backup::ext2_backup, `item(`id(new_par), new_par));
 
-		    UI::ChangeWidget(`id(`par), `Items, ext2_backup);
+		    UI::ChangeWidget(`id(`par), `Items, Backup::ext2_backup);
 		}
 	    }
 	}
@@ -643,14 +654,14 @@ global define SystemBackupDialog() ``{
 
 	if (ret == `allmounted || ret == `selected || ret == `none)
 	{
-	    backup_all_ext2 = UI::QueryWidget(`id(`allmounted), `Value);
-	    backup_none_ext2 = UI::QueryWidget(`id(`none), `Value);
-	    backup_selected_ext2 = UI::QueryWidget(`id(`selected), `Value);
+	    Backup::backup_all_ext2 = UI::QueryWidget(`id(`allmounted), `Value);
+	    Backup::backup_none_ext2 = UI::QueryWidget(`id(`none), `Value);
+	    Backup::backup_selected_ext2 = UI::QueryWidget(`id(`selected), `Value);
 
-	    UI::ChangeWidget(`id(`par), `Enabled, backup_selected_ext2);
-	    UI::ChangeWidget(`id(`addnew), `Enabled, backup_selected_ext2);
-	    UI::ChangeWidget(`id(`edit), `Enabled, backup_selected_ext2);
-	    UI::ChangeWidget(`id(`delete), `Enabled, backup_selected_ext2);
+	    UI::ChangeWidget(`id(`par), `Enabled, Backup::backup_selected_ext2);
+	    UI::ChangeWidget(`id(`addnew), `Enabled, Backup::backup_selected_ext2);
+	    UI::ChangeWidget(`id(`edit), `Enabled, Backup::backup_selected_ext2);
+	    UI::ChangeWidget(`id(`delete), `Enabled, Backup::backup_selected_ext2);
 	}
 
 	if (ret == `abort)
@@ -662,7 +673,7 @@ global define SystemBackupDialog() ``{
 	}
     }
 
-    backup_pt = UI::QueryWidget(`id(`pt), `Value);
+    Backup::backup_pt = UI::QueryWidget(`id(`pt), `Value);
 
     return ret;
 }
@@ -670,35 +681,37 @@ global define SystemBackupDialog() ``{
 
 /**
  * Display progress of searching modified files in packages
+ * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define SearchingModifiedDialog() ``{
+global define symbol SearchingModifiedDialog() ``{
 
-    UI::ClearWizardContents();
+    Wizard::ClearContents();
 
-    string script_options = " --output-progress";	// required parameter for YaST2 frontend
+/*    string script_options = " --output-progress";	// required parameter for YaST2 frontend
 
-    if (search)
+    if (Backup::search)
     {
 	script_options = script_options + " --search";
 
-	foreach(`i, dir_list, ``{script_options = script_options + " --exclude-dir " + select(select(i, 0), 0);});
-	foreach(`i, fs_exclude, ``{script_options = script_options + " --exclude-fs " + i;});
+	foreach(`i, Backup::dir_list, ``{script_options = script_options + " --exclude-dir " + select(select(i, 0), 0);});
+	foreach(`i, Backup::fs_exclude, ``{script_options = script_options + " --exclude-fs " + i;});
 
-	if (enhanced_check_owner)
+	if (Backup::enhanced_check_owner)
 	{
 	    script_options = script_options + " --enhanced-check";
 	}
     }
 
-    if (!check_multiple_packages)
+    if (!Backup::check_multiple_packages)
     {
 	script_options = script_options + " --disable-check-multiple";
     }
 
     y2debug("Search script options: %1", script_options);
+*/
 
-    boolean started = SCR::Execute(.background.run_output, script_get_files + script_options);
+    boolean started = SCR::Execute(.background.run_output, Backup::script_get_files + Backup::get_search_script_parameters());
     list script_out = [ ];
 
     symbol ret = nil;
@@ -729,7 +742,7 @@ global define SearchingModifiedDialog() ``{
     boolean search_no_package = false;
     boolean reading_installed_packages = false;
 
-    while(SCR::Read(.background.output_open) || (SCR::Read(.background.newlines) > 0) /*|| (size(script_out) > 0)*/)
+    while(SCR::Read(.background.output_open) || (SCR::Read(.background.newlines) > 0))
     {
 	script_out = SCR::Read(.background.newout);
 
@@ -764,7 +777,7 @@ global define SearchingModifiedDialog() ``{
 			    "install_prefixes" : actual_instprefixes
 			];
 
-			backup_files = add(backup_files, actual_package, package_info /*package_files*/);
+			Backup::backup_files = add(Backup::backup_files, actual_package, package_info);
 			package_files = [ ];
 		    }
 
@@ -822,21 +835,21 @@ global define SearchingModifiedDialog() ``{
 			    {
 				if (line == id_reading_files)
 				{
-				    UI::SetWizardContents("", `Label(_("Reading packages files...")), backup_help_searching_modified(), false, false);
+				    Wizard::SetContents("", `Label(_("Reading packages files...")), backup_help_searching_modified(), false, false);
 				}
 				else
 				{
 				    if (line == id_reading_packages)
 				    {
 					y2milestone("Reading installed packages");
-					UI::SetWizardContents("", `Label(_("Reading list of installed packages...")), backup_help_searching_modified(), false, false);
+					Wizard::SetContents("", `Label(_("Reading list of installed packages...")), backup_help_searching_modified(), false, false);
 					reading_installed_packages = true;
 				    }
 				    else
 				    {
 					if (line == id_files_read)
 					{
-					    UI::SetWizardContents( _("Searching modified files"),
+					    Wizard::SetContents( _("Searching modified files"),
 						`Top(
 						    `VBox(
 							`VSpacing(0.5),
@@ -906,7 +919,7 @@ global define SearchingModifiedDialog() ``{
 	string id_readall = "Files read";
 	string id_dir = "Dir: ";
 
-	UI::SetWizardContents(_("Searching files"),
+	Wizard::SetContents(_("Searching files"),
 	    `Top(
 		`VBox(
 		    `VSpacing(0.5),
@@ -986,17 +999,17 @@ global define SearchingModifiedDialog() ``{
 	    "install_prefixes" : actual_instprefixes
 	];
 
-	backup_files = add(backup_files, actual_package, package_info);
+	Backup::backup_files = add(Backup::backup_files, actual_package, package_info);
     }
 
     y2milestone("Searching done");
 
 
-    if (display)
+    if (Backup::display)
     {
-	if (selected_files == nil)
+	if (Backup::selected_files == nil)
 	{
-	    selected_files = backup_files;
+	    Backup::selected_files = Backup::backup_files;
 	}
 
 	return `next;
@@ -1004,12 +1017,12 @@ global define SearchingModifiedDialog() ``{
     else
     {
 	// no manual selection, backup all files
-	selected_files = backup_files;
+	Backup::selected_files = Backup::backup_files;
 
 	// count number of files
 	selected_files_num = 0;
 
-	foreach(`pak, `val, selected_files,
+	foreach(`pak, `val, Backup::selected_files,
 	    ``{
 		selected_files_num = selected_files_num + size(lookup(val, "changed_files", []));
 	    }
@@ -1023,26 +1036,27 @@ global define SearchingModifiedDialog() ``{
 
 /**
  * Display found files, user can select files to backup
+ * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define FilesDialog() ``{
+global define symbol FilesDialog() ``{
 
-    UI::ClearWizardContents();
+    Wizard::SetContents("", `Label(_("Inserting files to table...")), "", false, false);
 
     list table_items = MapToTableItems(nil);
 
-    UI::SetWizardContents( _("File selection"),
+    Wizard::SetContents( _("File selection"),
 	`VBox(
 	    `VSpacing(0.5),
 	    `Left(`Label(_("Select files to backup:"))),
-	    `Table(`id(`table), 
+	    `Table(`id(`table),
 		`opt(`notify),
 		`header(" ", _("File name"), _("Package")),
 		table_items
 	    ),
 	    `HBox(
-		`PushButton(`id(`sel_all), _("Select all")),
-		`PushButton(`id(`desel_all), _("Deselect all"))
+		`PushButton(`id(`sel_all), _("&Select all")),
+		`PushButton(`id(`desel_all), _("&Deselect all"))
 	    ),
 	    `VSpacing(1.0)
 	),
@@ -1111,7 +1125,7 @@ global define FilesDialog() ``{
 
 // Note: it is required that Table contains files ordered by package!
 
-    selected_files = $[ ];
+    Backup::selected_files = $[ ];
 
     integer num = size(table_items);
     integer idx = 1;
@@ -1140,10 +1154,10 @@ global define FilesDialog() ``{
 	    {
 		map package_info = $[
 		    "changed_files" : actual_package_files,
-		    "install_prefixes" : lookup(lookup(backup_files, actual_package_name, $[]), "install_prefixes", "(none)")
+		    "install_prefixes" : lookup(lookup(Backup::backup_files, actual_package_name, $[]), "install_prefixes", "(none)")
 		];
 
-		selected_files = add(selected_files, actual_package_name,  package_info);
+		Backup::selected_files = add(Backup::selected_files, actual_package_name,  package_info);
 
 		actual_package_name = package_name;
 		actual_package_files = add([], file_name);
@@ -1162,13 +1176,13 @@ global define FilesDialog() ``{
     {
 	map package_info = $[
 	    "changed_files" : actual_package_files,
-	    "install_prefixes" : lookup(lookup(backup_files, actual_package_name, $[]), "install_prefixes", "(none)")
+	    "install_prefixes" : lookup(lookup(Backup::backup_files, actual_package_name, $[]), "install_prefixes", "(none)")
 	];
 
-	selected_files = add(selected_files, actual_package_name, package_info);
+	Backup::selected_files = add(Backup::selected_files, actual_package_name, package_info);
     }
 
-    y2debug("Selected files to backup: %1", selected_files);
+    y2debug("Selected files to backup: %1", Backup::selected_files);
 
     return ret;
 }
@@ -1176,9 +1190,10 @@ global define FilesDialog() ``{
 
 /**
  * Display progress of creating archive
+ * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define ArchivingDialog() ``{
+global define symbol ArchivingDialog() ``{
 
     y2milestone("Storing file names list...");
 
@@ -1195,14 +1210,14 @@ global define ArchivingDialog() ``{
 
     // store comment to file
     string tmpfile_comment = SCR::Read(.run.mktemp);
-    comment_stored = SCR::Write(.target.string, tmpfile_comment, description);
+    comment_stored = SCR::Write(.target.string, tmpfile_comment, Backup::description);
 
     if (!comment_stored)
     {
 	y2warning("Error writing comment to file %", tmpfile_comment);
     }
 
-    string archive_options = " --verbose --files-info " + tmpfile_list + " --archive-name "
+/*    string archive_options = " --verbose --files-info " + tmpfile_list + " --archive-name "
 	+ archive_name + " --comment-file " + tmpfile_comment;
 
     if (system)
@@ -1269,11 +1284,10 @@ global define ArchivingDialog() ``{
     }
 
     y2debug("Archive script options: %1", archive_options);
+*/
 
-
-    UI::ClearWizardContents();
-
-    boolean started = SCR::Execute(.background.run_output, script_create_archive + archive_options);
+    Wizard::ClearContents();
+    boolean started = SCR::Execute(.background.run_output, sformat("%1 %2", Backup::script_create_archive, Backup::get_archive_script_parameters(tmpfile_list, tmpfile_comment)));
 
     if (!started)
     {
@@ -1342,7 +1356,7 @@ global define ArchivingDialog() ``{
 	    {
 		if (substring(line, 0, size(id_hostname)) == id_hostname)
 		{
-		    UI::SetWizardContents(title, `Label(_("Storing host name...")), "", false, false);
+		    Wizard::SetContents(title, `Label(_("Storing host name...")), "", false, false);
 
 		    string tmp = substring(line, size(id_hostname));
 		    hostname_stored = (tmp == id_ok);
@@ -1351,7 +1365,7 @@ global define ArchivingDialog() ``{
 		{
 		    if (substring(line, 0, size(id_date)) == id_date)
 		    {
-			UI::SetWizardContents(title, `Label(_("Storing date...")), "", false, false);
+			Wizard::SetContents(title, `Label(_("Storing date...")), "", false, false);
 
 			string tmp = substring(line, size(id_date));
 			date_stored = (tmp == id_ok);
@@ -1360,7 +1374,7 @@ global define ArchivingDialog() ``{
 		    {
 			if (substring(line, 0, size(id_partab)) == id_partab)
 			{
-			    UI::SetWizardContents(title, `Label(_("Storing partition table...")), "", false, false);
+			    Wizard::SetContents(title, `Label(_("Storing partition table...")), "", false, false);
 
 //			    string tmp = substring(line, size(id_partab));
 //			    ptable_stored = (tmp == id_ok);
@@ -1371,7 +1385,7 @@ global define ArchivingDialog() ``{
 			    {
 				string part_name = substring(line, size(id_ptstored));
 
-				UI::SetWizardContents(title, `Label(_("Storing partition table: ") + part_name), "", false, false);
+				Wizard::SetContents(title, `Label(_("Storing partition table: ") + part_name), "", false, false);
 				added_files = added_files + 2;
 				stored_ptables = add(stored_ptables, part_name);
 			    }
@@ -1385,7 +1399,7 @@ global define ArchivingDialog() ``{
 				{
 				    if (substring(line, 0, size(id_ext2)) == id_ext2)
 				    {
-					UI::SetWizardContents(title, `Label(_("Storing Ext2 area: ") + substring(line, size(id_ext2)) + " ..."), "", false, false);
+					Wizard::SetContents(title, `Label(_("Storing Ext2 area: ") + substring(line, size(id_ext2)) + " ..."), "", false, false);
 				    }
 				    else
 				    {
@@ -1393,7 +1407,7 @@ global define ArchivingDialog() ``{
 					{
 					    total_files = tointeger(substring(line, size(id_files)));
 
-					    UI::SetWizardContents(title, `ProgressBar(`id(`pbar), _("Creating archive: ") + archive_name + " ...", total_files), backup_help_creating_archive(), false, false);
+					    Wizard::SetContents(title, `ProgressBar(`id(`pbar), _("Creating archive: ") + Backup::archive_name + " ...", total_files), backup_help_creating_archive(), false, false);
 					    tar_running = true;
 					}
 					else
@@ -1457,9 +1471,10 @@ global define ArchivingDialog() ``{
 
 /**
  * Display backup summary
+ * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define SummaryDialog() ``{
+global define symbol SummaryDialog() ``{
     string br = "<BR>";
     string p  = "<P>";
     string _p = "</P>";
@@ -1470,13 +1485,13 @@ global define SummaryDialog() ``{
     string backup_result = p + _("Found modified files: ") + modified_num + br
 	+ _("Total size: ") + size_text(modified_size) + _p;
 
-    if (search)
+    if (Backup::search)
     {
 	backup_result = backup_result + p + _("Found files which are not in any package: ") + nopkg_num + br
 	    + _("Total size: ") + size_text(nopkg_size) + _p;
     }
 
-    if (display)
+    if (Backup::display)
     {
 	backup_result = backup_result + p + _("Selected files to backup: ") + selected_files_num + _p;
     }
@@ -1501,12 +1516,12 @@ global define SummaryDialog() ``{
 	backup_details = backup_details + _p;
     }
 
-    if (system)
+    if (Backup::system)
     {
-	y2debug("Ext2 backup: %1", ext2_backup);
+	y2debug("Ext2 backup: %1", Backup::ext2_backup);
 	y2debug("Ext2 results: %1", e2image_results);
 
-	if (backup_pt)
+	if (Backup::backup_pt)
 	{
 	    if (!read_ptables_info)
 	    {
@@ -1528,7 +1543,7 @@ global define SummaryDialog() ``{
 	    backup_details = backup_details + _p;
 	}
 
-	if (size(ext2_backup) > 0)
+	if (size(Backup::ext2_backup) > 0)
 	{
 	    integer index = 0;
 
@@ -1537,14 +1552,14 @@ global define SummaryDialog() ``{
 		    if (r)
 		    {
 			backup_details = backup_details + br
-			    + sformat(_("Ext2 image %1 stored successfully"), select(select(select(ext2_backup, index), 0) ,0));
+			    + sformat(_("Ext2 image %1 stored successfully"), select(select(select(Backup::ext2_backup, index), 0) ,0));
 
 			added_files = added_files + 1;
 		    }
 		    else
 		    {
 			backup_details = backup_details + br + em
-			    + sformat(_("Storing Ext2 image %1 failed"), select(select(select(ext2_backup, index), 0) ,0)) + _em;
+			    + sformat(_("Storing Ext2 image %1 failed"), select(select(select(Backup::ext2_backup, index), 0) ,0)) + _em;
 		    }
 
 		    index = index + 1;
@@ -1583,7 +1598,7 @@ global define SummaryDialog() ``{
 	+ ((tar_result == 0) ? _("Archive created successfully") + br +_("Total archived files: ") + archived_num :
 	  em + _("Archive creation failed") + _em) + _p;
 
-    if (multi_volume)
+    if (Backup::multi_volume)
     {
 	if (size(created_archive_files) > 0)
 	{
@@ -1600,18 +1615,18 @@ global define SummaryDialog() ``{
     }
 
 
-    UI::SetWizardContents( _("Backup summary"),
+    Wizard::SetContents( _("Backup summary"),
 	`VBox(
 	    `VSpacing(0.5),
 	    `RichText(backup_result),
 	    `VSpacing(0.5),
-	    `PushButton(`id(`details), _("Details...")),
+	    `PushButton(`id(`details), _("&Details...")),
 	    `VSpacing(1.0)
 	),
 	backup_help_summary(), true, true
     );
 
-    UI::ReplaceWizardNextButton(`PushButton(`id(`finish), `opt(`default), FinishButtonLabel()));
+    Wizard::ReplaceNextButton(`PushButton(`id(`finish), `opt(`default), FinishButtonLabel()));
 
     symbol ret = UI::UserInput();
 
@@ -1625,7 +1640,7 @@ global define SummaryDialog() ``{
 	ret = UI::UserInput();
     }
 
-    UI::RestoreWizardNextButton();
+    Wizard::RestoreNextButton();
     return ret;
 }
 

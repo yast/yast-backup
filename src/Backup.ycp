@@ -1,0 +1,293 @@
+/**
+ *  File:
+ *    backup.ycp
+ *
+ *  Module:
+ *    Backup module
+ *
+ *  Authors:
+ *    Ladislav Slezak <lslezak@suse.cz>
+ *
+ *  $Id$
+ *
+ *  Main file for backup module - definition of workflow
+ *
+ */
+
+
+{
+
+module	"Backup";
+
+textdomain "backup";
+
+global string script_store_ext2_area = "e2image";
+global string script_get_partition_table = "/sbin/fdisk -l";
+global string script_get_files = "/usr/lib/YaST2/bin/backup_search.pl";
+global string script_create_archive = "/usr/lib/YaST2/bin/backup_archive.pl";
+
+// global variables initialized to default values:
+global string archive_name = "";		// archive file name
+global string description = "";		// user comment
+global symbol archive_type = `tgz;		// archive type
+
+global boolean multi_volume = false;
+global symbol volume_size = `fd144;
+global string user_volume_size = "";
+global symbol user_volume_unit = nil;
+
+
+// media description - capacity is maximum file size which fits
+// to formatted medium using widely used file system (FAT on floppies)
+
+global list media_descriptions = [
+    $[
+	"label" : _("Floppy 1.44 MB"),
+	"symbol" : `fd144,
+	"capacity" : 1457664		// exact size for FAT fs
+    ],
+    $[
+	"label" : _("Floppy 1.2 MB"),
+	"symbol" : `fd12,
+	"capacity" : 1213952		// exact size for FAT fs
+    ],
+/*    $[
+	"label" : _("ZIP 100 MB"),
+	"symbol" : `zip100,
+	"capacity" : ?????
+    ],
+    $[
+	"label" : _("ZIP 250 MB"),
+	"symbol" : `zip250,
+	"capacity" : ?????
+    ],*/
+    $[
+	"label" : _("CD-R/RW 650 MB (74 min.)"),
+	"symbol" : `cd650,
+	"capacity" : 650*1024*1024	// exact size is 650.4 MB - remaining space is for ISO fs
+    ],
+    $[
+	"label" : _("CD-R/RW 700 MB (80 min.)"),
+	"symbol" : `cd700,
+	"capacity" : 702*1024*1024	// exact size is 703.1 MB - remaining space is for ISO fs
+    ]
+];
+
+global list units_description = [
+    $[
+	"label" : _("bytes"),
+	"capacity" : 1,
+	"symbol"   : `B
+    ],
+    $[
+	"label" : _("kB"),
+	"capacity" : 1000,
+	"symbol"   : `kB
+    ],
+    $[
+	"label" : _("kiB"),
+	"capacity" : 1024,
+	"symbol"   : `kiB
+    ],
+    $[
+	"label" : _("MB"),
+	"capacity" : 1000000,
+	"symbol"   : `MB
+    ],
+    $[
+	"label" : _("MiB"),
+	"capacity" : 1024*1024,
+	"symbol"   : `MiB
+    ],
+];
+
+global boolean search = true;			// search files which do not belong to any package
+global boolean system = false;			// backup system areas
+global boolean display = false;		// display files before creating archive
+global boolean enhanced_check_owner = false;	// enhanced check if file is owned by package
+global boolean check_multiple_packages = true;	// check if it is necessary to backup file, which owned by multiple packages
+
+global list default_dir = [ "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache" ];		// default excluded directoried from search
+global list dir_list = nil;			// selected directoried to exclude
+
+global list fs_exclude = [ ];			// selected filesystems to exclude from search
+global list detected_fs = nil;			// detected filesystems
+
+global list detected_ext2 = nil;		// detected mounted ext2 filesystems
+global list ext2_backup = [];			// selected ext2 filesystems to backup
+
+global boolean backup_pt = true;		// backup partition table
+
+global boolean backup_all_ext2 = true;		// backup all mounted ext2 partitions
+global boolean backup_none_ext2 = false;	// backup none ext2 partitions
+global boolean backup_selected_ext2 = false;	// backup selected ext2 partitions
+
+
+global map backup_files = $[ ];		// all found files to backup
+global map selected_files = nil;	// selected files to backup
+
+
+/**
+ * Return capacity of required medium
+ * @param media Medium descriptions
+ * @param m Identification of required medium
+ * @return integer Size of medium in bytes
+ */
+
+global define integer GetCapacity(list media, symbol m) ``{
+    integer result = nil;
+
+    if (media != nil)
+    {
+	foreach(`val, media,
+	    ``{
+		if (is(val, map) && lookup(val, "symbol", nil) == m)
+		{
+		    result = lookup(val, "capacity", nil);
+		}
+	    }
+	);
+    }
+
+    return result;
+}
+
+
+/**
+ * Return backup_search.pl script parameters according to state of variables
+ * @return string String with command line parameters
+ */
+
+global define string get_search_script_parameters() ``{
+    string script_options = " --output-progress";       // required parameter for YaST2 frontend
+
+    if (search)
+    {
+	script_options = script_options + " --search";
+
+	foreach(`i, dir_list, ``{script_options = script_options + " --exclude-dir " + select(select(i, 0), 0);});
+	foreach(`i, fs_exclude, ``{script_options = script_options + " --exclude-fs " + i;});
+
+	if (enhanced_check_owner)
+	{
+	    script_options = script_options + " --enhanced-check";
+	}
+    }
+
+    if (!check_multiple_packages)
+    {
+	script_options = script_options + " --disable-check-multiple";
+    }
+
+    y2debug("Search script options: %1", script_options);
+
+    return script_options;
+}
+
+
+/**
+ * Return backup_search.pl script parameters according to state of variables
+ * @param file_list Where is list of files to backup stored
+ * @param file_comment Where is comment stored
+ * @return string String with command line parameters
+ */
+
+global define string get_archive_script_parameters(string file_list, string file_comment) ``{
+    string archive_options = " --verbose --files-info " + file_list + " --archive-name "
+	+ archive_name + " --comment-file " + file_comment;
+
+    if (system)
+    {
+        // add partition tabel option
+	if (backup_pt)
+	{
+	    archive_options = archive_options + " --store-ptable";
+	}
+
+	list tmp_selected_pt = [];
+	foreach(`sel_tmp_pt, ext2_backup,	// get device names from `item(`id(XYZ), "XYZ")
+	    ``{
+		tmp_selected_pt = add(tmp_selected_pt, select(sel_tmp_pt, 1));
+	    }
+	);
+
+	list partitions = (backup_all_ext2) ? detected_ext2 : (backup_none_ext2 ? [] : tmp_selected_pt);
+
+	y2milestone("partitions: %1", partitions);
+
+	foreach(`spt, partitions, ``{archive_options = archive_options + " --store-ext2 " + spt;});
+    }
+
+
+    if (archive_type == `tgz)
+    {
+	archive_options = archive_options + " --archive-type tgz";
+    }
+    else
+    {
+	if (archive_type == `tbz)
+	{
+	    archive_options = archive_options + " --archive-type tbz2";
+	}
+	else
+	{
+	    if (archive_type == `tar)
+	    {
+		archive_options = archive_options + " --archive-type tar";
+	    }
+	}
+    }
+
+    if (multi_volume)
+    {
+	if (volume_size == `user_defined)
+	{
+	    integer vol_size = tointeger( (tofloat(user_volume_size)) * (tofloat(GetCapacity(units_description, user_volume_unit))) );
+
+	    if (vol_size > 0)
+	    {
+		archive_options = archive_options + " --multi-volume " + sformat("%1", vol_size);
+	    }
+	    else
+	    {
+		y2warning("Bad volume size: %1", user_volume_size);
+	    }
+	}
+	else
+	{
+	    archive_options = archive_options + " --multi-volume " + GetCapacity(media_descriptions, volume_size);
+	}
+    }
+
+    y2debug("Archive script options: %1", archive_options);
+
+    return archive_options;
+}
+
+/*integer selected_files_num = 0;		// number of selected files to backup
+
+string checkmark = UI::Glyph(`CheckMark);
+string nocheckmark = (checkmark == "[x]") ? "[ ]" : " ";
+
+boolean hostname_stored = false;
+boolean date_stored = false;
+boolean file_list_stored = false;
+boolean comment_stored = false;
+list e2image_results = [];		// results of storing ext2 images
+integer archived_num = 0;
+list not_readable_files = [];
+list created_archive_files = [];
+list failed_ptables = [];
+list stored_ptables = [];
+boolean read_ptables_info = false;
+
+integer tar_result = 1;		// exit status of tar
+integer total_files = 0;	// total number of files in archive
+integer added_files = 0;
+
+boolean confirm_abort = false;	// confirm abort
+*/
+
+
+}
+

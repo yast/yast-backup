@@ -10,16 +10,18 @@
 include "backup/functions.ycp";
 include "testsuite.ycp";
 
-DUMP( GetCapacity(nil, nil) );
-DUMP( GetCapacity([ ], `s) );
-DUMP( GetCapacity(["no map"], nil) );
-DUMP( GetCapacity([
+import "Backup";
+
+DUMP( Backup::GetCapacity(nil, nil) );
+DUMP( Backup::GetCapacity([ ], `s) );
+DUMP( Backup::GetCapacity(["no map"], nil) );
+DUMP( Backup::GetCapacity([
     $[
 	"capacity" : 1440000
     ]
 ], `s) );
 
-DUMP( GetCapacity([
+DUMP( Backup::GetCapacity([
     $[
 	"label" : _("Floppy 1.44 MB"),
 	"symbol" : `fd144,

@@ -23,121 +23,22 @@
 
 y2milestone("Backup module started");
 
+import "Wizard";
+
 include "wizard/sequencer.ycp";
-include "ui/wizard_dialog.ycp";
+//include "ui/wizard_dialog.ycp";
 include "ui/common_popups.ycp";
 include "ui/common_functions.ycp";
 
 include "backup/functions.ycp";
 include "backup/ui.ycp";
 
+textdomain "backup";
 
-/* TODO move user setting to map?? But some big variables should remain global... */
 
 integer wait_time = 300;    // loop delay (in miliseconds)
 
-string script_store_ext2_area = "e2image";
-string script_get_partition_table = "/sbin/fdisk -l";
-string script_get_files = "/usr/lib/YaST2/bin/backup_search.pl";
-string script_create_archive = "/usr/lib/YaST2/bin/backup_archive.pl";
-
-// global variables initialized to default values:
-string archive_name = "";		// archive file name
-string description = "";		// user comment
-symbol archive_type = `tgz;		// archive type
-
 boolean root_warning_displayed = false;
-
-boolean multi_volume = false;
-symbol volume_size = `fd144;
-string user_volume_size = "";
-symbol user_volume_unit = nil;
-
-
-// media description - capacity is maximum file size which fits
-// to formatted medium using widely used file system (FAT on floppies)
-
-list media_descriptions = [
-    $[
-	"label" : _("Floppy 1.44 MB"),
-	"symbol" : `fd144,
-	"capacity" : 1457664		// exact size for FAT fs
-    ],
-    $[
-	"label" : _("Floppy 1.2 MB"),
-	"symbol" : `fd12,
-	"capacity" : 1213952		// exact size for FAT fs
-    ],
-/*    $[
-	"label" : _("ZIP 100 MB"),
-	"symbol" : `zip100,
-	"capacity" : ?????
-    ],
-    $[
-	"label" : _("ZIP 250 MB"),
-	"symbol" : `zip250,
-	"capacity" : ?????
-    ],*/
-    $[
-	"label" : _("CD-R/RW 650 MB (74 min.)"),
-	"symbol" : `cd650,
-	"capacity" : 650*1024*1024	// exact size is 650.4 MB - remaining space is for ISO fs
-    ],
-    $[
-	"label" : _("CD-R/RW 700 MB (80 min.)"),
-	"symbol" : `cd700,
-	"capacity" : 702*1024*1024	// exact size is 703.1 MB - remaining space is for ISO fs
-    ]
-];
-
-list units_description = [
-    $[
-	"label" : _("bytes"),
-	"capacity" : 1,
-	"symbol"   : `B
-    ],
-    $[
-	"label" : _("kB"),
-	"capacity" : 1000,
-	"symbol"   : `kB
-    ],
-    $[
-	"label" : _("kiB"),
-	"capacity" : 1024,
-	"symbol"   : `kiB
-    ],
-    $[
-	"label" : _("MB"),
-	"capacity" : 1000000,
-	"symbol"   : `MB
-    ],
-    $[
-	"label" : _("MiB"),
-	"capacity" : 1024*1024,
-	"symbol"   : `MiB
-    ],
-];
-
-boolean search = true;			// search files which do not belong to any package
-boolean system = false;			// backup system areas
-boolean display = false;		// display files before creating archive
-boolean enhanced_check_owner = false;	// enhanced check if file is owned by package
-boolean check_multiple_packages = true;	// check if it is necessary to backup file, which owned by multiple packages
-
-list default_dir = [ "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache" ];		// default excluded directoried from search
-list dir_list = nil;			// selected directoried to exclude
-
-list fs_exclude = [ ];			// selected filesystems to exclude from search
-list detected_fs = nil;			// detected filesystems
-
-list detected_ext2 = nil;		// detected mounted ext2 filesystems
-list ext2_backup = [];			// selected ext2 filesystems to backup
-
-boolean backup_pt = true;		// backup partition table
-
-boolean backup_all_ext2 = true;		// backup all mounted ext2 partitions
-boolean backup_none_ext2 = false;	// backup none ext2 partitions
-boolean backup_selected_ext2 = false;	// backup selected ext2 partitions
 
 integer modified_num = 0;		// number of modified files
 integer modified_size = 0;		// size
@@ -146,8 +47,6 @@ integer nopkg_size = 0;			// size
 
 list list_of_installed_packages = [];	// names of all installed packages
 
-map backup_files = $[ ];		// all found files to backup
-map selected_files = nil;		// selected files to backup
 integer selected_files_num = 0;		// number of selected files to backup
 
 string checkmark = UI::Glyph(`CheckMark);
@@ -239,7 +138,7 @@ map aliases = $[
 ];
 
 // create wizard dialog
-UI::CreateWizardDialog();
+Wizard::CreateDialog();
 
 // start wizard sequencer
 WizardSequencer(aliases, sequence);

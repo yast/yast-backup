@@ -16,6 +16,10 @@
 
 {
 
+include "ui/common_messages.ycp";
+
+textdomain "backup";
+
 /**
  * This function returns list of items for Table widget. Each item contains id, selection mark, file name and package name.
  * Used global variables: nocheckmark, checkmark, backup_files, selected_files
@@ -23,16 +27,16 @@
  * @return list List of items
  */
 
-global define MapToTableItems(boolean check) ``{
+global define list MapToTableItems(boolean check) ``{
     integer idx = 0;
     list items = [];
 
-    if (backup_files == nil)
+    if (Backup::backup_files == nil)
     {
 	return [];
     }
 
-    foreach(`key, `val, backup_files,
+    foreach(`key, `val, Backup::backup_files,
 	``{
 	    list ch = lookup(val, "changed_files", []);
 
@@ -46,7 +50,7 @@ global define MapToTableItems(boolean check) ``{
 
 			if (check == nil)
 			{
-			    mark = (contains(lookup(lookup(selected_files, key, $[]), "changed_files", []), file) == true) ? checkmark : nocheckmark;
+			    mark = (contains(lookup(lookup(Backup::selected_files, key, $[]), "changed_files", []), file) == true) ? checkmark : nocheckmark;
 			}
 			else
 			{
@@ -70,14 +74,14 @@ global define MapToTableItems(boolean check) ``{
  * @return boolean False if user select to not abort, true otherwise.
  */
 
-global define AbortConfirmation(symbol type) ``{
+global define boolean AbortConfirmation(symbol type) ``{
 
     boolean ret = nil;
 
     string heading = _("Abort confirmation");
     string question = _("Do you really want to abort backup?");
-    string yes = _("Yes");
-    string no = _("No");
+    string yes = YesButtonLabel();	// from common_messages.ycp
+    string no = NoButtonLabel();
 
     if (type == `not_created)
     {
@@ -120,7 +124,7 @@ global define AbortConfirmation(symbol type) ``{
  * @return map Returned map: $[ "text" : string, "clicked" : symbol ]. Value with key text is string entered by user, symbol is `ok or `cancel depending which button was pressed.
  */
 
-global define ShowEditDialog(string label, string value) ``{
+global define map ShowEditDialog(string label, string value) ``{
 
     if (label == nil)
     {
@@ -137,8 +141,8 @@ global define ShowEditDialog(string label, string value) ``{
 	    `TextEntry(`id(`te), label, value),
 	    `VSpacing(1.0),
 	    `HBox(
-	        `PushButton(`id(`ok), "Ok"),
-		`PushButton(`id(`cancel), "Cancel")
+	        `PushButton(`id(`ok), OKButtonLabel()),
+		`PushButton(`id(`cancel), CancelButtonLabel())
 	    )
 	)
     );
@@ -160,7 +164,7 @@ global define ShowEditDialog(string label, string value) ``{
  * @return symbol Pressed button id or nil if some data is ready from subprocess.
  */
 
-global define waitForUserOrProcess(integer wait, symbol abort_question) ``{
+global define symbol waitForUserOrProcess(integer wait, symbol abort_question) ``{
     symbol ret = nil;
 
     while (SCR::Read(.background.newlines) == 0 && SCR::Read(.background.output_open))
@@ -193,7 +197,7 @@ global define waitForUserOrProcess(integer wait, symbol abort_question) ``{
  * @example GetMountedFilesystems() -> [ "devpts", "ext2", "nfs", "proc", "reiserfs" ]
  */
 
-global define GetMountedFilesystems() ``{
+global define list GetMountedFilesystems() ``{
     list mounted = SCR::Read(.proc.mounts);
     list result = [ ];
 
@@ -223,7 +227,7 @@ global define GetMountedFilesystems() ``{
  * @example GetMountedExt2Filesystems() -> [ "/dev/hda1", "/dev/hda4" ]
  */
 
-global define GetMountedExt2Filesystems() ``{
+global define list GetMountedExt2Filesystems() ``{
     list mounted = SCR::Read(.proc.mounts);
     list result = [ ];
 
@@ -256,7 +260,7 @@ global define GetMountedExt2Filesystems() ``{
  * @example GetListWithFlags(["/dev", "/etc"], ["/etc"]) -> [`item (`id ("/dev"), "/dev", false), `item (`id ("/etc"), "/etc", true)]
  */
 
-global define GetListWithFlags(list in, list selected) ``{
+global define list GetListWithFlags(list in, list selected) ``{
 
     if (in == nil)
     {
@@ -276,7 +280,7 @@ global define GetListWithFlags(list in, list selected) ``{
  * @example AddIdBool( [ `item(`id("ext2"), "ext2", true) ], false) ) -> [ `item (`id ("ext2"), "ext2", false) ]
  */
 
-global define AddIdBool(list in, boolean val) ``{
+global define list AddIdBool(list in, boolean val) ``{
     if (val == nil)
     {
 	val = false;
@@ -300,7 +304,7 @@ global define AddIdBool(list in, boolean val) ``{
  * @example AddId("abc", "123") -> [`item(`id("abc"), "abc"), `item(`id("123"), "123")]
  */
 
-global define AddId(list in) ``{
+global define list AddId(list in) ``{
 
     if (in == nil) return [];
 
@@ -316,10 +320,10 @@ global define AddId(list in) ``{
  * @see <a href="../backup_specification.html">Backup module specification</a>
  */
 
-global define MapFilesToString() ``{
+global define string MapFilesToString() ``{
     string result = "";
 
-    if (selected_files == nil || backup_files == nil || list_of_installed_packages == nil)
+    if (Backup::selected_files == nil || Backup::backup_files == nil || list_of_installed_packages == nil)
     {
 	return "";
     }
@@ -337,12 +341,12 @@ global define MapFilesToString() ``{
 	result = result + "</installed>\n";
     }
 
-    foreach(`pkg, `info, selected_files,
+    foreach(`pkg, `info, Backup::selected_files,
         ``{
             if (pkg != "")
             {
 		string tmp = "Package: " + pkg + "\nInstalled: "
-		    + lookup(lookup(backup_files, pkg, $[]), "install_prefixes", "(none)") + "\n";
+		    + lookup(lookup(Backup::backup_files, pkg, $[]), "install_prefixes", "(none)") + "\n";
 
                 foreach(`file, lookup(info, "changed_files", []), ``{tmp = tmp + file + "\n";});
 
@@ -351,12 +355,12 @@ global define MapFilesToString() ``{
         }
     );
 
-    list nopkg = lookup(lookup(selected_files, "", $[ ]), "changed_files", []);
+    list nopkg = lookup(lookup(Backup::selected_files, "", $[ ]), "changed_files", []);
 
     if (size(nopkg) > 0)
     {
 	string tmp = "Nopackage:\n";
-        foreach(`file, nopkg, ``{tmp = tmp +  file + "\n";});
+        foreach(`file, nopkg, ``{tmp = tmp + file + "\n";} );
 
 	result = result + tmp;
     }
@@ -371,7 +375,7 @@ global define MapFilesToString() ``{
  * @return list Items list for UI widgets
  */
 
-global define MediaList2UIList(list media) ``{
+global define list MediaList2UIList(list media) ``{
     list result = [];
 
     if (media == nil)
@@ -400,9 +404,10 @@ global define MediaList2UIList(list media) ``{
 
 /**
  * Set state of depending widgets in Multiple volume options dialog
+ * @return void
  */
 
-global define SetMultiWidgetsState() ``{
+global define void SetMultiWidgetsState() ``{
     boolean tmp_multi = UI::QueryWidget(`id(`multi_volume), `Value);
     UI::ChangeWidget(`id(`vol), `Enabled, tmp_multi);
 
@@ -411,30 +416,6 @@ global define SetMultiWidgetsState() ``{
     UI::ChangeWidget(`id(`user_unit), `Enabled, user);
 }
 
-
-/**
- * Return capacity of required medium
- * @param media Medium descriptions
- * @param m Identification of required medium
- */
-
-global define GetCapacity(list media, symbol m) ``{
-    integer result = nil;
-
-    if (media != nil)
-    {
-	foreach(`val, media,
-	    ``{
-		if (is(val, map) && lookup(val, "symbol", nil) == m)
-		{
-		    result = lookup(val, "capacity", nil);
-		}
-	    }
-	);
-    }
-
-    return result;
-}
 
 }
 
