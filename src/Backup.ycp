@@ -229,6 +229,17 @@ global define string get_archive_script_parameters(string file_list, string file
 	    {
 		archive_options = archive_options + " --archive-type tar";
 	    }
+	    else
+	    {
+		if (archive_type == `txt)
+		{
+		    archive_options = archive_options + " --archive-type txt";
+		}
+		else
+		{
+		    y2error("Unknown type of archive: %1", archive_type);
+		}
+	    }
 	}
     }
 

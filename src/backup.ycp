@@ -19,7 +19,7 @@
 
 /* TODO: check for configuration changes, avoid unnecessary searches */
 
-y2milestone("Backup module started");
+y2milestone(" *** Backup module started *** ");
 
 import "Wizard";
 
@@ -62,6 +62,7 @@ list created_archive_files = [];
 list failed_ptables = [];
 list stored_ptables = [];
 boolean read_ptables_info = false;
+boolean stored_list = false;
 
 integer tar_result = 1;		// exit status of tar
 integer total_files = 0;	// total number of files in archive
@@ -145,7 +146,7 @@ WizardSequencer(aliases, sequence);
 // close dialog
 UI::CloseDialog();
 
-y2milestone("Backup module finished.");
+y2milestone(" *** Backup module finished *** ");
 
 }
 

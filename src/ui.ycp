@@ -48,10 +48,12 @@ global define symbol ArchDialog() ``{
 		    `Left(
 			`HBox(
 			    `HSpacing(2.0),
-			    `ComboBox(`id(`type), _("Select archive &type:"),
+			    `ComboBox(`id(`type), `opt(`notify),
+				_("Select archive &type:"),
 				[ `item(`id(`tgz), "gzip (*.tar.gz)"),
 				  `item(`id(`tbz), "bzip2 (*.tar.bz2)"),
 				  `item(`id(`tar), "tar (*.tar)"),
+				  `item(`id(`txt), "only list of files (*.txt)")
 				]
 			    ),
 			    `HSpacing(3.0),
@@ -94,20 +96,30 @@ global define symbol ArchDialog() ``{
         ret = UI::UserInput();
         Backup::archive_name = UI::QueryWidget(`id(`filename), `Value);
 
-	if (ret == `next)
+	if (ret == `type)
 	{
-	    if (size(Backup::archive_name) == 0)
+	    boolean stat = UI::QueryWidget(`id(`type), `Value) != `txt;
+
+	    UI::ChangeWidget(`id(`opts), `Enabled, stat);
+	    UI::ChangeWidget(`id(`description), `Enabled, stat);
+	}
+	else
+	{
+	    if (ret == `next)
 	    {
-		UI::WarningPopup(_("Archive file name can not be empty\nPlease enter archive file name"));
+		if (size(Backup::archive_name) == 0)
+		{
+		    UI::WarningPopup(_("Archive file name can not be empty\nPlease enter archive file name"));
+		}
+		else
+		{
+		    cont = true;
+		}
 	    }
 	    else
 	    {
 		cont = true;
 	    }
-	}
-	else
-	{
-	    cont = true;
 	}
     }
 
@@ -286,6 +298,12 @@ global define symbol BackupDialog() ``{
 
     // set values
     UI::ChangeWidget(`id(`search), `Value, Backup::search);
+
+    if (Backup::archive_type == `txt)
+    {
+	UI::ChangeWidget(`id(`system), `Enabled, false);
+    }
+
     UI::ChangeWidget(`id(`system), `Value, Backup::system);
     UI::ChangeWidget(`id(`display), `Value, Backup::display);
     UI::ChangeWidget(`id(`md5_check), `Value, Backup::do_md5_test);
@@ -315,7 +333,7 @@ global define symbol BackupDialog() ``{
     // set next dialog
     if (!Backup::search && ret == `next)
     {
-	ret = (Backup::system) ? `next3 : `next2;
+	ret = (Backup::system && Backup::archive_type != `txt) ? `next3 : `next2;
     }
 
     return ret;
@@ -429,7 +447,7 @@ global define symbol ExcludeDialog() ``{
 	}
     }
 
-    if (!Backup::system && ret == `next)
+    if (!(Backup::system && Backup::archive_type != `txt) && ret == `next)
 	ret = `next2;
 
     return ret;
@@ -1213,6 +1231,9 @@ global define symbol ArchivingDialog() ``{
     boolean tar_running = false;
     string title = _("Creating archive");
 
+    string id_storing_list = "Storing list";
+    string id_list_stored = "File list stored";
+
     e2image_results = [];
 
     y2milestone("Creating archive...");
@@ -1228,118 +1249,136 @@ global define symbol ArchivingDialog() ``{
 
 	    y2debug("Archive script output: %1", line);
 
-	    if (tar_running)
+	    if (Backup::archive_type == `txt)
 	    {
-		if (substring(line, 0, size(id_tar_exit)) == id_tar_exit)
+		if (line == id_storing_list)
 		{
-		    tar_result = tointeger(substring(line, size(id_tar_exit)));
+		    Wizard::SetContents(title, `Label(_("Storing list of files...")), "", false, false);
 		}
 		else
 		{
-		    if (substring(line, 0, size(id_new_volume)) == id_new_volume)
+		    if (line == id_list_stored)
 		    {
-			string vol_name = substring(line, size(id_new_volume));
-			UI::ChangeWidget(`id(`pbar), `Label, _("Creating volume: ") + vol_name + " ...");
-			created_archive_files = add(created_archive_files, vol_name);
+			stored_list = true;
 		    }
 		    else
 		    {
-			archived_num = archived_num + 1;
-			UI::ChangeWidget(`id(`pbar), `Value, archived_num);
+			y2warning("Unknown output from archive script: %1", line);
 		    }
 		}
 	    }
 	    else
 	    {
-		if (substring(line, 0, size(id_hostname)) == id_hostname)
+		if (tar_running)
 		{
-		    Wizard::SetContents(title, `Label(_("Storing host name...")), "", false, false);
-
-		    string tmp = substring(line, size(id_hostname));
-		    hostname_stored = (tmp == id_ok);
-		}
-		else
-		{
-		    if (substring(line, 0, size(id_date)) == id_date)
+		    if (substring(line, 0, size(id_tar_exit)) == id_tar_exit)
 		    {
-			Wizard::SetContents(title, `Label(_("Storing date...")), "", false, false);
-
-			string tmp = substring(line, size(id_date));
-			date_stored = (tmp == id_ok);
+			tar_result = tointeger(substring(line, size(id_tar_exit)));
 		    }
 		    else
 		    {
-			if (substring(line, 0, size(id_partab)) == id_partab)
+			if (substring(line, 0, size(id_new_volume)) == id_new_volume)
 			{
-			    Wizard::SetContents(title, `Label(_("Storing partition table...")), "", false, false);
-
-//			    string tmp = substring(line, size(id_partab));
-//			    ptable_stored = (tmp == id_ok);
+			    string vol_name = substring(line, size(id_new_volume));
+			    UI::ChangeWidget(`id(`pbar), `Label, _("Creating volume: ") + vol_name + " ...");
+			    created_archive_files = add(created_archive_files, vol_name);
 			}
 			else
 			{
-			    if (substring(line, 0, size(id_ptstored)) == id_ptstored)
-			    {
-				string part_name = substring(line, size(id_ptstored));
+			    archived_num = archived_num + 1;
+			    UI::ChangeWidget(`id(`pbar), `Value, archived_num);
+			}
+		    }
+		}
+		else
+		{
+		    if (substring(line, 0, size(id_hostname)) == id_hostname)
+		    {
+			Wizard::SetContents(title, `Label(_("Storing host name...")), "", false, false);
 
-				Wizard::SetContents(title, `Label(_("Storing partition table: ") + part_name), "", false, false);
-				added_files = added_files + 2;
-				stored_ptables = add(stored_ptables, part_name);
+			string tmp = substring(line, size(id_hostname));
+			hostname_stored = (tmp == id_ok);
+		    }
+		    else
+		    {
+			if (substring(line, 0, size(id_date)) == id_date)
+			{
+			    Wizard::SetContents(title, `Label(_("Storing date...")), "", false, false);
+
+			    string tmp = substring(line, size(id_date));
+			    date_stored = (tmp == id_ok);
+			}
+			else
+			{
+			    if (substring(line, 0, size(id_partab)) == id_partab)
+			    {
+				Wizard::SetContents(title, `Label(_("Storing partition table...")), "", false, false);
 			    }
 			    else
 			    {
-				if (substring(line, 0, size(id_not_stored)) == id_not_stored)
+				if (substring(line, 0, size(id_ptstored)) == id_ptstored)
 				{
-				    failed_ptables = add(failed_ptables, substring(line, size(id_not_stored)));
+				    string part_name = substring(line, size(id_ptstored));
+
+				    Wizard::SetContents(title, `Label(_("Storing partition table: ") + part_name), "", false, false);
+				    added_files = added_files + 2;
+				    stored_ptables = add(stored_ptables, part_name);
 				}
 				else
 				{
-				    if (substring(line, 0, size(id_ext2)) == id_ext2)
+				    if (substring(line, 0, size(id_not_stored)) == id_not_stored)
 				    {
-					Wizard::SetContents(title, `Label(_("Storing Ext2 area: ") + substring(line, size(id_ext2)) + " ..."), "", false, false);
+					failed_ptables = add(failed_ptables, substring(line, size(id_not_stored)));
 				    }
 				    else
 				    {
-					if (substring(line, 0, size(id_files)) == id_files)
+					if (substring(line, 0, size(id_ext2)) == id_ext2)
 					{
-					    total_files = tointeger(substring(line, size(id_files)));
-
-					    Wizard::SetContents(title, `ProgressBar(`id(`pbar), _("Creating archive: ") + Backup::archive_name + " ...", total_files), backup_help_creating_archive(), false, false);
-					    tar_running = true;
+					    Wizard::SetContents(title, `Label(_("Storing Ext2 area: ") + substring(line, size(id_ext2)) + " ..."), "", false, false);
 					}
 					else
 					{
-					    if (line == id_ok || line == id_failed)
+					    if (substring(line, 0, size(id_files)) == id_files)
 					    {
-						e2image_results = add(e2image_results, (line == id_ok));
+						total_files = tointeger(substring(line, size(id_files)));
+
+						Wizard::SetContents(title, `ProgressBar(`id(`pbar), _("Creating archive: ") + Backup::archive_name + " ...", total_files), backup_help_creating_archive(), false, false);
+						tar_running = true;
 					    }
 					    else
 					    {
-						if (substring(line, 0, size(id_not_readable)) == id_not_readable)
+						if (line == id_ok || line == id_failed)
 						{
-						    not_readable_files = add(not_readable_files, substring(line, size(id_not_readable)));
+						    e2image_results = add(e2image_results, (line == id_ok));
 						}
 						else
 						{
-						    if (line == id_pt_read)
+						    if (substring(line, 0, size(id_not_readable)) == id_not_readable)
 						    {
-							read_ptables_info = true;
+							not_readable_files = add(not_readable_files, substring(line, size(id_not_readable)));
 						    }
 						    else
 						    {
-							if (line == id_storing_installed_pkgs)
+							if (line == id_pt_read)
 							{
-							    Wizard::SetContents(title, `Label(_("Storing list of installed packages...")), "", false, false);
+							    read_ptables_info = true;
 							}
 							else
 							{
-							    if (substring(line, 0, size(id_storedpkg)) == id_storedpkg)
+							    if (line == id_storing_installed_pkgs)
 							    {
-								packages_list_stored = (substring(line, size(id_storedpkg)) == id_ok);
+								Wizard::SetContents(title, `Label(_("Storing list of installed packages...")), "", false, false);
 							    }
 							    else
 							    {
-								y2warning("Unknown output from archive script: %1", line);
+								if (substring(line, 0, size(id_storedpkg)) == id_storedpkg)
+								{
+								    packages_list_stored = (substring(line, size(id_storedpkg)) == id_ok);
+								}
+								else
+								{
+								    y2warning("Unknown output from archive script: %1", line);
+								}
 							    }
 							}
 						    }
@@ -1393,155 +1432,165 @@ global define symbol SummaryDialog() ``{
     string em = "<B>";
     string _em = "</B>";
 
-    string backup_result = p + _("Found modified files: ") + modified_num + br
-	+ _("Total size: ") + size_text(modified_size) + _p;
+    string backup_result = "";
+    string backup_details = "";
 
-    if (Backup::search)
+    if (Backup::archive_type == `txt)
     {
-	backup_result = backup_result + p + _("Found files which are not in any package: ") + nopkg_num + br
-	    + _("Total size: ") + size_text(nopkg_size) + _p;
-    }
-
-    if (Backup::display)
-    {
-	backup_result = backup_result + p + _("Selected files to backup: ") + selected_files_num + _p;
-    }
-
-    string backup_details = p + (hostname_stored ? _("Host name stored successfully") :
-	em + _("Storing host name failed") + _em) + br + (date_stored ? _("Date stored successfully") :
-	em + _("Storing date failed") + _em) + br + (file_list_stored ? _("File list stored successfully") :
-	em + _("Storing file list failed") + _em) + br + (comment_stored ? _("Comment stored successfully") :
-        em + _("Storing comment failed") + _em) + br
-	+ (packages_list_stored ? _("List of installed packages stored succesfully") :
-	em + _("Storing list of installed packages failed") + _em) + _p;
-
-
-    if (size(not_readable_files) > 0)
-    {
-	backup_details = backup_details + br + p + em + _("Errors during creating archive:") + _em + br;
-
-	foreach(`f, not_readable_files,
-	    ``{
-		backup_details = backup_details + em + sformat(_("Can not read file %1"), f) + _em + br;
-	    }
-	);
-
-	backup_details = backup_details + _p;
-    }
-
-    if (Backup::system)
-    {
-	y2debug("Ext2 backup: %1", Backup::ext2_backup);
-	y2debug("Ext2 results: %1", e2image_results);
-
-	if (Backup::backup_pt)
-	{
-	    if (!read_ptables_info)
-	    {
-		backup_details = backup_details + p + em + _("Detection of disk partitions failed") + _em + br;
-	    }
-
-	    foreach(`failed_pt, failed_ptables,
-		``{
-		    backup_details = backup_details + em + sformat(_("Storing partition table of disk /dev/%1 failed"), failed_pt) + _em + br;
-		}
-	    );
-
-	    foreach(`stored_pt, stored_ptables,
-		``{
-		    backup_details = backup_details + sformat(_("Storing partition table of disk /dev/%1 was successful"), stored_pt) + br;
-		}
-	    );
-
-	}
-
-	if (size(Backup::ext2_backup) > 0)
-	{
-	    integer index = 0;
-
-	    foreach(`r, e2image_results,
-		``{
-		    if (r)
-		    {
-			backup_details = backup_details
-			    + sformat(_("Ext2 image %1 stored successfully"), select(select(select(Backup::ext2_backup, index), 0) ,0)) + br;
-
-			added_files = added_files + 1;
-		    }
-		    else
-		    {
-			backup_details = backup_details + em
-			    + sformat(_("Storing Ext2 image %1 failed"), select(select(select(Backup::ext2_backup, index), 0) ,0)) + _em + br;
-		    }
-
-		    index = index + 1;
-		}
-	    );
-	}
-
-	backup_details = backup_details + _p;
-    }
-
-    if (file_list_stored)
-    {
-	added_files = added_files + 1;
-    }
-
-    if (hostname_stored)
-    {
-	added_files = added_files + 1;
-    }
-
-    if (date_stored)
-    {
-	added_files = added_files + 1;
-    }
-
-    if (comment_stored)
-    {
-	added_files = added_files + 1;
-    }
-
-    if (packages_list_stored)
-    {
-	added_files = added_files +1;
-    }
-
-    y2debug("selected_files_num: %1", selected_files_num);
-    y2debug("added_files: %1", added_files);
-    y2debug("total_files: %1", total_files);
-
-    backup_result = backup_result + _p
-	+ br + ((selected_files_num + added_files < total_files) ? em + _("Warning: Some files were not backuped") + _em + br : "");
-
-    string archive_created = "";
-
-    if (!Backup::multi_volume)
-    {
-	archive_created = sformat(_("Archive %1 created successfully"), Backup::archive_name);
+	backup_result = p + (stored_list ? sformat(_("List of files stored to file %1"), Backup::archive_name) : em + _("Error storing list of files") + _em) + _p;
     }
     else
     {
-	archive_created = _("Archive created successfully");
-    }
+	backup_result = p + _("Found modified files: ") + modified_num + br
+	    + _("Total size: ") + size_text(modified_size) + _p;
 
-    backup_result = backup_result
-	+ ((tar_result == 0) ? archive_created + br +_("Total archived files: ") + archived_num :
-	  em + _("Archive creation failed") + _em) + _p;
-
-    if (Backup::multi_volume)
-    {
-	if (size(created_archive_files) > 0)
+	if (Backup::search)
 	{
-	    backup_details = backup_details + p + em + "Created archive volumes:" + _em + br;
+	    backup_result = backup_result + p + _("Found files which are not in any package: ") + nopkg_num + br
+		+ _("Total size: ") + size_text(nopkg_size) + _p;
+	}
 
-	    foreach(`f, created_archive_files,
+	if (Backup::display)
+	{
+	    backup_result = backup_result + p + _("Selected files to backup: ") + selected_files_num + _p;
+	}
+
+	backup_details = p + (hostname_stored ? _("Host name stored successfully") :
+	    em + _("Storing host name failed") + _em) + br + (date_stored ? _("Date stored successfully") :
+	    em + _("Storing date failed") + _em) + br + (file_list_stored ? _("File list stored successfully") :
+	    em + _("Storing file list failed") + _em) + br + (comment_stored ? _("Comment stored successfully") :
+	    em + _("Storing comment failed") + _em) + br
+	    + (packages_list_stored ? _("List of installed packages stored succesfully") :
+	    em + _("Storing list of installed packages failed") + _em) + _p;
+
+
+	if (size(not_readable_files) > 0)
+	{
+	    backup_details = backup_details + br + p + em + _("Errors during creating archive:") + _em + br;
+
+	    foreach(`f, not_readable_files,
 		``{
-		    backup_details = backup_details + f + br;
+		    backup_details = backup_details + em + sformat(_("Can not read file %1"), f) + _em + br;
 		}
 	    );
 
 	    backup_details = backup_details + _p;
+	}
+
+	if (Backup::system)
+	{
+	    y2debug("Ext2 backup: %1", Backup::ext2_backup);
+	    y2debug("Ext2 results: %1", e2image_results);
+
+	    if (Backup::backup_pt)
+	    {
+		if (!read_ptables_info)
+		{
+		    backup_details = backup_details + p + em + _("Detection of disk partitions failed") + _em + br;
+		}
+
+		foreach(`failed_pt, failed_ptables,
+		    ``{
+			backup_details = backup_details + em + sformat(_("Storing partition table of disk /dev/%1 failed"), failed_pt) + _em + br;
+		    }
+		);
+
+		foreach(`stored_pt, stored_ptables,
+		    ``{
+			backup_details = backup_details + sformat(_("Storing partition table of disk /dev/%1 was successful"), stored_pt) + br;
+		    }
+		);
+
+	    }
+
+	    if (size(Backup::ext2_backup) > 0)
+	    {
+		integer index = 0;
+
+		foreach(`r, e2image_results,
+		    ``{
+			if (r)
+			{
+			    backup_details = backup_details
+				+ sformat(_("Ext2 image %1 stored successfully"), select(select(select(Backup::ext2_backup, index), 0) ,0)) + br;
+
+			    added_files = added_files + 1;
+			}
+			else
+			{
+			    backup_details = backup_details + em
+				+ sformat(_("Storing Ext2 image %1 failed"), select(select(select(Backup::ext2_backup, index), 0) ,0)) + _em + br;
+			}
+
+			index = index + 1;
+		    }
+		);
+	    }
+
+	    backup_details = backup_details + _p;
+	}
+
+	if (file_list_stored)
+	{
+	    added_files = added_files + 1;
+	}
+
+	if (hostname_stored)
+	{
+	    added_files = added_files + 1;
+	}
+
+	if (date_stored)
+	{
+	    added_files = added_files + 1;
+	}
+
+	if (comment_stored)
+	{
+	    added_files = added_files + 1;
+	}
+
+	if (packages_list_stored)
+	{
+	    added_files = added_files +1;
+	}
+
+	y2debug("selected_files_num: %1", selected_files_num);
+	y2debug("added_files: %1", added_files);
+	y2debug("total_files: %1", total_files);
+
+	backup_result = backup_result + _p
+	    + br + ((selected_files_num + added_files < total_files) ? em + _("Warning: Some files were not backuped") + _em + br : "");
+
+	string archive_created = "";
+
+	if (!Backup::multi_volume)
+	{
+	    archive_created = sformat(_("Archive %1 created successfully"), Backup::archive_name);
+	}
+	else
+	{
+	    archive_created = _("Archive created successfully");
+	}
+
+	backup_result = backup_result
+	    + ((tar_result == 0) ? archive_created + br +_("Total archived files: ") + archived_num :
+	      em + _("Archive creation failed") + _em) + _p;
+
+	if (Backup::multi_volume)
+	{
+	    if (size(created_archive_files) > 0)
+	    {
+		backup_details = backup_details + p + em + "Created archive volumes:" + _em + br;
+
+		foreach(`f, created_archive_files,
+		    ``{
+			backup_details = backup_details + f + br;
+		    }
+		);
+
+		backup_details = backup_details + _p;
+	    }
 	}
     }
 
@@ -1556,6 +1605,11 @@ global define symbol SummaryDialog() ``{
 	),
 	backup_help_summary(), true, true
     );
+
+    if (Backup::archive_type == `txt)
+    {
+	UI::ChangeWidget(`id(`details), `Enabled, false);
+    }
 
     Wizard::ReplaceNextButton(`PushButton(`id(`finish), `opt(`default), FinishButtonLabel()));
 
