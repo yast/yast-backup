@@ -395,21 +395,6 @@ sub SearchDirectory($%%%)
     my @content = readdir(DIR);
     closedir(DIR);
 
-    if (@content == 2 and !$$files{$in_dir})
-    {
-	if (isinpackage($in_dir) == 0)
-	{
-	    if (!$output_files)
-	    {
-		print "Size: 0 $dir\n";
-	    }
-	    else
-	    {
-		print "$dir\n";
-	    }
-	}
-    }
-    else
     {
 	foreach my $item (@content)
 	{
@@ -432,7 +417,7 @@ sub SearchDirectory($%%%)
 		    }
 		}
 	    }
-	    elsif (-f $fullname)
+	    elsif (-f $fullname || ($item ne "." and $item ne ".." and -d $fullname))
 	    {
 		# is file is some package?
 		if (!$$files{$fullname})
@@ -459,13 +444,16 @@ sub SearchDirectory($%%%)
 			}
 		    }
 		}
-	    }
-	    elsif ($item ne "." and $item ne ".." and -d $fullname)
-	    {
-		if (!$$exclude{$fullname})
+
+		# do recursive search in subdirectory (if it is not excluded)
+		if ($item ne "." and $item ne ".." and -d $fullname)
 		{
-		    SearchDirectory($fullname, $files, $exclude, $inodes);
+		    if (!$$exclude{$fullname})
+		    {
+			SearchDirectory($fullname, $files, $exclude, $inodes);
+		    }
 		}
+
 	    }
 	    # ignore sockets - they can't be archived
 	    elsif ($item ne "." and $item ne ".." and !$$files{$fullname} and !(-S $fullname))
