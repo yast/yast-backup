@@ -23,6 +23,7 @@ import "AutoinstClone";
 import "Profile";
 import "Nfs";
 import "Popup";
+import "FileUtils";
 
 textdomain "backup";
 
@@ -983,6 +984,41 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
     string free   = regexpsub(line,  "^([^ ]*) +([0-9]+) +([0-9]+) +([0-9]+) +[0-9]+%", "\\4");
 
     return $["device" : device, "total" : tointeger(total), "used" : tointeger(used), "free" : tointeger(free) ];
+}
+
+define string IsPossibleToCreateDirectoryOrExists (string directory) {
+    string error_message = "";
+
+    list<string> directory_path = splitstring(directory, "/");
+    string tested_directory = "";
+    foreach(string dir, directory_path, {
+	tested_directory = tested_directory + (tested_directory != "/" ? "/":"") + dir;
+	y2debug("TESTING: %1", tested_directory);
+
+	// directory exists
+	if (FileUtils::Exists(tested_directory)) {
+	    // exists, but it isn't a directory, can't create archive 'inside'
+	    if (! FileUtils::IsDirectory(tested_directory)) {
+		y2error("Cannot create backup archive in '%1', '%2' is not a directory.",
+		    directory, tested_directory
+		);
+		error_message = sformat(
+		    // Popup error message, %1 is a directory somewhere under %2, %2 is a directory - just tested for existency
+		    _("Cannot create backup archive in '%1',
+'%2' is not a directory.
+Please, type another one or remove '%2'."),
+		    directory, tested_directory
+		);
+		break;
+	    }
+	// directory doesn't exist, will be created
+	} else {
+	    break;
+	}
+
+    });
+
+    return error_message;
 }
 
 }

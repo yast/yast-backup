@@ -452,8 +452,7 @@ define boolean InstallNeededPackages (list<string> packages) {
     Wizard::SetContents(_("Archive settings"),
 	`VBox(
 	    `VSpacing(0.5),
-	    // text entry label
-	    `TextEntry(`id(`filename), _("File Na&me:")),
+	    `TextEntry(`id(`filename), Label::FileName()),
 	    `VSpacing(0.5),
 
 	    `Frame(_("Backup Location"),
@@ -649,6 +648,16 @@ Enter the file name to use.
 		{
 		    // warning popup message
 		    Popup::Warning(_("Please enter archive file name with\nabsolute path (e.g. /tmp/backup.tar)"));
+		    cont = false;
+		    continue;
+		}
+
+		string dir = substring(Backup::archive_name, 0, findlastof(Backup::archive_name, "/"));
+		// testing if the directory exists or if it is possible to create it
+		string error_message = IsPossibleToCreateDirectoryOrExists(dir);
+		if (error_message != "") {
+		    Popup::Error(error_message);
+		    
 		    cont = false;
 		    continue;
 		}
