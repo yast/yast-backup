@@ -1,6 +1,7 @@
 Read	.target.size "/etc/install.inf" -1
 Read	.target.tmpdir nil
 Read	.target.size nil -1
+Dir	.autoinst.menuentry.s: []
 Read	.probe.architecture nil
 Read	.probe.has_apm nil
 Read	.probe.has_pcmcia nil
