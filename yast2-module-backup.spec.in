@@ -6,6 +6,7 @@
 
 Summary:		Backup module for YaST2
 BuildArchitectures:	noarch
+Requires:		yast2 yast2-trans-backup yast2-lib-wizard yast2-lib-sequencer perl util-linux fileutils e2fsprogs
 
 
 %description
