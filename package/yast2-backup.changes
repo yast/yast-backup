@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Mon Aug 19 16:56:00 CEST 2002 - lslezak@suse.cz
+
+- store lan settings to autoyast profile if archive is
+  stored on NFS server
+- requires yast2-network
+- version 2.6.4
+
+-------------------------------------------------------------------
 Mon Aug  5 15:21:02 CEST 2002 - lslezak@suse.cz
 
 - added help texts for translators
