@@ -222,33 +222,53 @@ global define list GetMountedFilesystems() ``{
 
 
 /**
- * Returns list of Ext2 mountpoints
- * @return list List of alphabetically sorted strings
- * @example GetMountedExt2Filesystems() -> [ "/dev/hda1", "/dev/hda4" ]
+ * Returns list of Ext2 mountpoints - actually mounted and from /etc/fstab file
+ * @return list List of strings
+ * @example Ext2Filesystems() -> [ "/dev/hda1", "/dev/hda4" ]
  */
 
-global define list GetMountedExt2Filesystems() ``{
+global define list Ext2Filesystems() ``{
     list mounted = SCR::Read(.proc.mounts);
     list result = [ ];
+    list tmp_parts = [];
 
-    if (mounted == nil)
+    if (mounted != nil)
     {
-	return [];
+	foreach(`m, mounted,
+	    ``{
+		string fs = lookup(m, "vfstype", nil);
+		string dev = lookup(m, "spec", nil);
+		string file = lookup(m, "file", nil);
+
+		if (fs == "ext2" && dev != nil && !contains(tmp_parts, dev))
+		{
+		    result = add(result, $[ "partition" : dev, "mountpoint" : file ]);
+		    tmp_parts = add(tmp_parts, dev);
+		}
+	    }
+	);
     }
 
-    foreach(`m, mounted,
-	``{
-	    string fs = lookup(m, "vfstype", nil);
-	    string dev = lookup(m, "spec", nil);
+    list fstab = SCR::Read(.etc.fstab);
 
-	    if (fs == "ext2" && dev != nil)
-	    {
-		result = add(result, dev);
+    if (fstab != nil)
+    {
+	foreach(`f, fstab,
+	    ``{
+		string fs = lookup(f, "vfstype", nil);
+		string dev = lookup(f, "spec", nil);
+		string file = lookup(f, "file", nil);
+
+		if (fs == "ext2" && dev != nil && !contains(tmp_parts, dev))
+		{
+		    result = add(result, $[ "partition" : dev, "mountpoint" : file ]);
+		    tmp_parts = add(tmp_parts, dev);
+		}
 	    }
-	}
-    );
+	);
+    }
 
-    return toset(result);
+    return result;
 }
 
 
@@ -316,14 +336,32 @@ global define list AddIdBool(list in, boolean val) ``{
  */
 
 global define list AddId(list in) ``{
+    if (in == nil) return [];
+
+    return maplist(`i, in, ``{
+	return `item(`id(i), i);
+    });
+}
+
+
+/**
+ * Returns list of items from list of values.
+ * @return list List of items
+ * @param in Input list of maps with keys "partition", "mountpoints" and strings as values
+ * @example AddId([ $["partition" : "/dev/hda3", "mountpoint" : "/usr"] ]) -> [`item(`id("/dev/hda3"), "/dev/hda3", "/usr")]
+ */
+
+global define list AddIdExt2(list in) ``{
 
     if (in == nil) return [];
 
     return maplist(`i, in, ``{
-        return `item(`id(i), i);
+	string pt = lookup(i, "partition", nil);
+	string mp = lookup(i, "mountpoint", nil);
+
+        return `item(`id(pt), pt, mp);
     });
 }
-
 
 /**
  * Returns string generated from selected files list. String is in format which is accepted by backup_archive.pl script. Used global variables: selected_files, backup_files.
@@ -412,6 +450,59 @@ global define void SetMultiWidgetsState() ``{
     boolean user = (tmp_multi && UI::QueryWidget(`id(`vol), `Value) == `user_defined);
     UI::ChangeWidget(`id(`user_size), `Enabled, user);
     UI::ChangeWidget(`id(`user_unit), `Enabled, user);
+}
+
+/**
+ * Return mount point for Ext2 partition. This function at first checks if partition is mounted. If yes it returns actual mout point, if no it searches mount point from /etc/fstab file.
+ * @param device_name Name of device
+ * @return string Mount point of device or nil if device does not exist or there is other file system than Ext2
+ * @example Ext2MountPoint("/dev/hda1") -> "/boot"
+ */
+
+global define string Ext2MountPoint(string device_name) ``{
+    // chack if partition is now mounted
+    list mp = SCR::Read(.proc.mounts);
+    string result = nil;
+
+    if (mp != nil)
+    {
+	foreach(`p, mp,
+	    ``{
+		string d = lookup(p, "file", nil);
+		string dev = lookup(p, "spec", nil);
+		string fs = lookup(p, "vfstype", nil);
+
+		if (fs == "ext2" && dev == device_name)
+		{
+		    result = d;
+		}
+	    }
+	);
+    }
+
+    // if partition is not mounted then search mount point from fstab
+    if (result == nil)
+    {
+	list fstab = SCR::Read(.etc.fstab);
+
+	if (fstab != nil)
+	{
+	    foreach(`p, fstab,
+		``{
+		    string d = lookup(p, "file", nil);
+		    string dev = lookup(p, "spec", nil);
+		    string fs = lookup(p, "vfstype", nil);
+
+		    if (fs == "ext2" && dev == device_name)
+		    {
+			result = d;
+		    }
+		}
+	    );
+	}
+    }
+
+    return result;
 }
 
 

@@ -1,6 +1,6 @@
 /**
  *  File:
- *    backup.ycp
+ *    Backup.ycp
  *
  *  Module:
  *    Backup module
@@ -10,7 +10,7 @@
  *
  *  $Id$
  *
- *  Main file for backup module - definition of workflow
+ *  Main file for backup module
  *
  */
 
@@ -117,8 +117,8 @@ global list ext2_backup = [];			// selected ext2 filesystems to backup
 
 global boolean backup_pt = true;		// backup partition table
 
-global boolean backup_all_ext2 = true;		// backup all mounted ext2 partitions
-global boolean backup_none_ext2 = false;	// backup none ext2 partitions
+global boolean backup_all_ext2 = false;		// backup all mounted ext2 partitions
+global boolean backup_none_ext2 = true;		// backup none ext2 partitions
 global boolean backup_selected_ext2 = false;	// backup selected ext2 partitions
 
 

@@ -26,7 +26,7 @@ textdomain "backup";
 
 global define string backup_help_archive_settings() ``{
     // For translators: help text in archive setting dialog - part 1/3
-    return _("<P><B><BIG>Backup module</BIG></B><BR>This YaST2 module searches files on your system and creates backup archive from them.<BR></P>")
+    return _("<P><B><BIG>Backup module</BIG></B><BR>This YaST2 module searches files on your system and creates backup archive from them.</P>")
 
     // For translators: help text in archive setting dialog - part 2/3
     + _("<P><B>Backup</B><BR>To create backup of your system enter archive name and select archive type. <B>Archive description</B> is optional description of the backup archive.</P>")
@@ -49,7 +49,7 @@ global define string backup_help_archive_options() ``{
     + _("<P><B>Creating multi volume archive</B><BR>Check option to create multi volume archive and select your backup medium.<BR>If your backup medium is not in the list then select <B>User defined</B> and enter volume size in the textbox.</P>")
 
     // For translators: help text in tar options dialog - part 3/3
-    + _("<P><B>Note:</B> 1 kB = 1000 Bytes, 1 kiB = 1024 Bytes, etc.</P>");
+    + _("<P><B>Note:</B> 1 kB = 1000 Bytes, 1 kiB = 1024 Bytes, etc. Volume size is truncated to multiply of 2048. </P>");
 }
 
 
@@ -60,7 +60,7 @@ global define string backup_help_archive_options() ``{
 
 global define string backup_help_backup_setting() ``{
     // For translators: help text in backup settings dialog - part 1/2
-    return _("<P><B><BIG>Search</BIG></B><BR>Here you can select which parts of the system will be searched and backuped.<BR></P>")
+    return _("<P><B><BIG>Search</BIG></B><BR>Here you can select which parts of the system will be searched and backuped.</P>")
 
     // For translators: help text in backup settings dialog - part 2/2
     + _("<P><B>Search options</B><BR>MD5 sum can be used to determine if file was changed. It is more reliable than size or modification time checking, but it takes more time.</P>");
@@ -75,7 +75,7 @@ global define string backup_help_backup_setting() ``{
 
 global define string backup_help_exclude_dir() ``{
     // For translators: help text in exclude directory dialog - part 1/3
-    return _("<P><B><BIG>Exclude</BIG></B><BR>Here is a list of directories which will be excluded from searching of files not owned by any package.<BR></P>")
+    return _("<P><B><BIG>Exclude</BIG></B><BR>Here is a list of directories which will be excluded from searching of files not owned by any package.</P>")
 
     // For translators: help text in exclude directory dialog - part 2/3
     + _("<P><B>Editing list</B><BR>List of excluded directories can be edited by <B>Add</B>, <B>Edit</B> and <B>Delete</B> buttons.</P>")
@@ -92,7 +92,7 @@ global define string backup_help_exclude_dir() ``{
 
 global define string backup_help_exclude_fs() ``{
     // For translators: help text in exclude file system dialog - part 1/3
-    return _("<P><B><BIG>Exclude</BIG></B><BR>File systems can be excluded from searching instead of excluding directories where they are mounted.<BR></P>")
+    return _("<P><B><BIG>Exclude</BIG></B><BR>File systems can be excluded from searching instead of excluding directories where they are mounted.</P>")
 
     // For translators: help text in exclude file system dialog - part 2/3
     + _("<P><B>Excluding file system</B><BR>To exclude all directories on certain file system check box with name of the file system.</P>")
