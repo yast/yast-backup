@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Dec 18 13:12:59 CET 2003 - lslezak@suse.cz
+
+- fixes for the new interpreter
+- remember RPM restoration option when file selection dialog is
+  displayed
+
+-------------------------------------------------------------------
 Tue Nov 25 12:33:18 CET 2003 - lslezak@suse.cz
 
 - use UI:: file popups

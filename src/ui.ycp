@@ -29,6 +29,7 @@ import "Require";
 import "Popup";
 
 include "backup/help_texts.ycp";
+include "backup/functions.ycp";
 
 textdomain "backup";
 
@@ -42,6 +43,41 @@ global string filesystem_text = _("File System");
 global string directory_text = _("Directory");
 // type of item (displayed in the table)
 global string regexp_text = _("Reg. expression");
+
+global integer selected_pkg_num = 0;		// number of packages which files are selected
+global integer modified_size = 0;		// size
+global integer modified_num = 0;		// number of modified files
+
+global integer wait_time = 300;    // loop delay (in miliseconds)
+global integer nopkg_num = 0;			// number of found files which do not belong to any package
+global integer nopkg_size = 0;			// size
+global integer selected_files_num = 0;		// number of selected files to backup
+
+global string checkmark = "X";
+global string nocheckmark = " ";
+
+global boolean root_warning_displayed = false;
+
+global boolean file_list_stored = false;
+
+global boolean hostname_stored = false;
+global boolean date_stored = false;
+global boolean comment_stored = false;
+global list e2image_results = [];		// results of storing ext2 images
+global integer archived_num = 0;
+global list not_readable_files = [];
+global list created_archive_files = [];
+global list failed_ptables = [];
+global list stored_ptables = [];
+global boolean read_ptables_info = false;
+global boolean stored_list = false;
+
+global integer tar_result = 1;		// exit status of tar
+global integer total_files = 0;	// total number of files in archive
+global integer added_files = 0;
+
+global boolean packages_list_stored = false;
+global map profilewritten = $[];	// result of writing profile
 
 /**
  * Update widget status in the dialog. Enable/disable widget according to
@@ -87,6 +123,34 @@ global define void update_location_dialog() ``{
 }
 
 /**
+ * Ask whether archive can be overwritten if it already exists
+ * @return boolean true when archive can be overwritten, nil when an error occured (e.g. NFS mount failed)
+ */
+global define boolean WriteArchive() ``{
+    boolean ret = true;
+
+    y2milestone("target_type: %1", Backup::target_type);
+
+    boolean exists = (Backup::target_type == `file) ?
+	(((integer)SCR::Read(.target.size, Backup::archive_name)) >= 0) :
+	NFSFileExists(Backup::nfsserver, Backup::nfsexport, Backup::archive_name);
+
+    y2milestone("exists: %1", exists);
+
+    if (exists == true)
+    {
+	// For translators %1 is archive file name (e.g. /tmp/backup.tar)
+	ret = Popup::YesNo(sformat(_("File %1 already exists.\nDo you wish to overwrite it?"), Backup::archive_name));
+    }
+    else if (exists == nil)
+    {
+	ret = nil;
+    }
+
+    return ret;
+}
+
+/**
  * Display dialog for automatic backup - set time when backup module will
  * be started at background with current selected profile.
  * @return symbol User input value
@@ -94,14 +158,14 @@ global define void update_location_dialog() ``{
 global define symbol CronDialog() ``{
 
     // read current settings from profile
-    map current_profile = eval(Backup::backup_profiles[Backup::selected_profile]:$[]);
-    map current_settings = eval(current_profile[`cron_settings]:$[]);
+    map current_profile = (map)eval(Backup::backup_profiles[Backup::selected_profile]:$[]);
+    map current_settings = (map)eval(current_profile[`cron_settings]:$[]);
 
     // current day settings
     symbol cday = current_settings["every"]:`none;
     integer cweekday = current_settings["weekday"]:0;
 
-    list items = [];
+    list<term> items = [];
     // create combo box content
     foreach(integer num, string name, Backup::daynames, ``{
 	    items = add(items, `item(`id(num), name, cweekday == num));
@@ -194,12 +258,12 @@ global define symbol CronDialog() ``{
     // set initial widget states
     update_cron_dialog();
 
-    symbol ret = UI::UserInput();
+    symbol ret = (symbol)UI::UserInput();
 
     while (!contains([`abort, `cancel, `back, `next], ret))
     {
 	update_cron_dialog();
-	ret = UI::UserInput();
+	ret = (symbol)UI::UserInput();
     }
 
     if (ret == `cancel)
@@ -281,6 +345,7 @@ global define symbol ArchDialog() ``{
     if (Backup::no_interactive)
     {
 	boolean cont = true;
+	string nfsdir = "";
 
 	// no multivolume and does not exists, continue
 	if (!Backup::multi_volume)
@@ -301,7 +366,6 @@ global define symbol ArchDialog() ``{
 	    // list directory content
 	    string dir = substring(Backup::archive_name, 0, findlastof(Backup::archive_name, "/"));
 	    string fn = substring(Backup::archive_name, findlastof(Backup::archive_name, "/") + 1);
-	    string nfsdir = "";
 
 	    if (Backup::target_type == `nfs)
 	    {
@@ -321,14 +385,14 @@ global define symbol ArchDialog() ``{
 	    y2debug("dir: %1", dir);
 	    y2debug("file: %1", fn);
 
-	    list ls = SCR::Read(.target.dir, dir);
+	    list<string> ls = (list<string>)SCR::Read(.target.dir, dir);
 
 	    boolean matched = false;
 
 	    string conflict_file = "";
 
 	    // check if some volume part exists
-	    foreach(`f, ls, ``{
+	    foreach(string f, ls, ``{
 		    if (regexpmatch(f, "\d*_" + fn) == true)
 		    {
 			if (matched == false)
@@ -480,7 +544,7 @@ global define symbol ArchDialog() ``{
 
     boolean cont = false;
     symbol ret = nil;
-    map id_result = SCR::Execute(.target.bash_output, "/usr/bin/id -u");
+    map id_result = (map)SCR::Execute(.target.bash_output, "/usr/bin/id -u");
 
     if (id_result["stdout"]:"" != "0\n" && root_warning_displayed == false)
     {
@@ -503,12 +567,12 @@ be backed up by root.
 	// update dialog (enable/disable widgets)
 	update_location_dialog();
 
-        ret = UI::UserInput();
-	Backup::nfsserver = UI::QueryWidget(`id(`nfsserver), `Value);
-	Backup::nfsexport = UI::QueryWidget(`id(`nfsexport), `Value);
+        ret = (symbol)UI::UserInput();
+	Backup::nfsserver = (string)UI::QueryWidget(`id(`nfsserver), `Value);
+	Backup::nfsexport = (string)UI::QueryWidget(`id(`nfsexport), `Value);
 
-        Backup::archive_name = UI::QueryWidget(`id(`filename), `Value);
-	symbol type = (UI::QueryWidget(`id(`rbgroup), `CurrentButton) == `only_list) ? `txt : UI::QueryWidget(`id(`type), `Value);
+        Backup::archive_name = (string)UI::QueryWidget(`id(`filename), `Value);
+	symbol type = (((symbol)UI::QueryWidget(`id(`rbgroup), `CurrentButton)) == `only_list) ? `txt : ((symbol)UI::QueryWidget(`id(`type), `Value));
 
 	// add extension ".tar" if it is missing
 	if (type != `txt)
@@ -519,7 +583,7 @@ be backed up by root.
 
 	if (ret == `type)
 	{
-	    boolean stat = UI::QueryWidget(`id(`type), `Value) != `txt;
+	    boolean stat = ((symbol)UI::QueryWidget(`id(`type), `Value)) != `txt;
 
 	    UI::ChangeWidget(`id(`opts), `Enabled, stat);
 	}
@@ -528,16 +592,16 @@ be backed up by root.
 	    if (ret == `next)
 	    {
 		// check NFS server and export name
-		if (UI::QueryWidget(`id(`nfs), `Value) == true)
+		if (((boolean)UI::QueryWidget(`id(`nfs), `Value)) == true)
 		{
-		    if (size(UI::QueryWidget(`id(`nfsserver), `Value)) == 0)
+		    if (size((string)UI::QueryWidget(`id(`nfsserver), `Value)) == 0)
 		    {
 			Popup::Warning(_("A server name is required.
 Enter the server name to use.
 "));
 			continue;
 		    }
-		    else if (size(UI::QueryWidget(`id(`nfsexport), `Value)) == 0)
+		    else if (size((string)UI::QueryWidget(`id(`nfsexport), `Value)) == 0)
 		    {
 			Popup::Warning(_("A remote directory name is required.
 Enter the directory name to use.
@@ -549,7 +613,7 @@ Enter the directory name to use.
 		// check if star is installed for star subarchive type
 		if (type == `star || type == `stgz || type == `stbz)
 		{
-		    if (SCR::Read(.target.size, "/usr/bin/star") < 0)
+		    if (((integer)SCR::Read(.target.size, "/usr/bin/star")) < 0)
 		    {
 			// Popup::YesNo message text - ask to install 'star' package
 			boolean inst = Popup::YesNo(_("Package 'star' is required for
@@ -614,14 +678,14 @@ Enter the file name to use.
 		    y2debug("dir: %1", dir);
 		    y2debug("file: %1", fn);
 
-		    list ls = SCR::Read(.target.dir, dir);
+		    list<string> ls = (list<string>)SCR::Read(.target.dir, dir);
 
 		    boolean matched = false;
 
 		    string conflict_file = "";
 
 		    // check if some volume part exists
-		    foreach(`f, ls, ``{
+		    foreach(string f, ls, ``{
 			    if (regexpmatch(f, "\d*_" + fn) == true)
 			    {
 				if (matched == false)
@@ -680,7 +744,7 @@ Enter the file name to use.
 	    // select NFS export
 	    else if (ret == `selectexport)
 	    {
-		string server = UI::QueryWidget(`id(`nfsserver), `Value);
+		string server = (string)UI::QueryWidget(`id(`nfsserver), `Value);
 
 		if (size(server) > 0)
 		{
@@ -705,7 +769,7 @@ Enter the file name to use.
     }
 
     // get values
-    Backup::archive_type = (UI::QueryWidget(`id(`rbgroup), `CurrentButton) == `archive) ? UI::QueryWidget(`id(`type), `Value) : `txt;
+    Backup::archive_type = (((symbol)UI::QueryWidget(`id(`rbgroup), `CurrentButton)) == `archive) ? (symbol)UI::QueryWidget(`id(`type), `Value) : `txt;
 
     if (ret == `opts)
     {
@@ -808,12 +872,12 @@ global define symbol TarOptionsDialog() ``{
 
     while (!cont)
     {
-        ret = UI::UserInput();
+        ret = (symbol)UI::UserInput();
 
 	if (ret == `ok)
 	{
-	    if (UI::QueryWidget(`id(`multi_volume), `Value) == true && UI::QueryWidget(`id(`vol), `Value) == `user_defined &&
-		    (tofloat(UI::QueryWidget(`id(`user_size), `Value)) * tofloat(Backup::GetCapacity(Backup::units_description, UI::QueryWidget(`id(`user_unit), `Value))) / 1024.0) < 10.0)
+	    if (((boolean)UI::QueryWidget(`id(`multi_volume), `Value)) == true && ((symbol)UI::QueryWidget(`id(`vol), `Value)) == `user_defined &&
+		    (tofloat(UI::QueryWidget(`id(`user_size), `Value)) * tofloat(Backup::GetCapacity(Backup::units_description, (symbol)UI::QueryWidget(`id(`user_unit), `Value))) / 1024.0) < 10.0)
 	    {
 		// warning popup message
 		Popup::Warning(_("Volume size must be at least 10240 bytes."));
@@ -822,10 +886,10 @@ global define symbol TarOptionsDialog() ``{
 	    {
 		cont = true;
 
-		Backup::multi_volume = UI::QueryWidget(`id(`multi_volume), `Value);
-		Backup::volume_size = UI::QueryWidget(`id(`vol), `Value);
-		Backup::user_volume_size = UI::QueryWidget(`id(`user_size), `Value);
-		Backup::user_volume_unit = UI::QueryWidget(`id(`user_unit), `Value);
+		Backup::multi_volume = (boolean)UI::QueryWidget(`id(`multi_volume), `Value);
+		Backup::volume_size = (symbol)UI::QueryWidget(`id(`vol), `Value);
+		Backup::user_volume_size = (string)UI::QueryWidget(`id(`user_size), `Value);
+		Backup::user_volume_unit = (symbol)UI::QueryWidget(`id(`user_unit), `Value);
 	    }
 	}
 	else
@@ -910,7 +974,7 @@ global define symbol BackupDialog() ``{
 
     while (ret != `next && ret != `abort && ret != `back && ret != `xpert)
     {
-	ret = UI::UserInput();
+	ret = (symbol)UI::UserInput();
 
 	if (ret == `abort || ret == `cancel)
 	{
@@ -923,10 +987,10 @@ global define symbol BackupDialog() ``{
     }
 
     // get values
-    Backup::search = UI::QueryWidget(`id(`search), `Value);
-    Backup::display = UI::QueryWidget(`id(`display), `Value);
-    Backup::do_md5_test = UI::QueryWidget(`id(`md5_check), `Value);
-    Backup::description = UI::QueryWidget(`id(`description), `Value);
+    Backup::search = (boolean)UI::QueryWidget(`id(`search), `Value);
+    Backup::display = (boolean)UI::QueryWidget(`id(`display), `Value);
+    Backup::do_md5_test = (boolean)UI::QueryWidget(`id(`md5_check), `Value);
+    Backup::description = (string)UI::QueryWidget(`id(`description), `Value);
 
     return ret;
 }
@@ -1011,9 +1075,9 @@ global define symbol SystemBackupDialog() ``{
 
     while (ret != `finish && ret != `back && ret != `abort)
     {
-	ret = UI::UserInput();
+	ret = (symbol)UI::UserInput();
 
-	string curr = UI::QueryWidget(`id(`par), `CurrentItem);
+	string curr = (string)UI::QueryWidget(`id(`par), `CurrentItem);
 	if (curr != nil)
 	{
 
@@ -1023,7 +1087,7 @@ global define symbol SystemBackupDialog() ``{
 
 		if (lookup(edited, "clicked", nil) == `ok)
 		{
-		    string txt = lookup(edited, "text", "");
+		    string txt = (string)(edited["text"]:"");
 		    string dir = Ext2MountPoint(txt);
 
 		    if (txt != curr)
@@ -1036,7 +1100,7 @@ global define symbol SystemBackupDialog() ``{
 			else
 			{
 			    // refresh ext2_backup content
-			    Backup::ext2_backup = maplist(`i, Backup::ext2_backup, ``{
+			    Backup::ext2_backup = maplist(term i, Backup::ext2_backup, ``{
 				if (select(select(i, 0, []), 0, nil) == curr)
 				{
 				    return `item(`id(txt), txt, dir);
@@ -1058,20 +1122,33 @@ global define symbol SystemBackupDialog() ``{
 
 	    if (ret == `delete)
 	    {
-		Backup::ext2_backup = filter(`i, Backup::ext2_backup, ``{return (select(select(i, 0, []), 0, nil) != curr);});
+		Backup::ext2_backup = filter(term i, Backup::ext2_backup, ``{return (select(select(i, 0, []), 0, nil) != curr);});
 		UI::ChangeWidget(`id(`par), `Items, Backup::ext2_backup);
 	    }
 	}
 
 	if (ret == `addnew)
 	{
-	    // popup dialog header
-	    map result = ShowEditDialog(_("&Add Ext2 partition"), "", Backup::detected_ext2);
+	    list<string> detected_ext2_strings = [];
 
-	    if (lookup(result, "clicked", nil) == `ok)
+	    foreach(map info, Backup::detected_ext2,
+		``{
+		    string part = (string)(info["partition"]:nil);
+
+		    if (part != nil)
+		    {
+			detected_ext2_strings = add(detected_ext2_strings, part);
+		    }
+		}
+	    );
+
+	    // popup dialog header
+	    map result = ShowEditDialog(_("&Add Ext2 partition"), "", detected_ext2_strings);
+
+	    if (((symbol)(result["clicked"]:nil)) == `ok)
 	    {
 		integer sz = size(Backup::ext2_backup);
-		string new_par = lookup(result, "text", nil);
+		string new_par = (string)(result["text"]:nil);
 		string dir = Ext2MountPoint(new_par);
 
 		// add new partition only if it's not empty a it isn't already in list
@@ -1096,9 +1173,9 @@ global define symbol SystemBackupDialog() ``{
 
 	if (ret == `allmounted || ret == `selected || ret == `none)
 	{
-	    Backup::backup_all_ext2 = UI::QueryWidget(`id(`allmounted), `Value);
-	    Backup::backup_none_ext2 = UI::QueryWidget(`id(`none), `Value);
-	    Backup::backup_selected_ext2 = UI::QueryWidget(`id(`selected), `Value);
+	    Backup::backup_all_ext2 = (boolean)UI::QueryWidget(`id(`allmounted), `Value);
+	    Backup::backup_none_ext2 = (boolean)UI::QueryWidget(`id(`none), `Value);
+	    Backup::backup_selected_ext2 = (boolean)UI::QueryWidget(`id(`selected), `Value);
 
 	    UI::ChangeWidget(`id(`par), `Enabled, Backup::backup_selected_ext2);
 	    UI::ChangeWidget(`id(`addnew), `Enabled, Backup::backup_selected_ext2);
@@ -1116,11 +1193,144 @@ global define symbol SystemBackupDialog() ``{
 	}
     }
 
-    Backup::backup_pt = UI::QueryWidget(`id(`pt), `Value);
+    Backup::backup_pt = (boolean)UI::QueryWidget(`id(`pt), `Value);
 
     Wizard::RestoreNextButton();
 
     return ret;
+}
+
+/**
+ * Check whether there is enough free space.
+ * @param required required space in kB
+ * @param available required space in kB
+ * @param target_type selected target archive type
+ * @return boolean true = there is enough free space, false = not enough free space,
+ *   nil = may be not enough space (compression is used, impossible to tell exactly)
+ */
+
+global define boolean is_space(integer required, integer available, symbol target_type) ``{
+
+    if (available < 0)
+    {
+	return false;
+    }
+
+    if (contains( [`tgz, `stgz, `tbz, `stbz], target_type))
+    {
+	// require at least 10M extra free space (overhead)
+	return (required + 10240 < available) ? true : nil;
+    }
+    else if (target_type == `tar || target_type == `star)
+    {
+	// require at least 10M extra free space (overhead)
+	return required + 10240 < available;
+    }
+    else if (target_type == `txt)
+    {
+	// require at least 500k extra free space (overhead)
+	return required + 500 < available;
+    }
+    else
+    {
+	y2warning("Unknown archive type: %1", target_type);
+    }
+
+    return nil;
+}
+
+/**
+ * Display warning dialog - there is (may) not enough free space in the directory.
+ * The dialog is not displayed when cron mode is active (there is no real UI).
+ * @param dir directory
+ * @param fits if true no dialog is displayed, if false display "there is no space",
+ * if nil display "there may not be space"
+ * @return boolean false = abort backup
+ */
+
+global define boolean display_free_space_warning(boolean fits, string dir) ``{
+    boolean cont = true;
+
+    // don't ask in cron mode - there is no UI
+    // always continue, summary mail with fail message
+    // will be sent to root user
+    if (Backup::cron_mode == true)
+    {
+	return cont;
+    }
+
+    if (fits == false)
+    {
+	// there is no enough space
+	cont = Popup::YesNo(sformat(_("There is not enough free space in directory %1.\nDo you wish to continue anyway?"), dir));
+    }
+    else if (fits == nil)
+    {
+	// may be that there is not enough space
+	cont = Popup::YesNo(sformat(_("There may not be enough free space in directory %1.\nDo you wish to continue anyway?"), dir));
+    }
+
+    return cont;
+}
+
+/**
+ * Check available free space and decide whether archive will fit
+ * @param found_size total size of found files in bytes
+ * @param tmp_dir selected temporary directory
+ * @param target_dir target archive directory
+ * @param target_type target archive type
+ * @return boolean true = archive fits, false = it doesn't fit,
+ *    nil = may not fit (compression is used, there is no guarantee that
+ *    archive will fit but it can be possible if compression ratio will
+ *    be enough high
+ */
+
+global define boolean check_space(integer found_size, string tmp_dir, string target_dir, symbol target_type) ``{
+
+    // required size in 1024-blocks
+    found_size = found_size / 1024;
+
+    map available_tmp = get_free_space(tmp_dir);
+    map available_target = get_free_space(target_dir);
+
+    if (size(available_target) == 0 || size(available_tmp) == 0)
+    {
+	return true;
+    }
+
+    boolean fits = true;
+
+    // temporary and target directories are same
+    if ((string)(available_tmp["device"]:nil) == (string)(available_target["device"]:nil))
+    {
+	integer free = (integer)(available_target["free"]:0);
+	// required space is doubled (tmpdir + target_dir)
+	integer required = found_size + found_size;
+
+	fits = is_space(required, free, target_type);
+
+	if (display_free_space_warning(fits, target_dir) == false)
+	{
+	    return false;
+	}
+    }
+    else
+    // temporary location and target directories are different
+    {
+	fits = is_space(found_size, available_target["free"]:0, target_type);
+	if (display_free_space_warning(fits, target_dir) == false)
+	{
+	    return false;
+	}
+
+	fits = is_space(found_size, available_tmp["free"]:0, target_type);
+	if (display_free_space_warning(fits, tmp_dir) == false)
+	{
+	    return false;
+	}
+    }
+
+    return true;
 }
 
 
@@ -1131,7 +1341,7 @@ global define symbol SystemBackupDialog() ``{
 
 global define symbol SearchingModifiedDialog() ``{
 
-    if (cron_mode != true)
+    if (Backup::cron_mode != true)
     {
 	Wizard::ClearContents();
     }
@@ -1139,7 +1349,7 @@ global define symbol SearchingModifiedDialog() ``{
     // set buffer size
     SCR::Write(.background.buffer_size, 500);
 
-    if (cron_mode != true)
+    if (Backup::cron_mode != true)
     {
 	// label text
 	Wizard::SetContents("", `Label(_("Reading packages available on the installation sources...")), backup_help_searching_modified(), false, false);
@@ -1151,12 +1361,12 @@ global define symbol SearchingModifiedDialog() ``{
     Backup::complete_backup = [];
 
     y2milestone("Search script: %1", Backup::script_get_files + Backup::get_search_script_parameters());
-    boolean started = SCR::Execute(.background.run_output, Backup::script_get_files + Backup::get_search_script_parameters());
-    list script_out = [ ];
+    boolean started = (boolean)SCR::Execute(.background.run_output, Backup::script_get_files + Backup::get_search_script_parameters());
+    list<string> script_out = [ ];
 
     symbol ret = nil;
 
-    y2milestone("subprocess started: %1 (PID: %2)", started, SCR::Read(.background.pid));
+    y2milestone("subprocess started: %1 (PID: %2)", started, (integer)SCR::Read(.background.pid));
 
     if (!started)
     {
@@ -1164,7 +1374,7 @@ global define symbol SearchingModifiedDialog() ``{
 	Report::Error(_("Could not start search script.
 Backup will be aborted.
 "));
-	y2error("Errors: %1", SCR::Read(.background.newerr));
+	y2error("Errors: %1", (list<string>)SCR::Read(.background.newerr));
 	return `abort;
     }
 
@@ -1192,9 +1402,9 @@ Backup will be aborted.
 
     selected_pkg_num = 0;
 
-    while(SCR::Read(.background.output_open) || (SCR::Read(.background.newlines) > 0))
+    while(((boolean)SCR::Read(.background.output_open)) || ((integer)SCR::Read(.background.newlines)) > 0)
     {
-	script_out = SCR::Read(.background.newout);
+	script_out = (list<string>)SCR::Read(.background.newout);
 
 	while (size(script_out) > 0)
 	{
@@ -1238,7 +1448,7 @@ Backup will be aborted.
 		    }
 		    package_num = package_num + 1;
 
-		    if (cron_mode != true)
+		    if (Backup::cron_mode != true)
 		    {
 			UI::ChangeWidget(`id(`package), `Value, actual_package);
 			UI::ChangeWidget(`id(`progress), `Value, package_num);
@@ -1254,7 +1464,7 @@ Backup will be aborted.
 			modified_size = modified_size + tointeger(size_str);
 			modified_num = modified_num + 1;
 
-			if (cron_mode != true)
+			if (Backup::cron_mode != true)
 			{
 			    UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", String::FormatSize(modified_size)));
 			    UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", modified_num));
@@ -1307,7 +1517,7 @@ Backup will be aborted.
 			    {
 				if (line == id_reading_files)
 				{
-				    if (cron_mode != true)
+				    if (Backup::cron_mode != true)
 				    {
 					// label text
 					Wizard::SetContents("", `Label(_("Reading packages files...")), backup_help_searching_modified(), false, false);
@@ -1319,7 +1529,7 @@ Backup will be aborted.
 				    {
 					y2milestone("Reading installed packages");
 
-					if (cron_mode != true)
+					if (Backup::cron_mode != true)
 					{
 					    // label text
 					    Wizard::SetContents("", `Label(_("Reading list of installed packages...")), backup_help_searching_modified(), false, false);
@@ -1331,7 +1541,7 @@ Backup will be aborted.
 				    {
 					if (line == id_files_read)
 					{
-					    if (cron_mode != true)
+					    if (Backup::cron_mode != true)
 					    {
 						// dialog header
 						Wizard::SetContents( _("Searching for modified files"),
@@ -1392,10 +1602,10 @@ Backup will be aborted.
 	    break;
 	}
 
-	if (cron_mode == true)
+	if (Backup::cron_mode == true)
 	{
 	    // in cron mode only wait for subprocess
-	    while (SCR::Read(.background.newlines) == 0 && SCR::Read(.background.output_open))
+	    while (((integer)SCR::Read(.background.newlines)) == 0 && (boolean)SCR::Read(.background.output_open))
 	    {
 		sleep(wait_time);
 	    }
@@ -1434,7 +1644,7 @@ Backup will be aborted.
 	string id_readall = "Files read";
 	string id_dir = "Dir: ";
 
-	if (cron_mode != true)
+	if (Backup::cron_mode != true)
 	{
 	    // dialog header
 	    Wizard::SetContents(_("Searching files"),
@@ -1475,12 +1685,12 @@ Backup will be aborted.
 	list package_files_part = [];
 	integer new_files = 0;
 
-	while(SCR::Read(.background.output_open) || (SCR::Read(.background.newlines) > 0) || (size(script_out) > 0))
+	while((boolean)SCR::Read(.background.output_open) || ((integer)SCR::Read(.background.newlines)) > 0 || (size(script_out) > 0))
 	// test of script_out size is needed, because previous while cycle was interrupted and script could exited with no new output...
 	{
 	    if (size(script_out) == 0)
 	    {
-		script_out = SCR::Read(.background.newout);
+		script_out = (list<string>)SCR::Read(.background.newout);
 	    }
 
 	    // current line index
@@ -1493,7 +1703,7 @@ Backup will be aborted.
 		line = select(script_out, lineidx, nil);	// read line
 		lineidx = lineidx + 1;
 
-		if  (substring(line, 0, size(id_file)) == id_file)
+		if (substring(line, 0, size(id_file)) == id_file)
 		{
 		    line = substring(line, size(id_file));
 
@@ -1502,7 +1712,7 @@ Backup will be aborted.
 		    nopkg_num = nopkg_num + 1;
 
 		    // refresh status when 10 new files was found - it's faster...
-		    if (nopkg_num % 10 == 0 && cron_mode != true)
+		    if (nopkg_num % 10 == 0 && Backup::cron_mode != true)
 		    {
 			UI::ChangeWidget(`id(`totsize), `Value, String::FormatSize(nopkg_size));
 			UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", nopkg_num));
@@ -1512,7 +1722,7 @@ Backup will be aborted.
 
 		    // escape newlines in file name
 		    // double backslashes
-		    list parts = splitstring(found_file, "\\");
+		    list<string> parts = splitstring(found_file, "\\");
 		    string escaped = mergestring(parts, "\\\\");
 
 		    // change newline to \n
@@ -1541,7 +1751,7 @@ Backup will be aborted.
 			{
 			    actual_dir = substring(line, size(id_dir));
 
-			    if (cron_mode != true)
+			    if (Backup::cron_mode != true)
 			    {
 				UI::ChangeWidget(`id(`directory), `Value, actual_dir);
 			    }
@@ -1554,10 +1764,10 @@ Backup will be aborted.
 
 	    script_out = [];
 
-	    if (cron_mode == true)
+	    if (Backup::cron_mode == true)
 	    {
 		// in cron mode only wait for subprocess
-		while (SCR::Read(.background.newlines) == 0 && SCR::Read(.background.output_open))
+		while (((integer)SCR::Read(.background.newlines)) == 0 && (boolean)SCR::Read(.background.output_open))
 		{
 		    sleep(wait_time);
 		}
@@ -1591,7 +1801,7 @@ Backup will be aborted.
 
     y2milestone("Searching done");
 
-    list dparts = splitstring(Backup::archive_name, "/");
+    list<string> dparts = splitstring(Backup::archive_name, "/");
     dparts = remove(dparts, size(dparts) - 1);
     string tdir = mergestring(dparts, "/");
 
@@ -1606,7 +1816,7 @@ Backup will be aborted.
     {
 	if (Backup::selected_files == nil)
 	{
-	    Backup::selected_files = eval(Backup::backup_files);
+	    Backup::selected_files = (map)eval(Backup::backup_files);
 	}
 
 	return `next;
@@ -1614,7 +1824,7 @@ Backup will be aborted.
     else
     {
 	// no manual selection, backup all files
-	Backup::selected_files = eval(Backup::backup_files);
+	Backup::selected_files = (map)eval(Backup::backup_files);
 
 	// skip the files listed in Backup::unselected_files
 	if (Backup::unselected_files != nil)
@@ -1625,7 +1835,7 @@ Backup will be aborted.
 		map new_selected = $[ ];
 		foreach(string pak, map val, Backup::selected_files,
 		``{
-		    list changed_files = lookup(val, "changed_files", [ ]);
+		    list<string> changed_files = ((list<string>)(val["changed_files"]:[ ]));
 		    if( contains( changed_files , file ) )
 		    {
 			changed_files = filter( string v, changed_files, ``(v != file) );
@@ -1637,7 +1847,7 @@ Backup will be aborted.
 		    new_selected = add( new_selected, pak, val );
 		}
 		);
-		Backup::selected_files = eval(new_selected);
+		Backup::selected_files = (map)eval(new_selected);
 	    }
 	    );
 	    y2milestone("Filtered out unselected files according to profile");
@@ -1652,7 +1862,7 @@ Backup will be aborted.
 	    }
 	);
 
-	return (Backup::display && !cron_mode) ? `next : `next2;	// `next2 = skip file selection dialog
+	return (Backup::display && !Backup::cron_mode) ? `next : `next2;	// `next2 = skip file selection dialog
     }
 }
 
@@ -1669,7 +1879,7 @@ global define symbol FilesDialog() ``{
     Wizard::SetContents("", `Label(_("Adding files to table...")), "", false, false);
 
     integer t1 = time();
-    list items = SCR::Read(.target.ycp, SCR::Read(.target.tmpdir) + "/items.ycp");
+    list<term> items = (list<term>)SCR::Read(.target.ycp, (string)SCR::Read(.target.tmpdir) + "/items.ycp");
 
     // dialog header
     Wizard::SetContents( _("File selection"),
@@ -1740,7 +1950,7 @@ global define symbol FilesDialog() ``{
 
     while (ret != `next && ret != `back && ret != `abort)
     {
-	ret = UI::UserInput();
+	ret = (symbol)UI::UserInput();
 
 	if (ret == `abort || ret == `cancel)
 	{
@@ -1755,7 +1965,7 @@ global define symbol FilesDialog() ``{
 	    }
 	}
 
-	integer current_item  = UI::QueryWidget(`id(`table), `CurrentItem);
+	integer current_item  = (integer)UI::QueryWidget(`id(`table), `CurrentItem);
 
 	if (ret == `sel_all || ret == `desel_all)
 	{
@@ -1763,7 +1973,7 @@ global define symbol FilesDialog() ``{
 	    {
 		Backup::unselected_files = [];
 		deselected_ids = $[];
-		Backup::selected_files = eval(Backup::backup_files);
+		Backup::selected_files = (map)eval(Backup::backup_files);
 	    }
 	    else
 	    {
@@ -1785,8 +1995,8 @@ global define symbol FilesDialog() ``{
 		}
 	    }
 
-	    UI::ChangeWidget(`id(`table), `Items, (ret == `sel_all) ? SCR::Read(.target.ycp, SCR::Read(.target.tmpdir) + "/items.ycp")
-	                    : SCR::Read(.target.ycp, SCR::Read(.target.tmpdir) + "/items.ycp2"));
+	    UI::ChangeWidget(`id(`table), `Items, (ret == `sel_all) ? (list<term>)SCR::Read(.target.ycp, (string)SCR::Read(.target.tmpdir) + "/items.ycp")
+	                    : (list<term>)SCR::Read(.target.ycp, (string)SCR::Read(.target.tmpdir) + "/items.ycp2"));
 
 	    if (current_item != nil)
 	    {
@@ -1799,11 +2009,11 @@ global define symbol FilesDialog() ``{
 	{
 	    if (ret == `table || ret == `sel_file)
 	    {
-		term table_item = UI::QueryWidget(`id(`table), `Item(current_item));
+		term table_item = (term)UI::QueryWidget(`id(`table), `Item(current_item));
 
-		string current_value = select(table_item, 1, nocheckmark);
-		string file_name = select(table_item, 2, "unknown file");
-		string package_name = select(table_item, 3, "unknown package");
+		string current_value = (string)select(table_item, 1, nocheckmark);
+		string file_name = (string)select(table_item, 2, "unknown file");
+		string package_name = (string)select(table_item, 3, "unknown package");
 
 		if (current_value == checkmark)
 		{
@@ -1817,7 +2027,7 @@ global define symbol FilesDialog() ``{
 		    }
 
 		    // remove from selected files
-		    map info = eval(Backup::selected_files[package_name]:$[]);
+		    map info = (map)eval(Backup::selected_files[package_name]:$[]);
 		    if (size(info) > 0)
 		    {
 			list chfiles = info["changed_files"]:[];
@@ -1837,7 +2047,7 @@ global define symbol FilesDialog() ``{
 		    deselected_ids = remove(deselected_ids, current_item);
 
 		    // add to selected
-		    map info = eval(Backup::selected_files[package_name]:$[]);
+		    map info = (map)eval(Backup::selected_files[package_name]:$[]);
 		    list chfiles = info["changed_files"]:[];
 
 		    if (!contains(chfiles, file_name))
@@ -1888,9 +2098,11 @@ global define symbol ArchivingDialog() ``{
     // progress bar stage
     list stages2 = [ _("Storing host information...") ];
 
-    map selected_info = MapFilesToString();
+    map selected_info = Backup::MapFilesToString();
     selected_files_num = selected_info["sel_files"]:0;
     selected_pkg_num = selected_info["sel_packages"]:0;
+
+    symbol ret = nil;
 
     // number of steps = number of selected files + nuber of selected packages
     //			+ 6 files (comment, hostname, date, files, installed_packages, packages_info)
@@ -1945,7 +2157,7 @@ global define symbol ArchivingDialog() ``{
     // progress bar stage
     stages2 = add(stages1, _("Writing autoinstallation profile..."));
 
-    if (cron_mode == true)
+    if (Backup::cron_mode == true)
     {
 	Progress::off();
     }
@@ -1959,20 +2171,20 @@ global define symbol ArchivingDialog() ``{
     y2milestone("Storing file names list...");
 
     // store selected file names to file
-    string tmpfile_list = SCR::Read(.target.tmpdir) + "/filelist";
+    string tmpfile_list = (string)SCR::Read(.target.tmpdir) + "/filelist";
 
-    file_list_stored = SCR::Write(.target.string, tmpfile_list, selected_info["filelist"]:"");
+    file_list_stored = (boolean)SCR::Write(.target.string, tmpfile_list, selected_info["filelist"]:"");
 
     if (!file_list_stored)
     {
-	Report::Error(_("Cannot write the list of selected files to file '%1'"), tmpfile_list);
+	Report::Error(sformat(_("Cannot write the list of selected files to file '%1'"), tmpfile_list));
     }
 
     y2milestone("File names stored");
 
     // store comment to file
-    string tmpfile_comment = SCR::Read(.target.tmpdir) + "/comment";
-    comment_stored = SCR::Write(.target.string, tmpfile_comment, Backup::description);
+    string tmpfile_comment = (string)SCR::Read(.target.tmpdir) + "/comment";
+    comment_stored = (boolean)SCR::Write(.target.string, tmpfile_comment, Backup::description);
 
 
     y2debug("%1", "Comment stored to file");
@@ -1980,7 +2192,7 @@ global define symbol ArchivingDialog() ``{
 
     if (!comment_stored)
     {
-	Report::Warning(_("Cannot write comment to file '%1'"), tmpfile_comment);
+	Report::Warning(sformat(_("Cannot write comment to file '%1'"), tmpfile_comment));
     }
 
     added_files = 0;
@@ -1988,7 +2200,7 @@ global define symbol ArchivingDialog() ``{
     // prepare start
     Backup::PrepareBackup();
 
-    boolean started = SCR::Execute(.background.run_output, sformat("%1 %2", Backup::script_create_archive, Backup::get_archive_script_parameters(tmpfile_list, tmpfile_comment)));
+    boolean started = (boolean)SCR::Execute(.background.run_output, sformat("%1 %2", Backup::script_create_archive, Backup::get_archive_script_parameters(tmpfile_list, tmpfile_comment)));
 
     if (!started)
     {
@@ -1999,7 +2211,7 @@ Backup will be aborted.
 	return `abort;
     }
 
-    list script_out = [ ];
+    list<string> script_out = [ ];
 
     string id_hostname = "Storing hostname: ";
     string id_date = "Storing date: ";
@@ -2033,9 +2245,9 @@ Backup will be aborted.
 
     y2milestone("Creating archive...");
 
-    while(SCR::Read(.background.output_open) == true || (SCR::Read(.background.newlines) > 0))
+    while(((boolean)SCR::Read(.background.output_open)) == true || ((integer)(SCR::Read(.background.newlines)) > 0))
     {
-	script_out = SCR::Read(.background.newout);
+	script_out = (list<string>)(SCR::Read(.background.newout));
 
 	while (size(script_out) > 0)
 	{
@@ -2249,10 +2461,10 @@ Backup will be aborted.
 	    }
 
 
-	    if (cron_mode == true)
+	    if (Backup::cron_mode == true)
 	    {
 		// in cron mode only wait for subprocess
-		while (SCR::Read(.background.newlines) == 0 && SCR::Read(.background.output_open))
+		while ((integer)SCR::Read(.background.newlines) == 0 && (boolean)SCR::Read(.background.output_open))
 		{
 		    sleep(wait_time);
 		}
@@ -2287,12 +2499,12 @@ Backup will be aborted.
     }
 
     // remove temporary file list and file with comment
-    if (!SCR::Execute(.target.remove, tmpfile_list))
+    if (! (boolean)SCR::Execute(.target.remove, tmpfile_list))
     {
 	y2warning("Error removing file: %1", tmpfile_list);
     }
 
-    if (!SCR::Execute(.target.remove, tmpfile_comment))
+    if (! (boolean)SCR::Execute(.target.remove, tmpfile_comment))
     {
 	y2warning("Error removing file: %1", tmpfile_comment);
     }
@@ -2302,6 +2514,39 @@ Backup will be aborted.
     return `next;
 }
 
+
+/**
+ * Allow user to enter a new profile name. If the profile already exists, it allows
+ * to replace it.
+ * @return string the name for the new profile, "" for cancel
+ */
+global define string AskNewProfileName() ``{
+    // Translators: text of a popup dialog
+    map new_name = ShowEditDialog(_("Enter a name for the new profile."), "", nil);
+
+    while( (symbol)(new_name["clicked"]:nil) == `ok && Backup::backup_profiles[ new_name["text"]:nil ]:nil != nil  )
+    {
+	// Translators: error popup, %1 is profile name
+	if( ! Popup::YesNo(sformat(_("A profile '%1' already exists.
+Replace the existing profile?
+"), new_name["text"]:"")) ) {
+	    new_name = ShowEditDialog(_("Enter a name for the new profile."), "", nil);
+	}
+	else
+	{
+	    // yes, do replace
+	    return new_name[ "text" ]:"";
+	}
+    }
+
+    if( (symbol)(new_name["clicked"]:nil) == `ok ) {
+	return (string)(new_name["text"]:"");
+    }
+    else
+    {
+	return "";
+    }
+}
 
 
 /**
@@ -2317,7 +2562,7 @@ global define symbol SummaryDialog() ``{
     string em = "<B>";
     string _em = "</B>";
 
-    if (cron_mode == true)
+    if (Backup::cron_mode == true)
     {
 	br = "\n";
 	p = "";
@@ -2387,7 +2632,7 @@ global define symbol SummaryDialog() ``{
 	    // part of summary text
 	    backup_details = backup_details + br + p + em + _("Errors while creating archive:") + _em + br;
 
-	    foreach(`f, not_readable_files,
+	    foreach(string f, not_readable_files,
 		``{
 		    // For translators: %1 file name - part of summary text
 		    backup_details = backup_details + em + sformat(_("Cannot read file %1"), f) + _em + br;
@@ -2410,14 +2655,14 @@ global define symbol SummaryDialog() ``{
 		    backup_details = backup_details + p + em + _("Detecting disk partitions failed") + _em + br;
 		}
 
-		foreach(`failed_pt, failed_ptables,
+		foreach(string failed_pt, failed_ptables,
 		    ``{
 			// For translators: %1 is device name of disk, e.g. hda - part of summary text
 			backup_details = backup_details + em + sformat(_("Storing partition table of disk /dev/%1 failed"), failed_pt) + _em + br;
 		    }
 		);
 
-		foreach(`stored_pt, stored_ptables,
+		foreach(string stored_pt, stored_ptables,
 		    ``{
 			// For translators: %1 is device name of disk, e.g. hda - part of summary text
 			backup_details = backup_details + sformat(_("Storing partition table of disk /dev/%1 was successful"), stored_pt) + br;
@@ -2430,7 +2675,7 @@ global define symbol SummaryDialog() ``{
 	    {
 		integer index = 0;
 
-		foreach(`r, e2image_results,
+		foreach(boolean r, e2image_results,
 		    ``{
 			if (r)
 			{
@@ -2503,7 +2748,7 @@ global define symbol SummaryDialog() ``{
 	}
 
 	// part of summary text - %1 is file name
-	string profilesummary = (lookup(profilewritten, "result", false) == true) ? sformat(_("Autoinstallation profile saved to file %1."), lookup(profilewritten, "profile", "")) : (em + _("Autoinstallation profile was not saved.") + _em);
+	string profilesummary = (((boolean)(profilewritten["result"]:false)) == true) ? sformat(_("Autoinstallation profile saved to file %1."), (string)(profilewritten["profile"]:"")) : (em + _("Autoinstallation profile was not saved.") + _em);
 
 	backup_result = backup_result
 	    // part of summary text
@@ -2522,7 +2767,7 @@ global define symbol SummaryDialog() ``{
 		// part of summary text
 		backup_details = backup_details + p + em + "Created archive volumes:" + _em + br;
 
-		foreach(`f, created_archive_files,
+		foreach(string f, created_archive_files,
 		    ``{
 			backup_details = backup_details + f + br;
 		    }
@@ -2545,11 +2790,11 @@ global define symbol SummaryDialog() ``{
     }
 
     // cron mode
-    if (cron_mode == true)
+    if (Backup::cron_mode == true)
     {
 	if (Backup::mail_summary == true)
 	{
-	    SendSummary(remove_result);
+	    SendSummary(Backup::remove_result, Backup::selected_profile, backup_result, backup_details);
 	}
 
 	return `finish;
@@ -2576,7 +2821,7 @@ global define symbol SummaryDialog() ``{
     Wizard::ReplaceNextButton(`PushButton(`id(`finish), `opt(`default), Label::OKButton()));
     UI::SetFocus(`id(`finish));
 
-    symbol ret = UI::UserInput();
+    symbol ret = (symbol)UI::UserInput();
 
     while (ret != `finish && ret != `back)
     {
@@ -2608,7 +2853,7 @@ global define symbol SummaryDialog() ``{
 	    }
 	}
 
-	ret = UI::UserInput();
+	ret = (symbol)UI::UserInput();
     }
 
     Wizard::RestoreNextButton();
@@ -2659,17 +2904,17 @@ global define symbol ExpertOptionsDialog() ``{
 
     while (ret != `finish && ret != `back && ret != `abort && ret != `set_system)
     {
-	ret = UI::UserInput();
+	ret = (symbol)UI::UserInput();
 
-	if (ret == `finish)
+	if (ret == `finish || ret == `set_system)
 	{
-	    Backup::tmp_dir = UI::QueryWidget(`id(`tmp), `Value);
-	    Backup::system = UI::QueryWidget(`id(`system), `Value);
+	    Backup::tmp_dir = (string)UI::QueryWidget(`id(`tmp), `Value);
+	    Backup::system = (boolean)UI::QueryWidget(`id(`system), `Value);
 	}
 
 	if (ret == `system)
 	{
-	    UI::ChangeWidget(`id(`set_system), `Enabled, UI::QueryWidget(`id(`system), `Value));
+	    UI::ChangeWidget(`id(`set_system), `Enabled, (boolean)UI::QueryWidget(`id(`system), `Value));
 	}
     }
 
@@ -2724,7 +2969,7 @@ global define symbol SelectProfileDialog() ``{
 	// select the first profile in the list
 	UI::ChangeWidget( `id(`start), `Enabled, (size( Backup::backup_profiles ) != 0) );
 
-	ret = UI::UserInput();
+	ret = (symbol)UI::UserInput();
 
 	// load corresponding settings
 	if( size( Backup::backup_profiles ) == 0 )
@@ -2733,7 +2978,7 @@ global define symbol SelectProfileDialog() ``{
 	}
 	else
 	{
-	    Backup::RestoreSettingsFromBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
+	    Backup::RestoreSettingsFromBackupProfile( (string)UI::QueryWidget(`id(`profile), `CurrentItem ) );
 	}
 
 	if( ret == `start )
@@ -2766,7 +3011,7 @@ global define symbol SelectProfileDialog() ``{
 		{
 		    // start config. workflow for the new profile
 		    ret = `edit;
-		    Backup::RestoreSettingsFromBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
+		    Backup::RestoreSettingsFromBackupProfile((string)UI::QueryWidget(`id(`profile), `CurrentItem ) );
 		}
 	    }
 	}
@@ -2775,12 +3020,12 @@ global define symbol SelectProfileDialog() ``{
 	    // remove the selected profile
 	    if ( Popup::YesNo ( _("Remove the selected profile?") ) )
 	    {
-		Backup::RemoveBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
+		Backup::RemoveBackupProfile( (string)UI::QueryWidget(`id(`profile), `CurrentItem ) );
 		UI::ReplaceWidget( `id(`selectionBox),
 		    `Table(`id(`profile), `header(tableheader1, tableheader2, tableheader3), Backup::BackupProfileDescriptions() ));
 
 		// select the first profile in the list
-		UI::ChangeWidget( `id(`profile), `CurrentItem, select( Backup::BackupProfileNames(), 0, nil ) );
+		UI::ChangeWidget( `id(`profile), `CurrentItem, (string)select( Backup::BackupProfileNames(), 0, nil ) );
 	    }
 	}
 	else if( ret == `manual )
@@ -2791,7 +3036,7 @@ global define symbol SelectProfileDialog() ``{
 	}
 	else if (ret == `cron)
 	{
-	    string selprofile = UI::QueryWidget(`id(`profile), `CurrentItem);
+	    string selprofile = (string)UI::QueryWidget(`id(`profile), `CurrentItem);
 
 	    if (selprofile != nil)
 	    {
@@ -2846,39 +3091,6 @@ global define symbol PrepareSearching() ``{
 }
 
 /**
- * Allow user to enter a new profile name. If the profile already exists, it allows
- * to replace it.
- * @return string the name for the new profile, "" for cancel
- */
-global define string AskNewProfileName() ``{
-    // Translators: text of a popup dialog
-    map new_name = ShowEditDialog(_("Enter a name for the new profile."), "", nil);
-
-    while( lookup( new_name, "clicked", nil ) == `ok && Backup::backup_profiles[ new_name["text"]:nil ]:nil != nil  )
-    {
-	// Translators: error popup, %1 is profile name
-	if( ! Popup::YesNo(sformat(_("A profile '%1' already exists.
-Replace the existing profile?
-"), new_name["text"]:"")) ) {
-	    new_name = ShowEditDialog(_("Enter a name for the new profile."), "", nil);
-	}
-	else
-	{
-	    // yes, do replace
-	    return new_name[ "text" ]:"";
-	}
-    }
-
-    if( lookup( new_name, "clicked", nil ) == `ok ) {
-	return new_name["text"]:"";
-    }
-    else
-    {
-	return "";
-    }
-}
-
-/**
  * Directory selection dialog
  * @param label dialog label
  * @param dir start directory
@@ -2910,13 +3122,14 @@ global define map DirPopup(string label, string dir) ``{
 
     UI::SetFocus(`id(`ok));
 
-    symbol input = UI::UserInput();
+    symbol input = (symbol)UI::UserInput();
 
     while (input != `ok && input != `cancel)
     {
 	if (input == `browse)
 	{
-	    string new = PopupDir(dir);
+	    // title in the file selection dialog
+	    string new = UI::AskForExistingDirectory(dir, _("Directory selection"));
 
 	    if (size(new) > 0)
 	    {
@@ -2924,61 +3137,14 @@ global define map DirPopup(string label, string dir) ``{
 	    }
 	}
 
-	input = UI::UserInput();
+	input = (symbol)UI::UserInput();
     }
 
-    string newval = UI::QueryWidget(`id(`dir), `Value);
+    string newval = (string)UI::QueryWidget(`id(`dir), `Value);
 
     UI::CloseDialog();
 
     return $[ "input" : input, "dir" : newval ];
-}
-
-/**
- * Convert size description to string
- * @param s volume size
- * @param user_size user defined size
- * @return string result
- */
-global define string symbol2string(symbol s, integer user_size) ``{
-
-    y2milestone("s: %1, user_size: %2", s, user_size);
-
-    string ret = "";
-
-    if (s == nil)
-    {
-	return ret;
-    }
-
-    if (s == `user)
-    {
-	map tmp = size2map(user_size);
-	return tmp["string"]:"";
-    }
-
-    foreach(map m, Backup::media_descriptions,
-	``{
-	    symbol sym = m["symbol"]:nil;
-	    integer cap = m["capacity"]:nil;
-	    string label = m["label"]:"";
-
-	    y2milestone("symbol: %1", m["symbol"]:nil);
-
-	    if (sym == s)
-	    {
-		ret = label;
-
-		if (cap > 0)
-		{
-		    map tmp = size2map(cap);
-		    ret = ret + sformat(" (%1)", tmp["string"]:"");
-		}
-	    }
-	}
-    );
-
-    return ret;
 }
 
 /**
@@ -2989,7 +3155,7 @@ global define string symbol2string(symbol s, integer user_size) ``{
 global define map size2map(integer sz) ``{
     string ret = "";
     symbol ret_unit = `B;
-    map unit_descr = $[];
+    map<symbol,string> unit_descr = $[];
 
     if (sz == nil)
     {
@@ -2998,8 +3164,8 @@ global define map size2map(integer sz) ``{
 
     foreach(map m, Backup::units_description,
 	``{
-	    symbol s = m["symbol"]:nil;
-	    string label = m["label"]:nil;
+	    symbol s = (symbol)(m["symbol"]:nil);
+	    string label = (string)(m["label"]:nil);
 
 	    if (s != nil && size(label) > 0)
 	    {
@@ -3060,164 +3226,88 @@ global define map size2map(integer sz) ``{
 }
 
 /**
- * Ask whether archive can be overwritten if it already exists
- * @return boolean true when archive can be overwritten, nil when an error occured (e.g. NFS mount failed)
+ * Convert size description to string
+ * @param s volume size
+ * @param user_size user defined size
+ * @return string result
  */
-global define boolean WriteArchive() ``{
-    boolean ret = true;
+global define string symbol2string(symbol s, integer user_size) ``{
 
-    y2milestone("target_type: %1", Backup::target_type);
+    y2milestone("s: %1, user_size: %2", s, user_size);
 
-    boolean exists = (Backup::target_type == `file) ?
-	(SCR::Read(.target.size, Backup::archive_name) >= 0) :
-	NFSFileExists(Backup::nfsserver, Backup::nfsexport, Backup::archive_name);
+    string ret = "";
 
-    y2milestone("exists: %1", exists);
-
-    if (exists == true)
+    if (s == nil)
     {
-	// For translators %1 is archive file name (e.g. /tmp/backup.tar)
-	ret = Popup::YesNo(sformat(_("File %1 already exists.\nDo you wish to overwrite it?"), Backup::archive_name));
+	return ret;
     }
-    else if (exists == nil)
+
+    if (s == `user)
     {
-	ret = nil;
+	map tmp = size2map(user_size);
+	return (string)(tmp["string"]:"");
+    }
+
+    foreach(map m, Backup::media_descriptions,
+	``{
+	    symbol sym = (symbol)(m["symbol"]:nil);
+	    integer cap = (integer)(m["capacity"]:nil);
+	    string label = (string)(m["label"]:"");
+
+	    y2milestone("symbol: %1", m["symbol"]:nil);
+
+	    if (sym == s)
+	    {
+		ret = label;
+
+		if (cap > 0)
+		{
+		    map tmp = size2map(cap);
+		    ret = ret + sformat(" (%1)", tmp["string"]:"");
+		}
+	    }
+	}
+    );
+
+    return ret;
+}
+
+/**
+ * Convert list of strings to list of items
+ * @param start_id identification of the first item
+ * @param type description of item
+ * @param input input
+ * @return list<term> result
+ */
+global define list<term> list2items(integer start_id, string type, list<string> input) ``{
+    list<term> ret = [];
+    integer i = start_id;
+
+    if (size(input) > 0)
+    {
+	foreach(string itm, input, ``{
+		ret = add(ret, `item(`id(i), itm, type));
+		i = i + 1;
+	    }
+	);
     }
 
     return ret;
 }
 
 /**
- * Check available free space and decide whether archive will fit
- * @param found_size total size of found files in bytes
- * @param tmp_dir selected temporary directory
- * @param target_dir target archive directory
- * @param target_type target archive type
- * @return boolean true = archive fits, false = it doesn't fit,
- *    nil = may not fit (compression is used, there is no guarantee that
- *    archive will fit but it can be possible if compression ratio will
- *    be enough high
+ * Create contstraints table content, add directories, regular expressions and
+ * file systems to exclude
+ * @return list list of items
  */
+global define list createConstraintsTable() ``{
+    list items = [];
 
-global define boolean check_space(integer found_size, string tmp_dir, string target_dir, symbol target_type) ``{
+    items = merge(items, list2items(size(items), directory_text, Backup::dir_list));
+    items = merge(items, list2items(size(items), regexp_text, Backup::regexp_list));
+    items = merge(items, list2items(size(items), filesystem_text, Backup::fs_exclude));
 
-    // required size in 1024-blocks
-    found_size = found_size / 1024;
-
-    map available_tmp = get_free_space(tmp_dir);
-    map available_target = get_free_space(target_dir);
-
-    if (size(available_target) == 0 || size(available_tmp) == 0)
-    {
-	return true;
-    }
-
-    boolean fits = true;
-
-    // temporary and target directories are same
-    if (available_tmp["device"]:nil == available_target["device"]:nil)
-    {
-	integer free = available_target["free"]:0;
-	// required space is doubled (tmpdir + target_dir)
-	integer required = found_size + found_size;
-
-	fits = is_space(required, free, target_type);
-
-	if (display_free_space_warning(fits, target_dir) == false)
-	{
-	    return false;
-	}
-    }
-    else
-    // temporary location and target directories are different
-    {
-	fits = is_space(found_size, available_target["free"]:0, target_type);
-	if (display_free_space_warning(fits, target_dir) == false)
-	{
-	    return false;
-	}
-
-	fits = is_space(found_size, available_tmp["free"]:0, target_type);
-	if (display_free_space_warning(fits, tmp_dir) == false)
-	{
-	    return false;
-	}
-    }
-
-    return true;
-}
-
-/**
- * Check whether there is enough free space.
- * @param required required space in kB
- * @param available required space in kB
- * @param target_type selected target archive type
- * @return boolean true = there is enough free space, false = not enough free space,
- *   nil = may be not enough space (compression is used, impossible to tell exactly)
- */
-
-global define boolean is_space(integer required, integer available, symbol target_type) ``{
-
-    if (available < 0)
-    {
-	return false;
-    }
-
-    if (contains( [`tgz, `stgz, `tbz, `stbz], target_type))
-    {
-	// require at least 10M extra free space (overhead)
-	return (required + 10240 < available) ? true : nil;
-    }
-    else if (target_type == `tar || target_type == `star)
-    {
-	// require at least 10M extra free space (overhead)
-	return required + 10240 < available;
-    }
-    else if (target_type == `txt)
-    {
-	// require at least 500k extra free space (overhead)
-	return required + 500 < available;
-    }
-    else
-    {
-	y2warning("Unknown archive type: %1", target_type);
-    }
-
-    return nil;
-}
-
-/**
- * Display warning dialog - there is (may) not enough free space in the directory.
- * The dialog is not displayed when cron mode is active (there is no real UI).
- * @param dir directory
- * @param fits if true no dialog is displayed, if false display "there is no space",
- * if nil display "there may not be space"
- * @return boolean false = abort backup
- */
-
-global define boolean display_free_space_warning(boolean fits, string dir) ``{
-    boolean cont = true;
-
-    // don't ask in cron mode - there is no UI
-    // always continue, summary mail with fail message
-    // will be sent to root user
-    if (cron_mode == true)
-    {
-	return cont;
-    }
-
-    if (fits == false)
-    {
-	// there is no enough space
-	cont = Popup::YesNo(sformat(_("There is not enough free space in directory %1.\nDo you wish to continue anyway?"), dir));
-    }
-    else if (fits == nil)
-    {
-	// may be that there is not enough space
-	cont = Popup::YesNo(sformat(_("There may not be enough free space in directory %1.\nDo you wish to continue anyway?"), dir));
-    }
-
-    return cont;
+    return items;
 }
 
 
@@ -3298,9 +3388,9 @@ global define symbol ConstraintDialog() ``{
 
     while (ret != `next && ret != `back && ret != `abort)
     {
-	ret = UI::UserInput();
+	ret = (symbol)UI::UserInput();
 
-	integer curr = UI::QueryWidget(`id(`const), `CurrentItem);
+	integer curr = (integer)UI::QueryWidget(`id(`const), `CurrentItem);
 	string type = nil;
 	string value = nil;
 
@@ -3308,7 +3398,7 @@ global define symbol ConstraintDialog() ``{
 	{
 	    y2milestone("current item: %1", curr);
 
-	    term line = UI::QueryWidget(`id(`const), `Item(curr));
+	    term line = (term)UI::QueryWidget(`id(`const), `Item(curr));
 	    y2milestone("current option: %1", line);
 
 	    type = select(line, 2, nil);
@@ -3345,7 +3435,7 @@ global define symbol ConstraintDialog() ``{
 
             if (result["clicked"]:nil == `ok)
             {
-                string new_txt = result["text"]:nil;
+                string new_txt = (string)(result["text"]:nil);
 
 		if (new_txt != nil && new_txt != value)
 		{
@@ -3402,7 +3492,7 @@ global define symbol ConstraintDialog() ``{
 
             if (result["clicked"]:nil == `ok)
             {
-                string new_regexp = result["text"]:nil;
+                string new_regexp = (string)(result["text"]:nil);
 
                 // add item only if it's not empty and it isn't already in list
                 if (new_regexp != "" && new_regexp != nil)
@@ -3429,7 +3519,7 @@ global define symbol ConstraintDialog() ``{
 
             if (result["clicked"]:nil == `ok)
             {
-                string new = result["text"]:nil;
+                string new = (string)(result["text"]:nil);
 
                 // add item only if it's not empty and it isn't already in list
                 if (new != "" && new != nil)
@@ -3456,7 +3546,7 @@ global define symbol ConstraintDialog() ``{
 
             if (result["clicked"]:nil == `ok)
             {
-                string new = result["text"]:nil;
+                string new = (string)(result["text"]:nil);
 
                 // add item only if it's not empty and it isn't already in list
                 if (new != "" && new != nil)
@@ -3481,44 +3571,6 @@ global define symbol ConstraintDialog() ``{
     {
 	// Restore 'next' button
 	Wizard::RestoreNextButton();
-    }
-
-    return ret;
-}
-
-/**
- * Create contstraints table content, add directories, regular expressions and
- * file systems to exclude
- * @return list list of items
- */
-global define list createConstraintsTable() ``{
-    list items = [];
-
-    items = merge(items, list2items(size(items), directory_text, Backup::dir_list));
-    items = merge(items, list2items(size(items), regexp_text, Backup::regexp_list));
-    items = merge(items, list2items(size(items), filesystem_text, Backup::fs_exclude));
-
-    return items;
-}
-
-/**
- * Convert list of strings to list of items
- * @param start_id identification of the first item
- * @param type description of item
- * @param input input
- * @return list<term> result
- */
-global define list<term> list2items(integer start_id, string type, list<string> input) ``{
-    list<term> ret = [];
-    integer i = start_id;
-
-    if (size(input) > 0)
-    {
-	foreach(string itm, input, ``{
-		ret = add(ret, `item(`id(i), itm, type));
-		i = i + 1;
-	    }
-	);
     }
 
     return ret;

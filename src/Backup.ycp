@@ -102,12 +102,12 @@ global boolean default_display = false;			// display files before creating archi
 global boolean default_do_md5_test = true;
 global boolean default_perms = true;			// store RPM file if owner/permissions were changed
 
-global list default_default_dir = [ "/media", "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache", "/windows" ];		// default excluded directoried from search
-global list default_dir_list = default_default_dir;			// selected directoried to exclude
-global list default_regexp_list = [];
+global list<string> default_default_dir = [ "/media", "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache", "/windows" ];		// default excluded directoried from search
+global list<string> default_dir_list = default_default_dir;			// selected directoried to exclude
+global list<string> default_regexp_list = [];
 
 // iso9660 is used on CDROM, ntfs read-only
-global list default_fs_exclude = [ "iso9660", "ntfs" ];		// selected filesystems to exclude from search
+global list<string> default_fs_exclude = [ "iso9660", "ntfs" ];		// selected filesystems to exclude from search
 global list default_detected_fs = nil;			// detected filesystems
 
 global list default_detected_ext2 = nil;		// detected mounted ext2 filesystems
@@ -143,47 +143,50 @@ global string default_nfsexport = "";
 global boolean default_mail_summary = true;
 
 // global variables initialized to default values:
-global string archive_name = eval( default_archive_name );		// archive file name
-global string description = eval( default_description );		// user comment
-global symbol archive_type = eval( default_archive_type );		// archive type
+global string archive_name = default_archive_name;		// archive file name
+global string description = default_description;		// user comment
+global symbol archive_type = default_archive_type;		// archive type
 
-global boolean multi_volume = eval( default_multi_volume );
-global symbol volume_size = eval( default_volume_size );
-global string user_volume_size = eval( default_user_volume_size );
-global symbol user_volume_unit = eval( default_user_volume_unit );
+global boolean multi_volume = default_multi_volume;
+global symbol volume_size = default_volume_size;
+global string user_volume_size = default_user_volume_size;
+global symbol user_volume_unit = default_user_volume_unit;
 
 global integer user_vol_size = 0;
 global string temporary_dir = default_temporary_dir;
 global boolean mail_summary = default_mail_summary;
 
-global boolean search = eval( default_search );			// search files which do not belong to any package
-global boolean system = eval( default_system );			// backup system areas
-global boolean display = eval( default_display );		// display files before creating archive
-global boolean do_md5_test = eval( default_do_md5_test );
-global boolean perms = eval( default_perms );
+global boolean search = default_search;			// search files which do not belong to any package
+global boolean system = default_system;			// backup system areas
+global boolean display = default_display;		// display files before creating archive
+global boolean do_md5_test = default_do_md5_test;
+global boolean perms = default_perms;
 
 global symbol target_type = default_target_type;
 //global string target_device = default_target_device;
 //global map target_devices_options = default_target_devices_options;
 
-global list default_dir = eval( default_default_dir ); 		// default excluded directoried from search
-global list dir_list = eval( default_dir_list );		// selected directoried to exclude
+global list<string> default_dir = default_default_dir;		// default excluded directoried from search
+global list<string> dir_list = default_dir_list;		// selected directoried to exclude
 
-global list regexp_list = eval(default_regexp_list);
+global list<string> regexp_list = default_regexp_list;
 
-global list fs_exclude = eval( default_fs_exclude );		// selected filesystems to exclude from search
-global list detected_fs = eval( default_detected_fs );		// detected filesystems
+global list<string> fs_exclude = default_fs_exclude;		// selected filesystems to exclude from search
+global list<string> detected_fs = default_detected_fs;		// detected filesystems
 
-global list detected_ext2 = eval( default_detected_ext2 );	// detected mounted ext2 filesystems
-global list ext2_backup = eval( default_ext2_backup );		// selected ext2 filesystems to backup
+global list<map> detected_ext2 = default_detected_ext2;	// detected mounted ext2 filesystems
+global list<term> ext2_backup = default_ext2_backup;		// selected ext2 filesystems to backup
 
-global boolean backup_pt = eval( default_backup_pt );		// backup partition table
+global boolean backup_pt = default_backup_pt;		// backup partition table
 
-global boolean backup_all_ext2 = eval( default_backup_all_ext2 );		// backup all mounted ext2 partitions
-global boolean backup_none_ext2 = eval( default_backup_none_ext2 );		// backup none ext2 partitions
-global boolean backup_selected_ext2 = eval( default_backup_selected_ext2 );	// backup selected ext2 partitions
+global boolean backup_all_ext2 = default_backup_all_ext2;		// backup all mounted ext2 partitions
+global boolean backup_none_ext2 = default_backup_none_ext2;		// backup none ext2 partitions
+global boolean backup_selected_ext2 = default_backup_selected_ext2;	// backup selected ext2 partitions
 
 global string tmp_dir = default_tmp_dir;
+
+global boolean cron_mode = false;
+global string cron_profile = "";
 
 //global boolean LVMsnapshot = default_LVMsnapshot;
 //global boolean testonly = default_testonly;
@@ -194,9 +197,9 @@ global string nfsserver = default_nfsserver;
 global string nfsexport = default_nfsexport;
 global string nfsmount = nil;	// NFS mount point, remember for unmounting
 
-global map backup_files = eval( default_backup_files );		// all found files to backup
-global map selected_files = eval( default_selected_files );	// selected files to backup
-global list unselected_files = eval( default_unselected_files );	// files, which user explicitly unselected
+global map backup_files = (map)eval( default_backup_files );		// all found files to backup
+global map selected_files = (map)eval( default_selected_files );	// selected files to backup
+global list unselected_files = default_unselected_files;	// files, which user explicitly unselected
 
 //global list selected_directories = default_selected_directories;
 //global list all_entered_dirs = default_all_entered_dirs;
@@ -209,6 +212,9 @@ global integer undetected_volume_size = 1024*1024*1024;
 
 global list installable_packages = [];
 global list complete_backup = [];
+
+// result of removing old archives
+global map remove_result = $[];
 
 // cached detected mount points
 map detected_mpoints = nil;
@@ -306,16 +312,16 @@ global list units_description = [
  * @return integer Size of medium in bytes
  */
 
-global define integer GetCapacity(list media, symbol m) ``{
+global define integer GetCapacity(list<map> media, symbol m) ``{
     integer result = nil;
 
     if (media != nil)
     {
-	foreach(`val, media,
+	foreach(map val, media,
 	    ``{
-		if (is(val, map) && lookup(val, "symbol", nil) == m)
+		if (is(val, map) && ((symbol)(val["symbol"]:nil)) == m)
 		{
-		    result = lookup(val, "capacity", nil);
+		    result = (integer)(val["capacity"]:nil);
 		}
 	    }
 	);
@@ -371,14 +377,14 @@ global define string get_search_script_parameters() ``{
 
 	if (size(fs_exclude) > 0)
 	{
-	    foreach(`i, fs_exclude, ``{script_options = script_options + " --exclude-fs " + i;});
+	    foreach(string i, fs_exclude, ``{script_options = script_options + " --exclude-fs " + i;});
 	}
 
     // save list of installable packages and pass it to the search script
     if (size(installable_packages) > 0)
     {
 	string content = mergestring(installable_packages, "\n");
-	string listfile = SCR::Read(.target.tmpdir) + "/packagelist";
+	string listfile = (string)SCR::Read(.target.tmpdir) + "/packagelist";
 
 	SCR::Write(.target.string, listfile, content);
 
@@ -391,7 +397,7 @@ global define string get_search_script_parameters() ``{
     }
 
     // add widget file option
-    script_options = script_options + " --widget-file " + SCR::Read(.target.tmpdir) + "/items.ycp";
+    script_options = script_options + " --widget-file " + ((string)SCR::Read(.target.tmpdir)) + "/items.ycp";
 
     // add package verification option
     script_options = script_options + " --pkg-verification";
@@ -444,7 +450,7 @@ global define string get_archive_script_parameters(string file_list, string file
     {
 	// store list of completely backed up files into a file
 	string complete_string = mergestring(complete_backup, "\n");
-	string tmpdir = SCR::Read(.target.tmpdir);
+	string tmpdir = (string)SCR::Read(.target.tmpdir);
 
 	SCR::Write(.target.string, tmpdir + "/complete_backup", complete_string);
 	archive_options = archive_options + " --complete-backup " + tmpdir + "/complete_backup";
@@ -467,10 +473,10 @@ global define string get_archive_script_parameters(string file_list, string file
 	    archive_options = archive_options + " --store-ptable";
 	}
 
-	list tmp_selected_pt = [];
-	foreach(`sel_tmp_pt, ext2_backup,	// get device names from `item(`id(XYZ), "XYZ")
+	list<string> tmp_selected_pt = [];
+	foreach(term sel_tmp_pt, ext2_backup,	// get device names from `item(`id(XYZ), "XYZ")
 	    ``{
-		string tmp = select(sel_tmp_pt, 1, nil);
+		string tmp = (string)(sel_tmp_pt[1]:nil);
 
 		if (tmp != nil)
 		{
@@ -479,11 +485,24 @@ global define string get_archive_script_parameters(string file_list, string file
 	    }
 	);
 
-	list partitions = (backup_all_ext2) ? detected_ext2 : (backup_none_ext2 ? [] : tmp_selected_pt);
+	list<string> detected_ext2_strings = [];
+
+	foreach(map info, detected_ext2,
+	    ``{
+		string part = (string)(info["partition"]:nil);
+
+		if (part != nil)
+		{
+		    detected_ext2_strings = add(detected_ext2_strings, part);
+		}
+	    }
+	);
+
+	list<string> partitions = (backup_all_ext2) ? detected_ext2_strings : (backup_none_ext2 ? [] : tmp_selected_pt);
 
 	y2milestone("Backup Ext2 partitions: %1", partitions);
 
-	foreach(`spt, partitions, ``{archive_options = archive_options + " --store-ext2 " + spt;});
+	foreach(string spt, partitions, ``{archive_options = archive_options + " --store-ext2 " + spt;});
     }
 
 
@@ -540,14 +559,14 @@ global define string get_archive_script_parameters(string file_list, string file
  */
 
 global define void ExcludeNodevFS() ``{
-    map filesystems = SCR::Read(.proc.filesystems);
+    map<string,string> filesystems = (map<string,string>)SCR::Read(.proc.filesystems);
 
     if (filesystems == nil)
     {
 	return;
     }
 
-    foreach(`k, `v, filesystems, ``{
+    foreach(string k, string v, filesystems, ``{
 	    if (v == "nodev")
 	    {
 		fs_exclude = add(fs_exclude, k);
@@ -587,13 +606,13 @@ global define map WriteProfile(list volumes) ``{
 
     // change prefix according to volume size or archive destination
     // check if file is written to NFS file system
-    list fs = SCR::Read(.proc.mounts);
+    list<map> fs = (list<map>)SCR::Read(.proc.mounts);
 
-    fs = filter(map info, fs, ``{return (lookup(info, "vfstype", "") == "nfs");});
+    fs = filter(map info, fs, ``{return ((string)(info["vfstype"]:"")) == "nfs";});
 
     foreach(map info, fs, ``{
-	    string mountpoint = lookup(info, "file", "");
-	    string spec = lookup(info, "spec", "");
+	    string mountpoint = info["file"]:"";
+	    string spec = info["spec"]:"";
 
 	    string server = substring(spec, 0, findfirstof(spec, ":"));
 	    string remdir = substring(spec, findfirstof(spec, ":") + 1);
@@ -714,8 +733,8 @@ global define map ReadCronSetting(string filename) ``{
 	return ret;
     }
 
-    string filecontent = SCR::Read(.target.string, filename);
-    list lines = splitstring(filecontent, "\n");
+    string filecontent = (string)SCR::Read(.target.string, filename);
+    list<string> lines = splitstring(filecontent, "\n");
 
     // filter out comments
     lines = filter(string l, lines, ``(!regexpmatch(l, "^[ \t]*#")));
@@ -849,20 +868,20 @@ are not fully supported.
 
 global define void ReadCronSettings() ``{
     string crondir = "/etc/cron.d";
-    list files = SCR::Read(.target.dir, crondir);
+    list<string> files = (list<string>)SCR::Read(.target.dir, crondir);
 
     // reset cron setings
     foreach(string name, map opts, backup_profiles, ``{
 
-	    map tmp = eval(opts);
-	    map cr = eval(opts[`cron_settings]:$[]);
+	    map tmp = (map)eval(opts);
+	    map cr = (map)eval(opts[`cron_settings]:$[]);
 
 	    cr["cronfile"] = "";
 	    cr["cron_changed"] = false;
 
-	    tmp[`cron_settings] = eval(cr);
+	    tmp[`cron_settings] = (map)eval(cr);
 
-	    backup_profiles[name] = eval(tmp);
+	    backup_profiles[name] = (map)eval(tmp);
 	}
     );
 
@@ -887,20 +906,20 @@ global define void ReadCronSettings() ``{
 		    if (cron != $[] && cron != nil)
 		    {
 			string profilename = cron["profilename"]:"";
-			map cronsettings = eval(cron["cronsettings"]:$[]);
+			map cronsettings = (map)eval(cron["cronsettings"]:$[]);
 
 			// update profile
 			if (profilename != "" && cronsettings != $[])
 			{
-			    map profile = eval(backup_profiles[profilename]:$[]);
+			    map profile = (map)eval(backup_profiles[profilename]:$[]);
 
 			    cronsettings["cronfile"] = crondir + "/" + file;
 
 			    // merge maps - include old backup settings from read profile
-			    cronsettings = union(eval(profile[`cron_settings]:$[]), cronsettings);
+			    cronsettings = union((map)eval(profile[`cron_settings]:$[]), cronsettings);
 
-			    profile[`cron_settings] = eval(cronsettings);
-			    backup_profiles[profilename] = eval(profile);
+			    profile[`cron_settings] = (map)eval(cronsettings);
+			    backup_profiles[profilename] = (map)eval(profile);
 			}
 		    }
 		}
@@ -919,7 +938,7 @@ global define void ReadCronSettings() ``{
  */
 
 global define boolean ReadBackupProfiles() ``{
-    backup_profiles = SCR::Read( .target.ycp, "/var/adm/YaST/backup/profiles" );
+    backup_profiles = (map)SCR::Read( .target.ycp, "/var/adm/YaST/backup/profiles" );
 
     // if the list is empty or the file does not exists, set empty map
     if( backup_profiles == nil ) backup_profiles = $[];
@@ -939,6 +958,51 @@ global define boolean ReadBackupProfiles() ``{
     ReadCronSettings();
 
     return ( backup_profiles != $[] ) ;
+}
+
+/**
+ * Create cron file content for selected profile.
+ * @param profilename Name of the profile
+ * @return string Cron content or empty string if profile has
+ *         disabled automatic start
+ */
+
+global define string CreateCronSetting(string profilename) ``{
+    map input = backup_profiles[profilename, `cron_settings]:$[];
+    string ret = "";
+
+    // return empty string if cron setting was not changed
+    if (input == nil || input == $[] || input["cron_changed"]:false == false)
+    {
+	return ret;
+    }
+
+    if (input["auto"]:false == true)
+    {
+	integer hour = input["hour"]:0;
+	integer minute = input["minute"]:0;
+	integer day = input["day"]:1;
+	integer weekday = input["weekday"]:0;
+	symbol every = input["every"]:`unknown;
+
+	if (every == `day)
+	{
+	    ret = sformat("%1 %2 * * *  root  /usr/lib/YaST2/bin/backup_cron \"profile=%3\"\n", minute, hour, profilename);
+	}
+	else if (every == `week)
+	{
+	    ret = sformat("%1 %2 * * %3  root  /usr/lib/YaST2/bin/backup_cron \"profile=%4\"\n", minute, hour, weekday, profilename);
+	}
+	else if (every == `month)
+	{
+	    ret = sformat("%1 %2 %3 * *  root  /usr/lib/YaST2/bin/backup_cron \"profile=%4\"\n", minute, hour, day, profilename);
+	}
+
+	// add comment to the first line
+	ret = "# Please do not edit this file manually, use YaST2 backup module instead\n" + ret;
+    }
+
+    return ret;
 }
 
 
@@ -983,12 +1047,12 @@ global define void WriteCronSettings() ``{
 	    }
 
 	    // mark saved value as unchanged
-	    map prof = eval(backup_profiles[name]:$[]);
-	    map cron_s = eval(prof[`cron_settings]:$[]);
+	    map prof = (map)eval(backup_profiles[name]:$[]);
+	    map cron_s = (map)eval(prof[`cron_settings]:$[]);
 
 	    cron_s["cron_changed"] = false;
-	    prof[`cron_settings] = eval(cron_s);
-	    backup_profiles[name] = eval(prof);
+	    prof[`cron_settings] = (map)eval(cron_s);
+	    backup_profiles[name] = (map)eval(prof);
 	}
     );
 }
@@ -1094,15 +1158,16 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
     display =		profile[ `display ]:		default_display;
     do_md5_test =	profile[ `do_md5_test ]:	default_do_md5_test;
     default_dir =	profile[ `default_dir ]:	default_default_dir;
-    dir_list =		profile[ `dir_list ]:		default_dir_list;
+
+//    dir_list =		profile[ `dir_list ]:		default_dir_list;
+
+    any read_dir_list = profile[ `dir_list ]:		default_dir_list;
 
     // convert list of items to list of strings
-    if (size(dir_list) > 0)
-    {
-	if (is(dir_list[0]:"", term))
+	if (is(read_dir_list, list<term>))
 	{
 	    // convert dir list from the old format
-	    list new_dir_list = [];
+	    list<string> new_dir_list = [];
 
 	    foreach(term i, dir_list,
 		``{
@@ -1122,7 +1187,14 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
 
 	    dir_list = new_dir_list;
 	}
-    }
+	else if (is(read_dir_list, list<string>))
+	{
+	    dir_list = read_dir_list;
+	}
+	else
+	{
+	    y2warning("Excluded directories - unsupported data type, value is %1", read_dir_list);
+	}
 
     fs_exclude =	profile[ `fs_exclude ]:		default_fs_exclude;
     detected_fs =	profile[ `detected_fs ]:	default_detected_fs;
@@ -1163,28 +1235,28 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
 global define void RestoreDefaultSettings() ``{
 
     // setup global settings according to defaults
-    archive_name = eval( default_archive_name );
-    description = eval( default_description );
-    archive_type = eval( default_archive_type );
-    multi_volume = eval( default_multi_volume );
-    volume_size = eval( default_volume_size );
-    user_volume_size = eval( default_user_volume_size );
-    user_volume_unit = eval( default_user_volume_unit );
-    search = eval( default_search );
-    system = eval( default_system );
-    display = eval( default_display );
-    do_md5_test = eval( default_do_md5_test );
-    default_dir = eval( default_default_dir );
-    dir_list = eval( default_dir_list );
-    fs_exclude = eval( default_fs_exclude );
-    detected_fs = eval( default_detected_fs );
-    detected_ext2 = eval( default_detected_ext2 );
-    ext2_backup = eval( default_ext2_backup );
-    backup_pt = eval( default_backup_pt );
-    backup_all_ext2 = eval( default_backup_all_ext2 );
-    backup_none_ext2 = eval( default_backup_none_ext2 );
-    backup_selected_ext2 = eval( default_backup_selected_ext2 );
-    unselected_files = eval( default_unselected_files );
+    archive_name = default_archive_name;
+    description = default_description;
+    archive_type = default_archive_type;
+    multi_volume = default_multi_volume;
+    volume_size = default_volume_size;
+    user_volume_size = default_user_volume_size;
+    user_volume_unit = default_user_volume_unit;
+    search = default_search;
+    system = default_system;
+    display = default_display;
+    do_md5_test = default_do_md5_test;
+    default_dir = default_default_dir;
+    dir_list = default_dir_list;
+    fs_exclude = default_fs_exclude;
+    detected_fs = default_detected_fs;
+    detected_ext2 = default_detected_ext2;
+    ext2_backup = default_ext2_backup;
+    backup_pt = default_backup_pt;
+    backup_all_ext2 = default_backup_all_ext2;
+    backup_none_ext2 = default_backup_none_ext2;
+    backup_selected_ext2 = default_backup_selected_ext2;
+    unselected_files = default_unselected_files;
 //    all_entered_dirs =	eval( default_all_entered_dirs );
 //    selected_directories = eval( default_selected_directories );
 //    LVMsnapshot = default_LVMsnapshot;
@@ -1200,8 +1272,8 @@ global define void RestoreDefaultSettings() ``{
     tmp_dir = default_tmp_dir;
     regexp_list = default_regexp_list;
 
-    selected_files = eval( default_selected_files );
-    backup_files = eval( default_backup_files );
+    selected_files = (map)eval(default_selected_files);
+    backup_files = (map)eval(default_backup_files);
 
     selected_profile = nil;
 }
@@ -1215,95 +1287,6 @@ global define list BackupProfileNames() ``{
     if( result == nil ) return [];
     else return sort( result );
 }
-
-/**
- * Helper function to extract the list of currently available profiles
- * @return list List of item used in the table widget
- */
-global define list BackupProfileDescriptions() ``{
-    list result = maplist( string key, map value, backup_profiles,
-        ``{
-	    // description can be multiline - merge lines
-	    string descr = mergestring(splitstring(value[`description]:default_description, "\n"), " ");
-	    map displayinfo = UI::GetDisplayInfo();
-	    // limit size of description shown in the table
-	    // maximum length half of width in ncurses UI
-	    integer maxsize = (displayinfo["TextMode"]:false) ? (displayinfo["Width"]:80 / 2) : 40;
-
-	    if (size(descr) > maxsize)
-	    {
-		// use only the beginning of the description, add dots
-		descr = substring(descr, 0, maxsize) + "...";
-	    }
-
-	    return `item( `id( key ), key, descr, CreateCronDescription(key) );
-	}
-    );
-
-    if( result == nil ) return [];
-    else return result;
-}
-
-/**
- * Remove given profile.
- * @param profile_name name of a profile to be removed
- * @return If the name of the profile cannot be found, return false, otherwise return true.
- */
-global define boolean RemoveBackupProfile( string profile_name ) ``{
-    // return false, is there is no such profile
-    if( !haskey( backup_profiles, profile_name ) ) return false;
-
-    backup_profiles = remove( backup_profiles, profile_name );
-
-    return true;
-}
-
-
-/**
- * Create cron file content for selected profile.
- * @param profilename Name of the profile
- * @return string Cron content or empty string if profile has
- *         disabled automatic start
- */
-
-global define string CreateCronSetting(string profilename) ``{
-    map input = backup_profiles[profilename, `cron_settings]:$[];
-    string ret = "";
-
-    // return empty string if cron setting was not changed
-    if (input == nil || input == $[] || input["cron_changed"]:false == false)
-    {
-	return ret;
-    }
-
-    if (input["auto"]:false == true)
-    {
-	integer hour = input["hour"]:0;
-	integer minute = input["minute"]:0;
-	integer day = input["day"]:1;
-	integer weekday = input["weekday"]:0;
-	symbol every = input["every"]:`unknown;
-
-	if (every == `day)
-	{
-	    ret = sformat("%1 %2 * * *  root  /usr/lib/YaST2/bin/backup_cron \"profile=%3\"\n", minute, hour, profilename);
-	}
-	else if (every == `week)
-	{
-	    ret = sformat("%1 %2 * * %3  root  /usr/lib/YaST2/bin/backup_cron \"profile=%4\"\n", minute, hour, weekday, profilename);
-	}
-	else if (every == `month)
-	{
-	    ret = sformat("%1 %2 %3 * *  root  /usr/lib/YaST2/bin/backup_cron \"profile=%4\"\n", minute, hour, day, profilename);
-	}
-
-	// add comment to the first line
-	ret = "# Please do not edit this file manually, use YaST2 backup module instead\n" + ret;
-    }
-
-    return ret;
-}
-
 
 /**
  * Create description of automatic backup.
@@ -1338,8 +1321,8 @@ global define string CreateCronDescription(string profilename) ``{
 
 	string bashcommand = sformat("/bin/date --date '%1:%2' '+%3'", hour, minute, timeformat);
 	// convert hour and minutes to localized time string - use date utility
-	map result = SCR::Execute(.target.bash_output, bashcommand);
-	string ltime  = mergestring(splitstring(result["stdout"]:"", "\n"), "");
+	map result = (map)SCR::Execute(.target.bash_output, bashcommand);
+	string ltime  = mergestring(splitstring((string)(result["stdout"]:""), "\n"), "");
 
 	if (ltime == "")
 	{
@@ -1367,6 +1350,50 @@ global define string CreateCronDescription(string profilename) ``{
 }
 
 /**
+ * Helper function to extract the list of currently available profiles
+ * @return list List of item used in the table widget
+ */
+global define list<term> BackupProfileDescriptions() ``{
+    list result = maplist( string key, map value, backup_profiles,
+        ``{
+	    // description can be multiline - merge lines
+	    string descr = mergestring(splitstring(value[`description]:default_description, "\n"), " ");
+	    map displayinfo = UI::GetDisplayInfo();
+	    // limit size of description shown in the table
+	    // maximum length half of width in ncurses UI
+	    integer maxsize = (displayinfo["TextMode"]:false) ? (displayinfo["Width"]:80 / 2) : 40;
+
+	    if (size(descr) > maxsize)
+	    {
+		// use only the beginning of the description, add dots
+		descr = substring(descr, 0, maxsize) + "...";
+	    }
+
+	    return `item( `id( key ), key, descr, CreateCronDescription(key) );
+	}
+    );
+
+    if (result == nil) return [];
+    else return result;
+}
+
+/**
+ * Remove given profile.
+ * @param profile_name name of a profile to be removed
+ * @return If the name of the profile cannot be found, return false, otherwise return true.
+ */
+global define boolean RemoveBackupProfile( string profile_name ) ``{
+    // return false, is there is no such profile
+    if( !haskey( backup_profiles, profile_name ) ) return false;
+
+    backup_profiles = remove( backup_profiles, profile_name );
+
+    return true;
+}
+
+
+
+/**
  * Try to detect all removable devices present in the system
  * @param only_writable return only writable devices (e.g. exclude CD-ROMs)
  * @return map Removable devices info
@@ -1376,7 +1403,7 @@ global define map RemovableDevices(boolean only_writable) ``{
     map ret = $[];
 
     // detect SCSI, IDE and floppy devices
-    list devs = merge(merge(SCR::Read(.probe.scsi), SCR::Read(.probe.ide)), SCR::Read(.probe.floppy));
+    list<map> devs = (list<map>)merge(merge((list<map>)SCR::Read(.probe.scsi), (list<map>)SCR::Read(.probe.ide)), (list<map>)SCR::Read(.probe.floppy));
 
     if (size(devs) > 0)
     {
@@ -1393,7 +1420,7 @@ global define map RemovableDevices(boolean only_writable) ``{
 		    // use non-rewinding tape device
 		    if (size(dev_name) > 0 && sub_class_id == 1)		// check if device is tape
 		    {
-			list parts = splitstring(dev, "/");
+			list<string> parts = splitstring(dev_name, "/");
 
 			// add 'n' to the device name if it is missing
 			// e.g. /dev/st0 (rewinding) -> /dev/nst0 (non-rewinding)
@@ -1473,7 +1500,7 @@ global define map RemovableDevices(boolean only_writable) ``{
 			map geometry = dev["resource", "disk_log_geo"]:$[];
 			integer sz = geometry["cylinders"]:0 * geometry["heads"]:0 * geometry["sectors"]:0;
 			integer sect_sz = (dev["size", "unit"]:"" == "sectors") ? (dev["size", "y"]:512) : 0;
-			integer raw_size = sz * sectors;
+			integer raw_size = sz * sect_sz;
 
 			// preselect medium size
 			if (raw_size == 96*64*32*512)
@@ -1485,7 +1512,7 @@ global define map RemovableDevices(boolean only_writable) ``{
 			{
 			    // unknown medium, use raw size minus 1MB for file system
 			    preselected = `user;
-			    user_size = raw - 1024*1024;
+			    user_size = raw_size - 1024*1024;
 			}
 
 		    }
@@ -1581,5 +1608,363 @@ global define string GetLocalArchiveName() ``{
     return ret;
 }
 
+/**
+ * Returns string generated from selected files list. String is in format which
+ * is accepted by backup_archive.pl script. Used global variables:
+ * selected_files, backup_files.
+ * @return map map with keys "filelist" (string - list of files), "sel_files"
+ *	(integer - number of selected files), "sel_packages" (integer: number
+ *	of selected packages).
+ * @see <a href="../backup_specification.html">Backup module specification</a>
+ */
+
+global define map MapFilesToString() ``{
+    string result = "";
+    integer num_files = 0;
+    integer num_pack = 0;
+
+    if (Backup::selected_files == nil || Backup::backup_files == nil)
+    {
+	return $[];
+    }
+
+    foreach(string pkg, map info, Backup::selected_files,
+        ``{
+            if (pkg != "")
+            {
+		string tmp = "Package: " + pkg + "\nInstalled: "
+		    + Backup::backup_files[pkg, "install_prefixes"]:"(none)" + "\n";
+
+		list<string> chfiles = info["changed_files"]:[];
+		result = result + tmp + mergestring(chfiles, "\n") + "\n";
+
+		num_files = num_files + size(chfiles);
+		num_pack = num_pack + 1;
+            }
+        }
+    );
+
+    list nopkg = Backup::selected_files["", "changed_files"]:[];
+
+    if (size(nopkg) > 0)
+    {
+	result = result + "Nopackage:\n" + mergestring(nopkg, "\n") + "\n";
+
+	num_files = num_files + size(nopkg);
+	num_pack = num_pack + 1;
+    }
+
+    return $[ "filelist" : result, "sel_files" : num_files, "sel_packages" : num_pack ];
 }
 
+/**
+ * Remove and/or rename old existing single archives
+ * @param name Archive name
+ * @param max Maximum count of existing archives
+ * @return map result
+ */
+global define map RemoveOldSingleArchives(string name, integer max) ``{
+    list removed = [];
+    map renamed = $[];
+
+    if (name == "" || name == nil)
+    {
+	return $[];
+    }
+
+    // check whether archive already exists
+    integer sz = (integer)SCR::Read(.target.size, name);
+
+    if (sz < 0)
+    {
+	// file doesn't exist, success
+	y2milestone("Archive doesn't exist");
+	return $[];
+    }
+
+    // check wheter older archives exist
+    list<string> parts = splitstring(name, "/");
+    string fname = parts[size(parts) - 1]:"";
+    string dir = mergestring(remove(parts, size(parts) - 1), "/");
+
+    if (size(fname) == 0)
+    {
+	return $[];
+    }
+
+    string command = "/bin/ls -1 -t " + dir + "/*-" + fname + " 2> /dev/null";
+    map result = (map)SCR::Execute(.target.bash_output, command);
+    list<string> files = splitstring(result["stdout"]:"", "\n");
+
+    list mv_dates = [];
+
+    // filter files with date - use regexp
+    files = filter(string file, files, ``(regexpmatch(file, "^" + dir + "/[0-9]{14}-" + fname + "$")));
+
+    y2milestone("Old archives: %1", files);
+
+    if (size(files) >= max && max >= 0)
+    {
+	// remove the old archives
+	while(size(files) >= max)
+	{
+	    string oldarchive = files[size(files) - 1]:"__DUMMY__";
+
+	    // remove old archive
+	    command = "/bin/rm -f " + oldarchive;
+	    y2milestone("Removing old archive: %1", oldarchive);
+	    result = (map)SCR::Execute(.target.bash_output, command);
+
+	    string removedoldarchive = oldarchive;
+
+	    // update NFS archive name
+	    if (Backup::target_type == `nfs)
+	    {
+		removedoldarchive = Backup::nfsserver + ":" + Backup::nfsexport + substring(oldarchive, size(Backup::nfsmount));
+	    }
+
+	    removed = add(removed, removedoldarchive);
+
+	    // remove old XML profile
+	    string oldXML = dir + "/" + GetBaseName(oldarchive) + ".xml";
+	    command = "/bin/rm -f " + oldXML;
+	    result = (map)SCR::Execute(.target.bash_output, command);
+
+	    // update NFS archive name
+	    if (Backup::target_type == `nfs)
+	    {
+		oldXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(oldXML, size(Backup::nfsmount));
+	    }
+
+	    removed = add(removed, oldXML);
+
+	    files = remove(files, size(files) - 1);
+	}
+    }
+
+    map stat = (map)SCR::Read(.target.stat, name);
+    integer ctime = stat["ctime"]:0;
+    string ctime_str = SecondsToDateString(ctime);
+
+    // rename existing archive
+    command = "/bin/mv -f " + name + " " + dir + "/" + ctime_str + "-" + fname;
+    result = (map)SCR::Execute(.target.bash_output, command);
+
+    string old_name = name;
+    string new_name = dir + "/" + ctime_str + "-" + fname;
+
+    // update NFS archive name
+    if (Backup::target_type == `nfs)
+    {
+	old_name = Backup::nfsserver + ":" + Backup::nfsexport + substring(name, size(Backup::nfsmount));
+	new_name = Backup::nfsserver + ":" + Backup::nfsexport + substring(new_name, size(Backup::nfsmount));
+	y2debug("NFS archive, old_name: %1, new_name: %2", old_name, new_name);
+    }
+
+
+//    renamed[name] = dir + "/" + ctime_str + "-" + fname;
+    renamed[old_name] = new_name;
+
+    // rename autoinstallation profile
+    string oldXML = dir + "/" + GetBaseName(name) + ".xml";
+    string newXML = dir + "/" + ctime_str + "-" + GetBaseName(fname) + ".xml";
+
+    command = "/bin/mv -f " + oldXML + " " + newXML;
+    result = (map)SCR::Execute(.target.bash_output, command);
+
+    // update NFS archive name
+    if (Backup::target_type == `nfs)
+    {
+	oldXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(oldXML, size(Backup::nfsmount));
+	newXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(newXML, size(Backup::nfsmount));
+	y2debug("NFS archive, oldXML: %1, newXML: %2", oldXML, newXML);
+    }
+
+    renamed[oldXML] = newXML;
+
+    return $[ "removed" : removed, "renamed" : renamed ];
+}
+
+
+/**
+ * Remove and/or rename old existing multivolume archives
+ * @param name Archive name
+ * @param max Maximum count of existing archives
+ * @return map result
+ */
+global define map RemoveOldMultiArchives(string name, integer max) ``{
+    list removed = [];
+    map renamed = $[];
+
+    if (name == "" || name == nil)
+    {
+	return $[];
+    }
+
+    // check wheter older archives exist
+    list<string> parts = splitstring(name, "/");
+    string fname = parts[size(parts) - 1]:"";
+    string dir = mergestring(remove(parts, size(parts) - 1), "/");
+
+    if (size(fname) == 0)
+    {
+	return $[];
+    }
+
+    // check whether first archive already exists
+    integer sz = (integer)SCR::Read(.target.size, dir + "/" + "01_" + fname);
+
+    if (sz < 0)
+    {
+	// file doesn't exist, success
+	y2milestone("First multivolume archive doesn't exist");
+	return $[];
+    }
+    else
+    {
+	y2milestone("First multivolume archive already exists");
+    }
+
+    string command = "/bin/ls -1 -t " + dir + "/*-*_" + fname + " 2> /dev/null";
+    map result = (map)SCR::Execute(.target.bash_output, command);
+    list<string> files = splitstring(result["stdout"]:"", "\n");
+
+    list mv_dates = [];
+
+    // filter files with date - use regexp
+    list multi = [];
+    foreach(string file, files, ``{
+	    if (regexpmatch(file, "^" + dir + "/[0-9]{14}-[0-9][0-9]+_" + fname + "$"))
+	    {
+		multi = add(multi, file);
+
+		string date = regexpsub(file,  "^" + dir + "/([0-9]{14})-[0-9][0-9]+_" + fname + "$", "\\1");
+
+		if (!contains(mv_dates, date))
+		{
+		    mv_dates = add(mv_dates, date);
+		}
+	    }
+	}
+    );
+    files = multi;
+
+    y2milestone("Old archives: %1", files);
+    y2milestone("Old archive dates: %1", mv_dates);
+
+    if (size(mv_dates) >= max && max >= 0)
+    {
+	// remove the old archives
+	while(size(mv_dates) >= max)
+	{
+	    string oldarchivedate = mv_dates[size(mv_dates) - 1]:"__DUMMY__";
+
+	    y2milestone("removing archives with date %1", oldarchivedate);
+
+	    foreach(string fn, files,
+		``{
+		    if (regexpmatch(fn, "^" + dir + "/" + oldarchivedate + "-[0-9]+_" + fname + "$"))
+		    {
+			// remove old archive
+			command = "/bin/rm -f " + fn;
+			y2milestone("Removing old volume: %1", fn);
+
+			// update NFS archive name
+			if (Backup::target_type == `nfs)
+			{
+			    fn = Backup::nfsserver + ":" + Backup::nfsexport + substring(fn, size(Backup::nfsmount));
+			}
+
+			removed = add(removed, fn);
+			SCR::Execute(.target.bash_output, command);
+		    }
+		}
+	    );
+
+	    // remove old XML profile
+	    string oldXML = dir + "/" + oldarchivedate + "-" + GetBaseName(fname) + ".xml";
+	    command = "/bin/rm -f " + oldXML;
+
+	    // update NFS archive name
+	    if (Backup::target_type == `nfs)
+	    {
+		oldXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(oldXML, size(Backup::nfsmount));
+	    }
+
+	    removed = add(removed, oldXML);
+	    result = (map)SCR::Execute(.target.bash_output, command);
+
+	    mv_dates = remove(mv_dates, size(mv_dates) - 1);
+	}
+    }
+
+    // get creation time of the first part of the archive
+    map stat = (map)SCR::Read(.target.stat, dir + "/" + "01_" + fname);
+    integer ctime = stat["ctime"]:0;
+    string ctime_str = SecondsToDateString(ctime);
+
+    command = "/bin/ls -1 -t " + dir + "/*_" + fname + " 2> /dev/null";
+    result = (map)SCR::Execute(.target.bash_output, command);
+    files = splitstring(result["stdout"]:"", "\n");
+    files = filter(string file, files, ``(regexpmatch(file, "^" + dir + "/[0-9]+_" + fname + "$")));
+    y2milestone("Existing volumes: %1", files);
+
+    foreach(string volume, files, ``{
+	list<string> vol_parts = splitstring(volume, "/");
+	string vol_fname = vol_parts[size(vol_parts) - 1]:"";
+	string vol_dir = mergestring(remove(vol_parts, size(vol_parts) - 1), "/");
+
+        // rename existing archive
+	string from =  vol_dir + "/" + vol_fname;
+	string to = vol_dir + "/" + ctime_str + "-" + vol_fname;
+        command = "/bin/mv -f " + from + " " + to;
+	result = (map)SCR::Execute(.target.bash_output, command);
+
+	// update NFS archive name
+	if (Backup::target_type == `nfs)
+	{
+	    from = Backup::nfsserver + ":" + Backup::nfsexport + substring(from, size(Backup::nfsmount));
+	    to = Backup::nfsserver + ":" + Backup::nfsexport + substring(to, size(Backup::nfsmount));
+	    y2debug("NFS archive, from: %1, to: %2", from, to);
+	}
+
+	renamed[from] = to;
+
+	y2milestone("renamed volume %1", volume);
+	}
+    );
+
+    // rename autoinstallation profile
+    string oldXML = dir + "/" + GetBaseName(name) + ".xml";
+    string newXML = dir + "/" + ctime_str + "-" + GetBaseName(fname) + ".xml";
+
+    command = "/bin/mv -f " + oldXML + " " + newXML;
+    result = (map)SCR::Execute(.target.bash_output, command);
+
+    // update NFS archive name
+    if (Backup::target_type == `nfs)
+    {
+	oldXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(oldXML, size(Backup::nfsmount));
+	newXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(newXML, size(Backup::nfsmount));
+	y2debug("NFS archive, oldXML: %1, newXML: %2", oldXML, newXML);
+    }
+
+    renamed[oldXML] = newXML;
+
+    return $[ "removed" : removed, "renamed" : renamed ];
+}
+
+/**
+ * Remove and/or rename old existing archives
+ * @param name Archive name
+ * @param max Maximum count of existing archives
+ * @param multivolume Is archive archive multivolume?
+ * @return map result
+ */
+global define map RemoveOldArchives(string name, integer max, boolean multivolume) ``{
+    return (multivolume == true) ? RemoveOldMultiArchives(name, max)
+	: RemoveOldSingleArchives(name, max);
+}
+
+
+}
