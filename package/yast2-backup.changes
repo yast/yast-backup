@@ -1,8 +1,9 @@
 -------------------------------------------------------------------
-Thu Oct 21 14:38:53 CEST 2004 - locilka@suse.de
+Thu Oct 21 14:38:53 CEST 2004 - locilka@suse.cz
 
 - Partly solved bug #45748, back button from "files to backup"
   pointed to wrong destination. 
+- 2.11.0
 
 -------------------------------------------------------------------
 Thu Oct 14 15:24:13 CEST 2004 - locilka@suse.cz
