@@ -2803,6 +2803,12 @@ global define symbol SummaryDialog() ``{
     return ret;
 }
 
+/**
+ * Display dialog with expert options (e.g. system area backup,
+ * temporary location...)
+ * @return symbol user input - widget ID
+ */
+
 global define symbol ExpertOptionsDialog() ``{
     // dialog header
     Wizard::SetContents( _("Expert Backup Options"),
@@ -2991,7 +2997,10 @@ global define symbol SelectProfileDialog() ``{
 	}
     } while( ret != `finish && ret != `manual && ret != `start && ret != `edit && ret != `cron && ret != `abort);
 
-    if( ret == `finish )
+    // save profiles before quit and
+    // before starting backup
+    // (modifications would be lost when backup is aborted
+    if (ret == `finish || ret == `start)
     {
 	y2milestone(" *** Storing profiles ***");
 	Backup::WriteBackupProfiles();
@@ -3268,11 +3277,12 @@ global define boolean WriteArchive() ``{
 /**
  * Check available free space and decide whether archive will fit
  * @param found_size total size of found files in bytes
- * @param tmpdir selected temporary directory
+ * @param tmp_dir selected temporary directory
+ * @param target_dir target archive directory
  * @param target_type target archive type
  * @return boolean true = archive fits, false = it doesn't fit,
  *    nil = may not fit (compression is used, there is no guarantee that
- *    archive will fit but can be possible if compression ration will
+ *    archive will fit but it can be possible if compression ratio will
  *    be enough high
  */
 
@@ -3308,13 +3318,13 @@ global define boolean check_space(integer found_size, string tmp_dir, string tar
     else
     // temporary location and target directories are different
     {
-	fits = is_space(required, available_target["free"]:0, target_type);
+	fits = is_space(found_size, available_target["free"]:0, target_type);
 	if (display_free_space_warning(fits, target_dir) == false)
 	{
 	    return false;
 	}
 
-	fits = is_space(required, available_tmp["free"]:0, target_type);
+	fits = is_space(found_size, available_tmp["free"]:0, target_type);
 	if (display_free_space_warning(fits, tmp_dir) == false)
 	{
 	    return false;
@@ -3324,8 +3334,16 @@ global define boolean check_space(integer found_size, string tmp_dir, string tar
     return true;
 }
 
+/**
+ * Check whether there is enough free space.
+ * @param required required space in kB
+ * @param available required space in kB
+ * @param target_type selected target archive type
+ * @return boolean true = there is enough free space, false = not enough free space,
+ *   nil = may be not enough space (compression is used, impossible to tell exactly)
+ */
 
-global define boolean is_space(integer required, integer available, symbol target_type)
+global define boolean is_space(integer required, integer available, symbol target_type) ``{
 
     if (available < 0)
     {
@@ -3355,13 +3373,22 @@ global define boolean is_space(integer required, integer available, symbol targe
     return nil;
 }
 
+/**
+ * Display warning dialog - there is (may) not enough free space in the directory.
+ * The dialog is not displayed when cron mode is active (there is no real UI).
+ * @param dir directory
+ * @param fits if true no dialog is displayed, if false display "there is no space",
+ * if nil display "there may not be space"
+ * @return boolean false = abort backup
+ */
+
 global define boolean display_free_space_warning(boolean fits, string dir) ``{
-    return cont = true;
+    boolean cont = true;
 
     // don't ask in cron mode - there is no UI
     // always continue, summary mail with fail message
     // will be sent to root user
-    if (Backup::cron_mode == true)
+    if (cron_mode == true)
     {
 	return cont;
     }
@@ -3369,12 +3396,12 @@ global define boolean display_free_space_warning(boolean fits, string dir) ``{
     if (fits == false)
     {
 	// there is no enough space
-	cont = Popup::YesNo(sformat(_("There is not enough free space in directory %1.\nDo you wish to continue anyway?"), tmpdir));
+	cont = Popup::YesNo(sformat(_("There is not enough free space in directory %1.\nDo you wish to continue anyway?"), dir));
     }
     else if (fits == nil)
     {
 	// may be that there is not enough space
-	cont = Popup::YesNo(sformat(_("There may not be enough free space in directory %1.\nDo you wish to continue anyway?"), tmpdir));
+	cont = Popup::YesNo(sformat(_("There may not be enough free space in directory %1.\nDo you wish to continue anyway?"), dir));
     }
 
     return cont;

@@ -1292,15 +1292,18 @@ global define string NFSfile(string server, string share, string filename) ``{
 	return nil;
     }
 
-    // TODO: check if filename begins with '/' character
-    return server + ":" + share + "/" + filename;
+    // check if filename begins with '/' character
+    string slash = (substring(filename, 0, 1) == "/") ? "" : "/";
+
+    return server + ":" + share + slash + filename;
 }
 
 
 /**
  * Get available space in the directory
  * @param directory selected directory
- * @return integer on success returns available space in 1024-blocks or -1 if failed
+ * @return map on success returns parsed df output in a map
+ * $["device" : string(device), "total" : integer(total), "used" : integer(used), "free" : integer(free) ]
  */
 
 global define map get_free_space(string directory) ``{
@@ -1330,7 +1333,7 @@ global define map get_free_space(string directory) ``{
     string used   = regexpsub(line,  "^([^ ]*) +([0-9]+) +([0-9]+) +([0-9]+) +[0-9]+%", "\\3");
     string free   = regexpsub(line,  "^([^ ]*) +([0-9]+) +([0-9]+) +([0-9]+) +[0-9]+%", "\\4");
 
-    return $["device" : device, "total" : total, "used" : used, "free" : free ];
+    return $["device" : device, "total" : tointeger(total), "used" : tointeger(used), "free" : tointeger(free) ];
 }
 
 }
