@@ -497,7 +497,15 @@ if (defined open(FILES, $files_info))
 
 		if (defined $opened)
 		{
-		    print PKGLIST $line."\n";
+		    if ($archive_type eq 'tgz' || $archive_type eq 'tbz2' || $archive_type eq 'tar')
+		    {
+			print PKGLIST $line."\n";
+		    }
+		    else
+		    {
+			# star doesn't use escape sequences
+			print PKGLIST remove_escape($line)."\n";
+		    }
 		}
 	    }
 	    else

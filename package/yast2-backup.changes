@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Jun 14 17:28:25 CEST 2004 - lslezak@suse.cz
+
+- backup files with backslash in file name (#40915)
+- temporary files are removed automatically
+- version 2.10.0
+
+-------------------------------------------------------------------
 Fri May 14 14:40:14 CEST 2004 - lslezak@suse.cz
 
 - NFS mount bugfix (pass empty string as paramater instead
