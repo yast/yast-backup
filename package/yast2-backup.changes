@@ -1,4 +1,16 @@
 -------------------------------------------------------------------
+Fri Apr 18 15:44:12 CEST 2003 - lslezak@suse.de
+
+- changed profile management dialog
+- automatic backup (cron mode):
+  new dialog for setting backup time
+  cron wrapper script
+  remove/rename existing archives
+  send summary mail to root
+  updated testsuite
+- version 2.8.1
+
+-------------------------------------------------------------------
 Thu Apr  3 13:04:31 CEST 2003 - lslezak@suse.de
 
 - fixed testsuites and help texts

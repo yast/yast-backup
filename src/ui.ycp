@@ -2506,7 +2506,7 @@ global define symbol SummaryDialog() ``{
     // cron mode
     if (cron_mode == true)
     {
-	SendSummary();
+	SendSummary(remove_result);
 
 	return `finish;
     }
@@ -2653,7 +2653,7 @@ global define symbol SelectProfileDialog() ``{
 		);
 
 		// select the profile in the list
-		UI::ChangeWidget( `id(`profile), `CurrentItem, new_name["text"]:"" );
+		UI::ChangeWidget( `id(`profile), `CurrentItem, new_name );
 	    }
 	}
 	else if( ret == `delete )
