@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Mon Aug 11 13:38:08 CEST 2003 - lslezak@suse.de
+
+- cron mode bugfixes
+- archive can be stored the NFS server
+- option for sending summary mail in the cron mode
+- merged proofread texts
+- summary text fixes
+- updated testsuite
+- version 2.8.3
+
+-------------------------------------------------------------------
 Mon Jun 30 14:53:52 CEST 2003 - lslezak@suse.de
 
 - make complete backup of updated packages

@@ -52,6 +52,7 @@ global define void update_cron_dialog() ``{
 	UI::ChangeWidget(`id(`minute), `Enabled, true);
 
 	UI::ChangeWidget(`id(`old), `Enabled, true);
+	UI::ChangeWidget(`id(`mail), `Enabled, true);
     }
     else
     {
@@ -62,9 +63,13 @@ global define void update_cron_dialog() ``{
 	UI::ChangeWidget(`id(`hour), `Enabled, false);
 	UI::ChangeWidget(`id(`minute), `Enabled, false);
 	UI::ChangeWidget(`id(`old), `Enabled, false);
+	UI::ChangeWidget(`id(`mail), `Enabled, false);
     }
 }
 
+/**
+ * Refresh widget states in the location dialog
+ */
 global define void update_location_dialog() ``{
     boolean nfs = (UI::QueryWidget(`id(`nfs), `Value) == true);
 //    boolean removable = (UI::QueryWidget(`id(`removable), `Value) == true);
@@ -77,12 +82,12 @@ global define void update_location_dialog() ``{
 //    UI::ChangeWidget(`id(`device), `Enabled, removable);
 //    UI::ChangeWidget(`id(`devopts), `Enabled, removable);
 }
+
 /**
  * Display dialog for automatic backup - set time when backup module will
  * be started at background with current selected profile.
  * @return symbol User input value
  */
-
 global define symbol CronDialog() ``{
 
     // read current settings from profile
@@ -101,23 +106,23 @@ global define symbol CronDialog() ``{
     );
 
     // dialog header - %1 is profile name
-    Wizard::SetContents(sformat(_("Automatic backup options - Profile '%1'"), Backup::selected_profile),
+    Wizard::SetContents(sformat(_("Automatic Backup Options -- Profile '%1'"), Backup::selected_profile),
 	`VBox(
 	    `VSpacing(0.5),
 	    // check box label
-	    `Left(`CheckBox(`id(`enabled), `opt(`notify), _("&Start backup automatically"), current_settings["auto"]:false)),
+	    `Left(`CheckBox(`id(`enabled), `opt(`notify), _("&Start Backup Automatically"), current_settings["auto"]:false)),
 	    `VSpacing(0.45),
 
 	    `HBox(
 		`HSpacing(4),
 		`VBox(
 		    // frame label
-		    `Frame(_("How often start backup"),
+		    `Frame(_("Backup Frequency"),
 			`VBox(
 			    `VSpacing(0.45),
 			    `HBox(
 				`HSpacing(1),
-				`ComboBox(`id(`time), `opt(`notify), _("S&tart backup"), [
+				`ComboBox(`id(`time), `opt(`notify), _("S&tart Backup"), [
 					`item(`id(`day), _("Daily"), cday == `day),
 					`item(`id(`week), _("Weekly"), cday == `week),
 					`item(`id(`month), _("Monthly"), cday == `month),
@@ -131,13 +136,13 @@ global define symbol CronDialog() ``{
 		    `VSpacing(0.45),
 
 		    // frame label
-		    `Frame(_("When start backup"),
+		    `Frame(_("Backup Start Time"),
 			`VBox(
 			    `VSpacing(0.45),
 			    `HBox(
 				`HSpacing(1),
 				// combo box label
-				`ComboBox(`id(`weekday), _("&Weekday"), items),
+				`ComboBox(`id(`weekday), _("&Week Day"), items),
 				`HSpacing(2),
 				// integer field widget label
 				`IntField(`id(`day), _("&Day of Month"), 1, 31, current_settings["day"]:0),
@@ -163,7 +168,7 @@ global define symbol CronDialog() ``{
 			    `HBox(
 				`HSpacing(1),
 				// integer field widget label
-				`IntField(`id(`old), _("Ma&x. number of old backups"), 0, 100, current_settings["old"]:3),
+				`IntField(`id(`old), _("Ma&x. Number of Old Backups"), 0, 100, current_settings["old"]:3),
 				`HStretch()
 			    ),
 			    `VSpacing(0.45),
@@ -282,7 +287,7 @@ global define symbol ArchDialog() ``{
 	    if (cont == nil)
 	    {
 		// error popup message - NFS mount failed
-		Popup::Error(_("Cannot mount selected NFS share."));
+		Popup::Error(_("Cannot mount the selected NFS share."));
 
 		cont = false;
 	    }
@@ -301,7 +306,7 @@ global define symbol ArchDialog() ``{
 		if (nfsdir == nil)
 		{
 		    // error popup message - NFS mount failed
-		    Popup::Error(_("Cannot mount selected NFS share."));
+		    Popup::Error(_("Cannot mount the selected NFS share."));
 		}
 		else
 		{
@@ -363,10 +368,10 @@ global define symbol ArchDialog() ``{
 	`VBox(
 	    `VSpacing(0.5),
 	    // text entry label
-	    `TextEntry(`id(`filename), _("File na&me:")),
+	    `TextEntry(`id(`filename), _("File Na&me:")),
 	    `VSpacing(0.5),
 
-	    `Frame(_("Backup location"),
+	    `Frame(_("Backup Location"),
 		`HBox(
 		    `RadioButtonGroup(`id(`source), `opt(`notify),
 			`VBox(
@@ -390,7 +395,7 @@ global define symbol ArchDialog() ``{
 			    `HBox(
 				`HSpacing(2),
 				// text entry label
-				`TextEntry(`id(`nfsexport), _("&Remote directory:"), Backup::nfsexport),
+				`TextEntry(`id(`nfsexport), _("&Remote Directory:"), Backup::nfsexport),
 				`HSpacing(1),
 				// push button label
 				`VBox(
@@ -412,7 +417,7 @@ global define symbol ArchDialog() ``{
 		    `VSpacing(`opt(`hstretch), 0.5),
 		    `RadioButtonGroup(`id(`rbgroup),
 			`VBox(
-			    `Left(`RadioButton(`id(`archive), `opt(`notify), _("Create backup archive"))),
+			    `Left(`RadioButton(`id(`archive), `opt(`notify), _("Create Backup Archive"))),
 			    `HBox(
 				`HSpacing(4.0),
 				`ComboBox(`id(`type), `opt(`notify),
@@ -441,7 +446,7 @@ global define symbol ArchDialog() ``{
 				`HStretch()
 			    ),
 			    `VSpacing(1),
-			    `Left(`RadioButton(`id(`only_list), `opt(`notify), _("Create only list of found files")))
+			    `Left(`RadioButton(`id(`only_list), `opt(`notify), _("Only Create List of Files Found")))
 			)
 		    ),
 		    `VSpacing(0.5)
@@ -590,7 +595,7 @@ Enter the file name to use.
 		    if (cont == nil)
 		    {
 			// error popup message - NFS mount failed
-			Popup::Error(_("Cannot mount selected NFS share."));
+			Popup::Error(_("Cannot mount the selected NFS share."));
 
 			cont = false;
 		    }
@@ -684,7 +689,7 @@ Enter the file name to use.
 		}
 		else
 		{
-		    Popup::Message(_("Server name is missing"));
+		    Popup::Message(_("Enter a server name."));
 		}
 	    }
 	    else
@@ -864,13 +869,13 @@ global define symbol BackupDialog() ``{
 	        `VBox(
 		    `VSpacing(0.5),
 		    // check box label
-                    `Left(`CheckBox(`id(`search), `opt(`notify), _("&Backup files that do not belong to any package"))),
+                    `Left(`CheckBox(`id(`search), `opt(`notify), _("&Backup Files Not Belonging to Any Package"))),
 		    `VSpacing(0.5),
 		    // check box label
                     `Left(`CheckBox(`id(`system), _("Backup &hard disk system areas"))),
 		    `VSpacing(0.5),
 		    // check box label
-		    `Left(`CheckBox(`id(`display), _("Display list of files before &creating archive"))),
+		    `Left(`CheckBox(`id(`display), _("Display List of Files Before &Creating Archive"))),
 		    `VSpacing(0.5)
 		)
 	    ),
@@ -969,7 +974,7 @@ global define symbol ExcludeDialog() ``{
     }
 
     // dialog header
-    Wizard::SetContents( _("Exclude from backup"),
+    Wizard::SetContents( _("Exclude from Backup"),
 	`VBox(
 	    `VSpacing(1.0),
 	    // table label
@@ -2135,7 +2140,7 @@ global define symbol ArchivingDialog() ``{
 
     if (!file_list_stored)
     {
-	Report::Error(_("Cannot write list of selected files to file '%1'"), tmpfile_list);
+	Report::Error(_("Cannot write the list of selected files to file '%1'"), tmpfile_list);
     }
 
     y2milestone("File names stored");
@@ -2708,7 +2713,7 @@ global define symbol SummaryDialog() ``{
     {
 	buttons = `HBox(
 		`PushButton(`id(`details), `opt(`key_F2), _("&Details...")),
-		`PushButton(`id(`profile), _("&Save as profile..."))
+		`PushButton(`id(`profile), _("&Save as Profile..."))
 	    );
     }
 
@@ -2803,8 +2808,8 @@ global define symbol SelectProfileDialog() ``{
             `Table(`id(`profile), `header(tableheader1, tableheader2, tableheader3), Backup::BackupProfileDescriptions() )
             ),
             `HBox(
-                `PushButton(`id(`start), _("&Start backup")),
-                `MenuButton(_("Profile mana&gement"),
+                `PushButton(`id(`start), _("&Start Backup")),
+                `MenuButton(_("Profile Mana&gement"),
                     [
                         `item(`id(`add), Label::AddButton()+"..."),
                         `item(`id(`clone), _("&Duplicate...")),
@@ -2813,7 +2818,7 @@ global define symbol SelectProfileDialog() ``{
 			`item(`id(`cron), tableheader3 + "...")
                     ])
             ),
-            `PushButton(`id(`manual),_("Backup &manually...")),
+            `PushButton(`id(`manual),_("Backup &Manually...")),
             `VSpacing(1.5)
         ),
         profile_help(), false, false
@@ -2954,7 +2959,8 @@ global define string AskNewProfileName() ``{
     {
 	// Translators: error popup, %1 is profile name
 	if( ! Popup::YesNo(sformat(_("A profile '%1' already exists.
-Do you want to replace the existing profile?"), new_name["text"]:"")) ) {
+Replace the existing profile?
+"), new_name["text"]:"")) ) {
 	    new_name = ShowEditDialog(_("Enter a name for the new profile."), "");
 	}
 	else
@@ -2973,6 +2979,12 @@ Do you want to replace the existing profile?"), new_name["text"]:"")) ) {
     }
 }
 
+/**
+ * Directory selection dialog
+ * @param label dialog label
+ * @param dir start directory
+ * @return map result $[ "input" : symbol (user input, `ok or `cancel), "dir" : string (selected directory) ];
+ */
 global define map DirPopup(string label, string dir) ``{
 
     UI::OpenDialog(
@@ -3023,7 +3035,12 @@ global define map DirPopup(string label, string dir) ``{
     return $[ "input" : input, "dir" : newval ];
 }
 
-
+/**
+ * Convert size description to string
+ * @param s volume size
+ * @param user_size user defined size
+ * @return string result
+ */
 global define string symbol2string(symbol s, integer user_size) ``{
 
     y2milestone("s: %1, user_size: %2", s, user_size);
@@ -3065,6 +3082,11 @@ global define string symbol2string(symbol s, integer user_size) ``{
     return ret;
 }
 
+/**
+ * Convert size in bytes to B, kiB, kB, MiB or MB
+ * @param sz size in bytes
+ * @return map map $[ "string" : string (textual representation), "size" : integer (value), "unit" : symbol (unit of the value) ]
+ */
 global define map size2map(integer sz) ``{
     string ret = "";
     symbol ret_unit = `B;
@@ -3072,7 +3094,7 @@ global define map size2map(integer sz) ``{
 
     if (sz == nil)
     {
-	return ret;
+	return nil;
     }
 
     foreach(map m, Backup::units_description,
@@ -3138,6 +3160,10 @@ global define map size2map(integer sz) ``{
     return $[ "string" : ret, "size" : sz, "unit" : ret_unit ];
 }
 
+/**
+ * Ask whether archive can be overwritten if it already exists
+ * @return boolean true when archive can be overwritten, nil when an error occured (e.g. NFS mount failed)
+ */
 global define boolean WriteArchive() ``{
     boolean ret = true;
 
