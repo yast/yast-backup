@@ -2,10 +2,5 @@ Read	.target.size "/etc/install.inf" -1
 Read	.target.tmpdir nil
 Read	.target.size nil -1
 Dir	.autoinst.menuentry.s: []
-Read	.probe.architecture nil
-Read	.probe.has_apm nil
-Read	.probe.has_pcmcia nil
-Read	.probe.has_smp false
-Read	.probe.system nil
 Dump	$[]
 Dump	$["default profile":$[`archive_name:"", `archive_type:`tgz, `backup_all_ext2:false, `backup_none_ext2:true, `backup_pt:true, `backup_selected_ext2:false, `default_dir:["/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache"], `description:"", `detected_ext2:nil, `detected_fs:nil, `dir_list:nil, `display:false, `do_md5_test:true, `ext2_backup:[], `fs_exclude:["iso9660"], `multi_volume:false, `search:true, `system:false, `unselected_files:[], `user_volume_size:"", `user_volume_unit:nil, `volume_size:`fd144], "empty profile":$[`archive_name:"Does not work", `archive_type:nil, `backup_all_ext2:nil, `backup_none_ext2:nil, `backup_pt:nil, `backup_selected_ext2:nil, `default_dir:nil, `description:"Does not work - profile", `detected_ext2:nil, `detected_fs:nil, `dir_list:nil, `display:nil, `do_md5_test:nil, `ext2_backup:nil, `fs_exclude:nil, `multi_volume:nil, `search:nil, `system:nil, `unselected_files:nil, `user_volume_size:nil, `user_volume_unit:nil, `volume_size:nil]]

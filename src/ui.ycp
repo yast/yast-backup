@@ -45,12 +45,14 @@ global define void refresh_widget_status(boolean enable_archive_type) ``{
     {
 	UI::ChangeWidget(`id(`type), `Enabled, false);
 	UI::ChangeWidget(`id(`opts), `Enabled, false);
+	UI::ChangeWidget(`id(`description), `Enabled, false);
 	UI::ChangeWidget(`id(`rbgroup), `CurrentButton, `only_list);
     }
     else
     {
 	UI::ChangeWidget(`id(`type), `Enabled, true);
 	UI::ChangeWidget(`id(`opts), `Enabled, true);
+	UI::ChangeWidget(`id(`description), `Enabled, true);
 	UI::ChangeWidget(`id(`rbgroup), `CurrentButton, `archive);
     }
 }
@@ -127,7 +129,7 @@ global define symbol ArchDialog() ``{
 	`VBox(
 	    `VSpacing(0.5),
 	    // text entry label
-	    `TextEntry(`id(`filename), _("Archive file na&me:")),
+	    `TextEntry(`id(`filename), _("File na&me:")),
 
 	    `VSpacing(0.5),
 	    // multi line widget label
