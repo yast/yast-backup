@@ -185,10 +185,18 @@ sub VerifyPackages(@%)
 	    my $file = undef;
 	    my $size = 0;
 	    my $mtime = 0;
+	    my $link = 0;
 	    my $md5_test = 0;
 
     	    my $backup = 1;
-	    
+
+	    $link = ($line =~ /^....L.* (\/.*)/);
+
+	    if ($link)
+	    {
+		$file = $1;
+	    }
+
 	    if ($no_md5)
 	    {
 		$size = ($line =~ /^S.* (\/.*)/);
@@ -275,6 +283,10 @@ sub VerifyPackages(@%)
 		$file =~ s/\\/\\\\/g;
 		$file =~ s/\n/\\n/g;
 
+		if ($link)
+		{
+		    $filestat[7] = 0;	# stat reports size of linked file not of symlink!
+		}
 
 		if (!$output_files)
 		{
@@ -339,6 +351,25 @@ sub ReadAllFiles(%%)
     return %duplicates;
 }
 
+
+sub isinpackage($)
+{
+    my ($filename) = @_;
+
+    open(RPMQFILE, "rpm -qf $filename 2> /dev/null |");
+    my $inpackage = 0;
+
+    while (my $pkg = <RPMQFILE>)
+    {
+	$inpackage = 1;
+    }
+    close(RPMQFILE);
+
+    return $inpackage;
+}
+
+
+
 # search files which do not belong to any package
 sub SearchDirectory($%%%)
 {
@@ -348,6 +379,8 @@ sub SearchDirectory($%%%)
     {
 	print "Dir: $dir\n";
     }
+
+    my $in_dir = $dir;
 
     # add ending '/' if neccessary
     if (substr($dir, length($dir) - 1) ne '/')
@@ -362,50 +395,88 @@ sub SearchDirectory($%%%)
     my @content = readdir(DIR);
     closedir(DIR);
 
-    foreach my $item (@content)
+    if (@content == 2 and !$$files{$in_dir})
     {
-	my $fullname = $dir.$item;
-
-	if (-l $fullname)
+	if (isinpackage($in_dir) == 0)
 	{
-	    next;	# skip symbolic links
-	}
-
-	if (-f $fullname)
-	{
-	    # is file is some package?
-	    if (!$$files{$fullname})
+	    if (!$output_files)
 	    {
-		my @filestat = stat($fullname);
+		print "Size: 0 $dir\n";
+	    }
+	    else
+	    {
+		print "$dir\n";
+	    }
+	}
+    }
+    else
+    {
+	foreach my $item (@content)
+	{
+	    my $fullname = $dir.$item;
 
-		# it seem that file is not owned by any package, but do another check - dev/inode number
-		if (!defined $inodes->{$filestat[0].$filestat[1]})
+	    if (-l $fullname)
+	    {
+		if (!$$files{$fullname})
 		{
-		    # escaping newline characters is needed because each file
-		    # is reported on separate line
-
-		    $fullname =~ s/\\/\\\\/g;
-		    $fullname =~ s/\n/\\n/g;
-
-		    if (!$output_files)
+		    if (isinpackage($fullname) == 0)
 		    {
-			print "Size: $filestat[7] $fullname\n";
-		    }
-		    else
-		    {
-			print "$fullname\n";
+			if (!$output_files)
+			{
+			    print "Size: 0 $fullname\n";
+			}
+			else
+			{
+			    print "$fullname\n";
+			}
 		    }
 		}
 	    }
-	}
-	else
-	{
-	    # ignore . and .. directories
-	    if ($item ne "." and $item ne ".." and -d $fullname)
+	    elsif (-f $fullname)
+	    {
+		# is file is some package?
+		if (!$$files{$fullname})
+		{
+		    my @filestat = stat($fullname);
+
+		    # it seems that file is not owned by any package, but do another check - dev/inode number
+
+		    if (!defined $inodes->{$filestat[0].$filestat[1]})
+		    {
+			# escaping newline characters is needed because each file
+			# is reported on separate line
+
+			$fullname =~ s/\\/\\\\/g;
+			$fullname =~ s/\n/\\n/g;
+
+			if (!$output_files)
+			{
+			    print "Size: $filestat[7] $fullname\n";
+			}
+			else
+			{
+			    print "$fullname\n";
+			}
+		    }
+		}
+	    }
+	    elsif ($item ne "." and $item ne ".." and -d $fullname)
 	    {
 		if (!$$exclude{$fullname})
 		{
 		    SearchDirectory($fullname, $files, $exclude, $inodes);
+		}
+	    }
+	    # ignore sockets - they can't be archived
+	    elsif ($item ne "." and $item ne ".." and !$$files{$fullname} and !(-S $fullname))
+	    {
+		if (!$output_files)
+		{
+		    print "Size: 0 $fullname\n";
+		}
+		else
+		{
+		    print "$fullname\n";
 		}
 	    }
 	}
