@@ -818,7 +818,7 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
  define map DetectMountpoints() ``{
     import "Storage";
 
-    map targetmap = Storage::GetTargetMap();
+    map<string,map<string,any> > targetmap = (map<string,map<string,any> >)Storage::GetTargetMap();
     y2debug("targetmap: %1", targetmap);
 
     map devices = $[];
@@ -860,7 +860,7 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
  * @param description detected mount points
  * @return list table content
  */
- define list MpointTableContents(list selected, list all, map description) ``{
+ define list MpointTableContents(list<string> selected, list<string> all, map<string,map> description) ``{
     y2milestone("selected: %1, description: %2", selected, description);
 
     import "FileSystems";
