@@ -1,5 +1,5 @@
-Read	.target.tmpdir "/tmp"
 Read	.target.size "/etc/install.inf" -1
+Read	.target.tmpdir "/tmp"
 Read	.target.tmpdir "/tmp"
 Read	.target.size "/tmp/autoinst.xml" -1
 Dir	.autoinst.menuentry.s: []
