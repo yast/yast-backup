@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Dec 17 10:05:24 CET 2004 - visnov@suse.cz
+
+- Removed firewall from NFB
+- 2.11.2 
+
+-------------------------------------------------------------------
 Thu Nov 11 16:50:13 CET 2004 - locilka@suse.cz
 
 - Added testing for the path accuracy of new archive
