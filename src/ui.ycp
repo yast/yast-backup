@@ -2607,12 +2607,20 @@ Backup will be aborted.
 
 /**
  * Allow user to enter a new profile name. If the profile already exists, it allows
- * to replace it.
+ * to replace it. Allows to rename current profile if current_name in not nil or "".
+ *
+ * @param  string current name of the profile
  * @return string the name for the new profile, "" for cancel
  */
- define string AskNewProfileName() ``{
+ define string AskNewProfileName( string current_name ) ``{
     // Translators: text of a popup dialog
-    map new_name = ShowEditDialog(_("Enter a name for the new profile."), "", nil);
+    string dialog_text = _("Enter a name for the new profile.");
+    // renaming the current profile
+    if (current_name != nil && current_name != "") {
+	// TRANSLATORS: text of a popup dialog, %1 is a profile name to be renamed
+	dialog_text = sformat(_("Enter a new name for the '%1' profile."), current_name);
+    }
+    map new_name = ShowEditDialog(dialog_text, "", nil);
 
     while( (symbol)(new_name["clicked"]:nil) == `ok && Backup::backup_profiles[ (string)(new_name["text"]:nil) ]:nil != nil  )
     {
@@ -2938,7 +2946,7 @@ Replace the existing profile?
 	}
 	else if( ret == `profile )
 	{
-	    string new_name = AskNewProfileName();
+	    string new_name = AskNewProfileName( nil );
 
 	    //if no cancel, store
 	    if( new_name != "" )
@@ -3017,6 +3025,40 @@ Replace the existing profile?
 }
 
 /**
+ * Displays a popup dialog asking for new name for the current profile.
+ * If nil returned, no redraw is needed, no changes are done.
+ *
+ * @param string current profile
+ * @param string name to be selected
+ */
+string RenameProfilePupupDialog(string current_name) {
+    Backup::RestoreSettingsFromBackupProfile( current_name );
+    string new_name = AskNewProfileName( current_name );
+
+    // no changes, the same name
+    if (current_name == new_name) {
+	return nil;
+    }
+
+    // if not cancelled
+    if (new_name != "" && new_name != nil) {
+	//map current_profile = (map)eval(Backup::backup_profiles[Backup::selected_profile]:$[]);
+	//map current_settings = (map)eval(current_profile[`cron_settings]:$[]);
+
+	Backup::StoreSettingsToBackupProfile( new_name );
+	// "Renaming", Cron settings, It seems to be a hack }8->
+	Backup::backup_profiles[new_name, `cron_settings]
+	    = Backup::backup_profiles[current_name, `cron_settings]:$[];
+	// Setting that cron settings were changed
+	Backup::backup_profiles[new_name, `cron_settings, "cron_changed"] = true;
+	Backup::backup_profiles[current_name, `cron_settings, "cron_changed"] = true;
+	Backup::RemoveBackupProfile( current_name );
+	return new_name;
+    }
+    return nil;
+}
+
+/**
  * Dialog for selection of a profile before backup
  * @return symbol Symbol for wizard sequencer - pressed button
  */
@@ -3042,6 +3084,8 @@ Replace the existing profile?
                         `item(`id(`add), Label::AddButton()+"..."),
                         `item(`id(`clone), _("&Duplicate...")),
                         `item(`id(`edit), Label::EditButton()+"..."),
+			// TRANSLATORS: Menu button selection
+			`item(`id(`rename), _("Re&name")+"..."),
                         `item(`id(`delete), Label::DeleteButton()),
 			`item(`id(`cron), tableheader3 + "...")
                     ])
@@ -3092,7 +3136,7 @@ Replace the existing profile?
 		Backup::RestoreDefaultSettings();
 	    }
 
-	    string new_name = AskNewProfileName();
+	    string new_name = AskNewProfileName( nil );
 
 	    // if the user didn't choose cancel
 	    if(  new_name != "" )
@@ -3113,6 +3157,16 @@ Replace the existing profile?
 		    // adding new profile
 		    Backup::profile_is_new_one = true;
 		}
+	    }
+	}
+	else if( ret == `rename ) {
+	    string current_name = (string) UI::QueryWidget(`id(`profile), `CurrentItem );
+	    current_name = RenameProfilePupupDialog(current_name);
+	    // redraw if any changes are done
+	    if (current_name != nil) {
+		UI::ReplaceWidget( `id(`selectionBox),
+		    `Table(`id(`profile), `header(tableheader1, tableheader2, tableheader3), Backup::BackupProfileDescriptions() ));
+		UI::ChangeWidget( `id(`profile), `CurrentItem, current_name );
 	    }
 	}
 	else if( ret == `delete )

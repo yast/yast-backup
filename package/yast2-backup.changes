@@ -3,6 +3,7 @@ Wed Jan 26 09:24:56 CET 2005 - locilka@suse.cz
 
 - Fixed user-defined-size entry got disabled wrong in UI (#48651)
 - Fixed creating empty profiles (#41878)
+- Fixed renaming profiles (#36241), added new "Rename" menu entry
 - 2.11.3
 
 -------------------------------------------------------------------
