@@ -26,6 +26,13 @@ include "backup/help_texts.ycp";
  */
 
 global define ArchDialog() ``{
+
+/*
+    AbortConfirmation(`not_created);
+    AbortConfirmation(`broken);
+    AbortConfirmation(`no_change);
+*/
+
     UI::SetWizardContents(_("Archive settings"),
 	`VBox(
 	    `VSpacing(0.5),
@@ -219,7 +226,14 @@ global define TarOptionsDialog() ``{
 	    }
 	    else
 	    {
-		cont = true;
+		if (ret == `abort)
+		{
+		    cont = AbortConfirmation(`no_change);
+		}
+		else
+		{
+		    cont = true;
+		}
 	    }
 	}
     }
@@ -279,12 +293,21 @@ global define BackupDialog() ``{
 
     while (ret != `next && ret != `abort && ret != `back)
     {
-
 	ret = UI::UserInput();
 
 	if (ret == `search)
 	{
 	    UI::ChangeWidget(`id(`enh_check), `Enabled, UI::QueryWidget(`id(`search), `Value));
+	}
+	else
+	{
+	    if (ret == `abort)
+	    {
+	        if(!AbortConfirmation(`no_change))
+		{
+		    ret = nil;		// not confirmed, unset ret
+		}
+	    }
 	}
     }
 
@@ -341,10 +364,12 @@ global define ExcludeDialog() ``{
     );
 
 
-    symbol ret = UI::UserInput();
+    symbol ret = nil;
 
     while (ret != `next && ret != `back && ret != `abort && ret != `expert)
     {
+	ret = UI::UserInput();
+
 	string curr = UI::QueryWidget(`id(`dirs), `CurrentItem);
 	if (curr != nil)
 	{
@@ -401,7 +426,13 @@ global define ExcludeDialog() ``{
             }
 	}
 
-    ret = UI::UserInput();
+	if (ret == `abort)
+	{
+	    if (!AbortConfirmation(`no_change))
+	    {
+		ret = nil;
+	    }
+	}
     }
 
     if (!system && ret == `next)
@@ -437,16 +468,18 @@ global define ExcludeFilesystemDialog() ``{
 	    ),
 	    `VSpacing(1.0)
 	),
-        backup_help_exclude_fs()	, true, true
+        backup_help_exclude_fs(), true, true
     );
 
     // replace 'Next' buton with 'Ok'
     UI::ReplaceWizardNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
 
-    symbol ret = UI::UserInput();
+    symbol ret = nil;
 
     while (ret != `ok && ret != `back && ret != `abort)
     {
+	ret = UI::UserInput();
+
 	if (ret == `sel_all)
 	{
 	    fs = AddIdBool(fs, true);
@@ -459,9 +492,17 @@ global define ExcludeFilesystemDialog() ``{
 		fs = AddIdBool(fs, false);
 		UI::ReplaceWidget(`id(`repl), `MultiSelectionBox(`id(`fss), "Exclude mounted filesystems:", fs));
 	    }
+	    else
+	    {
+		if (ret == `abort)
+		{
+		    if (!AbortConfirmation(`no_change))
+		    {
+			ret = nil;	// not confirmed, uset ret
+		    }
+		}
+	    }
 	}
-
-	ret = UI::UserInput();
     }
 
 
@@ -539,10 +580,11 @@ global define SystemBackupDialog() ``{
     UI::ChangeWidget(`id(`delete), `Enabled, backup_selected_ext2);
 
 
-    symbol ret = UI::UserInput();
+    symbol ret = nil;
 
     while (ret != `next && ret != `back && ret != `abort && ret != `expert)
     {
+	ret = UI::UserInput();
 
 	string curr = UI::QueryWidget(`id(`par), `CurrentItem);
 	if (curr != nil)
@@ -614,7 +656,13 @@ global define SystemBackupDialog() ``{
 	    UI::ChangeWidget(`id(`delete), `Enabled, backup_selected_ext2);
 	}
 
-    ret = UI::UserInput();
+	if (ret == `abort)
+	{
+	    if (!AbortConfirmation(`no_change))
+	    {
+		ret = nil;	// not confirmed, uset ret
+	    }
+	}
     }
 
     backup_pt = UI::QueryWidget(`id(`pt), `Value);
@@ -835,7 +883,7 @@ global define SearchingModifiedDialog() ``{
 	    break;
 	}
 
-	ret = waitForUserOrProcess(wait_time);
+	ret = waitForUserOrProcess(wait_time, `not_created);
 	if (ret != nil)
 	{
 	    return ret;
@@ -892,7 +940,7 @@ global define SearchingModifiedDialog() ``{
 
 	    while (size(script_out) > 0)
 	    {
-		line = select(script_out, 0); 		// read line
+		line = select(script_out, 0);		// read line
 		script_out = remove(script_out, 0);	// remove line
 
 		y2debug("Script output:", line);
@@ -920,7 +968,7 @@ global define SearchingModifiedDialog() ``{
 		}
 	    }
 
-	    ret = waitForUserOrProcess(wait_time);
+	    ret = waitForUserOrProcess(wait_time, `not_created);
 	    if (ret != nil)
 	    {
 		return ret;
@@ -996,15 +1044,24 @@ global define FilesDialog() ``{
     );
 
 
-    symbol ret = UI::UserInput();
-
-    if (ret == `abort)
-    {
-	return ret;
-    }
+    symbol ret = nil;
 
     while (ret != `next && ret != `back && ret != `abort)
     {
+	ret = UI::UserInput();
+
+	if (ret == `abort)
+	{
+	    if (!AbortConfirmation(`not_created))
+	    {
+		ret = nil;	// not confirmed, uset ret
+	    }
+	    else
+	    {
+		break;
+	    }
+	}
+
 	integer current_item  = UI::QueryWidget(`id(`table), `CurrentItem);
 
 	if (ret == `sel_all || ret == `desel_all)
@@ -1036,8 +1093,6 @@ global define FilesDialog() ``{
 		UI::ChangeWidget(`id(`table), `Item(current_item, 0), current_value);
 	    }
 	}
-
-	ret = UI::UserInput();
     }
 
     if (ret == `abort)
@@ -1154,7 +1209,9 @@ global define ArchivingDialog() ``{
 
 	list partitions = (backup_all_ext2) ? detected_ext2 : (backup_none_ext2 ? [] : ext2_backup);
 
-	foreach(`p, partitions, ``{archive_options = archive_options + " --store-ext2 " + select(p, 1);});
+	y2milestone("partitions: %1", partitions);
+
+	foreach(`spt, partitions, ``{archive_options = archive_options + " --store-ext2 " + spt;});
     }
 
 
@@ -1211,6 +1268,10 @@ global define ArchivingDialog() ``{
     string id_ext2 = "Storing ext2 area: ";
     string id_files = "Files: ";
     string id_tar_exit = "/Tar result:";
+    string id_new_volume = "/Volume created: ";
+    string id_not_readable = "/File not readable: ";
+    string id_not_stored = "Error storing partition: ";
+    string id_pt_read = "Partition tables info read";
 
     archived_num = 0;
     boolean tar_running = false;
@@ -1237,10 +1298,19 @@ global define ArchivingDialog() ``{
 		{
 		    tar_result = tointeger(substring(line, size(id_tar_exit)));
 		}
-		else	/* TODO: update archive name in progress bar if new volume was created */
+		else
 		{
-		    archived_num = archived_num + 1;
-		    UI::ChangeWidget(`id(`pbar), `Value, archived_num);
+		    if (substring(line, 0, size(id_new_volume)) == id_new_volume)
+		    {
+			string vol_name = substring(line, size(id_new_volume));
+			UI::ChangeWidget(`id(`pbar), `Label, _("Creating volume: ") + vol_name + " ...");
+			created_archive_files = add(created_archive_files, vol_name);
+		    }
+		    else
+		    {
+			archived_num = archived_num + 1;
+			UI::ChangeWidget(`id(`pbar), `Value, archived_num);
+		    }
 		}
 	    }
 	    else
@@ -1274,33 +1344,57 @@ global define ArchivingDialog() ``{
 			{
 			    if (substring(line, 0, size(id_ptstored)) == id_ptstored)
 			    {
-				UI::SetWizardContents(title, `Label(_("Storing partition table: ") + substring(line, size(id_ptstored))), "", false, false);
+				string part_name = substring(line, size(id_ptstored));
+
+				UI::SetWizardContents(title, `Label(_("Storing partition table: ") + part_name), "", false, false);
 				added_files = added_files + 2;
+				stored_ptables = add(stored_ptables, part_name);
 			    }
 			    else
 			    {
-				if (substring(line, 0, size(id_ext2)) == id_ext2)
+				if (substring(line, 0, size(id_not_stored)) == id_not_stored)
 				{
-				    UI::SetWizardContents(title, `Label(_("Storing Ext2 area: ") + substring(line, size(id_ext2)) + "..."), "", false, false);
+				    failed_ptables = add(failed_ptables, substring(line, size(id_not_stored)));
 				}
 				else
 				{
-				    if (substring(line, 0, size(id_files)) == id_files)
+				    if (substring(line, 0, size(id_ext2)) == id_ext2)
 				    {
-					total_files = tointeger(substring(line, size(id_files)));
-
-					UI::SetWizardContents(title, `ProgressBar(`id(`pbar), _("Creating archive: ") + archive_name + "...", total_files), backup_help_creating_archive(), false, false);
-					tar_running = true;
+					UI::SetWizardContents(title, `Label(_("Storing Ext2 area: ") + substring(line, size(id_ext2)) + " ..."), "", false, false);
 				    }
 				    else
 				    {
-					if (line == id_ok || line == id_failed)
+					if (substring(line, 0, size(id_files)) == id_files)
 					{
-					    e2image_results = add(e2image_results, (line == id_ok));
+					    total_files = tointeger(substring(line, size(id_files)));
+
+					    UI::SetWizardContents(title, `ProgressBar(`id(`pbar), _("Creating archive: ") + archive_name + " ...", total_files), backup_help_creating_archive(), false, false);
+					    tar_running = true;
 					}
 					else
 					{
-					    y2warning("Unknown output from archive script: %1", line);
+					    if (line == id_ok || line == id_failed)
+					    {
+						e2image_results = add(e2image_results, (line == id_ok));
+					    }
+					    else
+					    {
+						if (substring(line, 0, size(id_not_readable)) == id_not_readable)
+						{
+						    not_readable_files = add(not_readable_files, substring(line, size(id_not_readable)));
+						}
+						else
+						{
+						    if (line == id_pt_read)
+						    {
+							read_ptables_info = true;
+						    }
+						    else
+						    {
+							y2warning("Unknown output from archive script: %1", line);
+						    }
+						}
+					    }
 					}
 				    }
 				}
@@ -1311,7 +1405,7 @@ global define ArchivingDialog() ``{
 	    }
 
 
-	    ret = waitForUserOrProcess(wait_time);
+	    ret = waitForUserOrProcess(wait_time, `broken);
 	    if (ret != nil)
 	    {
 		return ret;
@@ -1351,7 +1445,6 @@ global define SummaryDialog() ``{
     string backup_result = p + _("Found modified files: ") + modified_num + br
 	+ _("Total size: ") + size_text(modified_size) + _p;
 
-
     if (search)
     {
 	backup_result = backup_result + p + _("Found files which are not in any package: ") + nopkg_num + br
@@ -1363,29 +1456,56 @@ global define SummaryDialog() ``{
 	backup_result = backup_result + p + _("Selected files to backup: ") + selected_files_num + _p;
     }
 
-    backup_result = backup_result + br + p + (hostname_stored ? _("Host name stored successfully") :
+    string backup_details = p + (hostname_stored ? _("Host name stored successfully") :
 	em + _("Storing host name failed") + _em) + br + (date_stored ? _("Date stored successfully") :
 	em + _("Storing date failed") + _em) + br + (file_list_stored ? _("File list stored successfully") :
 	em + _("Storing file list failed") + _em) + br + (comment_stored ? _("Comment stored successfully") :
-        em + _("Storing comment failed") + _em);
+        em + _("Storing comment failed") + _em) + _p;
+
+
+    if (size(not_readable_files) > 0)
+    {
+	backup_details = backup_details + br + p + em + _("Errors during creating archive:") + _em + br;
+
+	foreach(`f, not_readable_files,
+	    ``{
+		backup_details = backup_details + em + sformat(_("Can not read file %1"), f) + _em + br;
+	    }
+	);
+
+	backup_details = backup_details + _p;
+    }
 
     if (system)
     {
-/*	if (backup_pt)
+	y2debug("Ext2 backup: %1", ext2_backup);
+	y2debug("Ext2 results: %1", e2image_results);
+
+	if (backup_pt)
 	{
-	    if (ptable_stored)
+	    if (!read_ptables_info)
 	    {
-		added_files = added_files + 1;
-		backup_result = backup_result + br + _("Partition table stored successfully");
+		backup_details = backup_details + p + em + _("Detection of disk partitions failed") + _em + br;
 	    }
 	    else
 	    {
-		backup_result = backup_result + br + em + _("Storing partition table failed") + _em;
+		backup_details = backup_details + p + _("Detection of disk partitions was successful") + br;
 	    }
+
+	    foreach(`failed_pt, failed_ptables,
+		``{
+		    backup_details = backup_details + em + sformat(_("Storing partition table of disk /dev/%1 failed"), failed_pt) + _em + br;
+		}
+	    );
+
+	    foreach(`stored_pt, stored_ptables,
+		``{
+		    backup_details = backup_details + sformat(_("Storing partition table of disk /dev/%1 was successful"), stored_pt) + br;
+		}
+	    );
+
+	    backup_details = backup_details + _p;
 	}
-*/
-	y2debug("Ext2 backup: %1", ext2_backup);
-	y2debug("Ext2 results: %1", e2image_results);
 
 	if (size(ext2_backup) > 0)
 	{
@@ -1395,14 +1515,14 @@ global define SummaryDialog() ``{
 		``{
 		    if (r)
 		    {
-			backup_result = backup_result + br
+			backup_details = backup_details + br
 			    + sformat(_("Ext2 image %1 stored successfully"), select(select(select(ext2_backup, index), 0) ,0));
 
 			added_files = added_files + 1;
 		    }
 		    else
 		    {
-			backup_result = backup_result + br + em
+			backup_details = backup_details + br + em
 			    + sformat(_("Storing Ext2 image %1 failed"), select(select(select(ext2_backup, index), 0) ,0)) + _em;
 		    }
 
@@ -1437,17 +1557,34 @@ global define SummaryDialog() ``{
     y2debug("added_files: %1", added_files);
     y2debug("total_files: %1", total_files);
 
-    /* TODO report all archive names if multi volume selected */
     backup_result = backup_result + _p
 	+ br + ((selected_files_num + added_files != total_files) ? em + _("Warning: Some files were not backuped") + _em + br : "")
-	+ ((tar_result == 0) ? sformat(_("Archive %1 created successfully"), archive_name) + br +_("Total archived files: ") + archived_num :
+	+ ((tar_result == 0) ? _("Archive created successfully") + br +_("Total archived files: ") + archived_num :
 	  em + _("Archive creation failed") + _em) + _p;
+
+    if (multi_volume)
+    {
+	if (size(created_archive_files) > 0)
+	{
+	    backup_details = backup_details + p + em + "Created archive volumes:" + _em + br;
+
+	    foreach(`f, created_archive_files,
+		``{
+		    backup_details = backup_details + f + br;
+		}
+	    );
+
+	    backup_details = backup_details + _p;
+	}
+    }
 
 
     UI::SetWizardContents( _("Backup summary"),
 	`VBox(
 	    `VSpacing(0.5),
 	    `RichText(backup_result),
+	    `VSpacing(0.5),
+	    `PushButton(`id(`details), _("Details...")),
 	    `VSpacing(1.0)
 	),
 	backup_help_summary(), true, true
@@ -1458,11 +1595,17 @@ global define SummaryDialog() ``{
 
     symbol ret = UI::UserInput();
 
-    if (ret != `finish)
+    while (ret != `finish && ret != `back && ret != `abort)
     {
-	UI::RestoreWizardNextButton();
+	if (ret == `details)
+	{
+	    UI::LongTextPopup(_("Backup summary details:"), `RichText(backup_details), 70, 15);
+	}
+
+	ret = UI::UserInput();
     }
 
+    UI::RestoreWizardNextButton();
     return ret;
 }
 
