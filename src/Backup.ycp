@@ -498,12 +498,12 @@ global define boolean ReadBackupProfiles() ``{
     // if the list is empty or the file does not exists, set empty map
     if( backup_profiles == nil ) backup_profiles = $[];
     
-    return ( backup_profiles == $[] ) ;
+    return ( backup_profiles != $[] ) ;
 }
 
 // Write current backup profiles to a file
 global define boolean WriteBackupProfiles() ``{
-    if( SCR::Write (.target.ycp, "/var/adm/YaST/backup/profiles", backup_profiles ) )
+    if( !SCR::Write (.target.ycp, "/var/adm/YaST/backup/profiles", backup_profiles ) )
     {
 	y2error( "Unable to write profiles ino a file" );
 	return false;
@@ -612,8 +612,8 @@ global define void RestoreDefaultSettings() ``{
     ext2_backup = eval( default_ext2_backup );
     backup_pt = eval( default_backup_pt );
     backup_all_ext2 = eval( default_backup_all_ext2 );
-    backup_none_ext2 = eval( default_none_ext2 );
-    backup_selected_ext2 = eval( default_selected_ext2 );
+    backup_none_ext2 = eval( default_backup_none_ext2 );
+    backup_selected_ext2 = eval( default_backup_selected_ext2 );
     unselected_files = eval( default_unselected_files );
     
     selected_files = eval( default_selected_files );
