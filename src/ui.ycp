@@ -116,6 +116,10 @@ global define symbol ArchDialog() ``{
 		    cont = true;
 		}
 	    }
+	    else if (ret == `abort)
+	    {
+		cont = AbortConfirmation(`changed);
+	    }
 	    else
 	    {
 		cont = true;
@@ -244,7 +248,7 @@ global define symbol TarOptionsDialog() ``{
 	    {
 		if (ret == `abort)
 		{
-		    cont = AbortConfirmation(`no_change);
+		    cont = AbortConfirmation(`changed);
 		}
 		else
 		{
@@ -318,7 +322,7 @@ global define symbol BackupDialog() ``{
 
 	if (ret == `abort)
 	{
-	    if(!AbortConfirmation(`no_change))
+	    if(!AbortConfirmation(`changed))
 	    {
 		ret = nil;		// not confirmed, unset ret
 	    }
@@ -456,7 +460,7 @@ global define symbol ExcludeDialog() ``{
 
 	if (ret == `abort)
 	{
-	    if (!AbortConfirmation(`no_change))
+	    if (!AbortConfirmation(`changed))
 	    {
 		ret = nil;
 	    }
@@ -527,7 +531,7 @@ global define symbol ExcludeFilesystemDialog() ``{
 	    {
 		if (ret == `abort)
 		{
-		    if (!AbortConfirmation(`no_change))
+		    if (!AbortConfirmation(`changed))
 		    {
 			ret = nil;	// not confirmed, uset ret
 		    }
@@ -708,7 +712,7 @@ global define symbol SystemBackupDialog() ``{
 
 	if (ret == `abort)
 	{
-	    if (!AbortConfirmation(`no_change))
+	    if (!AbortConfirmation(`changed))
 	    {
 		ret = nil;	// not confirmed, uset ret
 	    }
@@ -922,7 +926,16 @@ global define symbol SearchingModifiedDialog() ``{
 	    break;
 	}
 
-	ret = waitForUserOrProcess(wait_time, `not_created);
+	ret = waitForUserOrProcess(wait_time, `changed);
+
+	if (ret == `abort)
+	{
+	    if (AbortConfirmation(`changed) == false)
+	    {
+		ret = nil;	// do not abort
+	    }
+	}
+
 	if (ret != nil)
 	{
 	    return ret;
@@ -1018,7 +1031,16 @@ global define symbol SearchingModifiedDialog() ``{
 		}
 	    }
 
-	    ret = waitForUserOrProcess(wait_time, `not_created);
+	    ret = waitForUserOrProcess(wait_time, `changed);
+
+	    if (ret == `abort)
+	    {
+		if (AbortConfirmation(`changed) == false)
+		{
+		    ret = nil;	// do not abort
+		}
+	    }
+
 	    if (ret != nil)
 	    {
 		return ret;
@@ -1104,7 +1126,7 @@ global define symbol FilesDialog() ``{
 
 	if (ret == `abort)
 	{
-	    if (!AbortConfirmation(`not_created))
+	    if (!AbortConfirmation(`changed))
 	    {
 		ret = nil;	// not confirmed, uset ret
 	    }
@@ -1551,13 +1573,28 @@ global define symbol ArchivingDialog() ``{
 	    }
 
 
-	    ret = waitForUserOrProcess(wait_time, `broken);
+	    ret = waitForUserOrProcess(wait_time, `changed);
+
+	    if (ret == `abort)
+	    {
+		if (AbortConfirmation(`changed) == false)
+		{
+		    ret = nil;	// do not abort
+		}
+	    }
+
 	    if (ret != nil)
 	    {
 		return ret;
 	    }
 	}
 
+    }
+
+    // remove incomplete backup archive file
+    if (ret == `abort)
+    {
+	SCR::Execute(.target.remove, Backup::archive_name);
     }
 
     // remove temporary file list and file with comment
@@ -1784,11 +1821,22 @@ global define symbol SummaryDialog() ``{
 
     symbol ret = UI::UserInput();
 
-    while (ret != `finish && ret != `back && ret != `abort)
+    while (ret != `finish && ret != `back)
     {
 	if (ret == `details)
 	{
 	    UI::LongTextPopup(_("Backup summary details:"), `RichText(backup_details), 70, 15);
+	}
+	else if (ret == `abort)
+	{
+	    if (AbortConfirmation(`changed))
+	    {
+		break;
+	    }
+	    else
+	    {
+		ret = nil;
+	    }
 	}
 
 	ret = UI::UserInput();
