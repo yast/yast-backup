@@ -21,7 +21,7 @@ module	"Backup";
 
 textdomain "backup";
 
-global string script_store_ext2_area = "e2image";
+global string script_store_ext2_area = "/sbin/e2image";
 global string script_get_partition_table = "/sbin/fdisk -l";
 global string script_get_files = "/usr/lib/YaST2/bin/backup_search.pl";
 global string script_create_archive = "/usr/lib/YaST2/bin/backup_archive.pl";
@@ -44,12 +44,12 @@ global list media_descriptions = [
     $[
 	"label" : _("Floppy 1.44 MB"),
 	"symbol" : `fd144,
-	"capacity" : 1457664		// exact size for FAT fs
+	"capacity" : 1423 // 1457664B is exact size for FAT fs
     ],
     $[
 	"label" : _("Floppy 1.2 MB"),
 	"symbol" : `fd12,
-	"capacity" : 1213952		// exact size for FAT fs
+	"capacity" : 1185 // 1213952B is exact size for FAT fs
     ],
 /*    $[
 	"label" : _("ZIP 100 MB"),
@@ -64,12 +64,12 @@ global list media_descriptions = [
     $[
 	"label" : _("CD-R/RW 650 MB (74 min.)"),
 	"symbol" : `cd650,
-	"capacity" : 650*1024*1024	// exact size is 650.4 MB - remaining space is for ISO fs
+	"capacity" : 649*1024	// exact size is 650.4 MB - remaining space is for ISO fs
     ],
     $[
 	"label" : _("CD-R/RW 700 MB (80 min.)"),
 	"symbol" : `cd700,
-	"capacity" : 702*1024*1024	// exact size is 703.1 MB - remaining space is for ISO fs
+	"capacity" : 702*1024	// exact size is 703.1 MB - remaining space is for ISO fs
     ]
 ];
 
@@ -266,7 +266,15 @@ global define string get_archive_script_parameters(string file_list, string file
     {
 	if (volume_size == `user_defined)
 	{
-	    integer vol_size = tointeger( (tofloat(user_volume_size)) * (tofloat(GetCapacity(units_description, user_volume_unit))) );
+	    // compute volume size (in kiB)
+
+	    y2warning("tofloat(user_volume_size): %1", tofloat(user_volume_size));
+	    y2warning("tofloat(GetCapacity(units_description, user_volume_unit)): %1", tofloat(GetCapacity(units_description, user_volume_unit)));
+	    y2warning("%1", ((tofloat(user_volume_size)) * (tofloat(GetCapacity(units_description, user_volume_unit)))));
+	    y2warning("%1", tointeger( ((tofloat(user_volume_size)) * (tofloat(GetCapacity(units_description, user_volume_unit)))) / 1024.0 ));
+
+
+	    integer vol_size = tointeger( ((tofloat(user_volume_size)) * (tofloat(GetCapacity(units_description, user_volume_unit)))) / 1024.0 );
 
 	    if (vol_size > 0)
 	    {

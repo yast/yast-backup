@@ -47,6 +47,7 @@ integer nopkg_size = 0;			// size
 boolean packages_list_stored = false;
 
 integer selected_files_num = 0;		// number of selected files to backup
+integer selected_pkg_num = 0;		// number of packages which files are selected
 
 string checkmark = UI::Glyph(`CheckMark);
 string nocheckmark = (checkmark == "[x]") ? "[ ]" : " ";

@@ -18,6 +18,7 @@ Changes:
 
 <P>
 <UL>
+  <LI><B>2001-12-18:</B> Updated to new Backup module</LI>
   <LI><B>2001-12-05:</B> Initial version</LI>
 </UL>
 </P>
@@ -41,7 +42,7 @@ added to archive too.</P>
 <H3>Backup archive content</H3>
 
 <P>Backup archive contains additional information to see when or on which
-system archive was created, on which system it was done...</P>
+system archive was created, etc.</P>
 
 <H3>Workflow desription</H3>
 
@@ -50,24 +51,30 @@ system archive was created, on which system it was done...</P>
 
 <P>At first dialog user can enter some propeties of created archive - file
 name, comment which will be stored in the archive, etc. Archive type determine
-type of created archive, which utility will be used for creating archive.
+type of created archive, which utility will be used for creating archive.</P>
+
+
+<P>Changed files which belong to one package are stored to one subarchive. All
+package archives and additional files are archived to one big archive by tar utility.
+Currently supported archive types:</P>
+
+
 
 <UL>
 
-<LI>tar.gz - gzip is used to compress archive</LI>
+<LI>tar with tar.gz subarchives - gzip is used to compress package archives, all files are merged to tar archive</LI>
 
-<LI>tar.bz2 - bzip2 compression utilityis used - it has better compression
+<LI>tar with tar.bz2 subarchives - bzip2 compression utility is used for package archives - it has better compression
 ratio, but it is slower</LI>
 
-<LI>tar - no compression at all, only merging files to one big file.</LI>
+<LI>tar with tar subarchives - no compression at all, only merging files</LI>
 
-<LI>txt - store only list of files. This option does not make backup archive,
+<LI>txt - store only list of found files. This option does not make backup archive,
 but stores file names to file. This is useful to see which files were changed
 or to use another archive program.</LI>
 
 </UL>
 
-<I>Note: Internal archive structure will be changed...</I>
 
 </P>
 
@@ -85,8 +92,9 @@ probably will) have different free space for user data.  </P>
 <P>User defined size can be entered as number of bytes, kilobytes, etc. Units
 with 'i' in their abbreviation are power of 2, units without 'i' are power of
 10 -- 1 kB is 1000 bytes, 1kiB is 1024 bytes, etc. Number can be entered in
-floating point format, values 1e3 bytes or 0.5 MiB are valid (values are
-truncated to whole bytes of course).</P>
+floating point format, values 1e3 bytes or 0.5 MiB are valid. Tar writes files 
+in 5 kiB blocks (default), so created volumes can be slightly smaller then entered value.
+</P>
 
 <P>Archive volumes are named
 <I>&lt;archive_directory&gt;&lt;volume_number&gt;&lt;archive_basename&gt;</I>.
@@ -105,7 +113,6 @@ because list of all installed files have to be read to it.</P>
 
 <P>Rpm utility is used to search modified files. It allows verifying installed packages
 by comparing current file attributes with attributes stored in RPM database.
-
 Changed files are be detected by different MD5 sum attributes. Computing MD5 sum
 takes lot of time, so it can be replaced by only comparing size and modification time 
 attributes, but it is less reliable.
@@ -123,8 +130,8 @@ directory '/' is searched always even, if its file system is selected.</P>
 
 <H5>Seaching</H5>
 
-<P>seaching files strarts after all unnecessary information is collected.
-During searching current action or progress is displayed.  </P>
+<P>Seaching files starts after all unnecessary information is collected.
+During searching current action or progress is displayed.</P>
 
 <H5>Files dialog</H5>
 
@@ -147,7 +154,7 @@ by unpacking files from the archive.</P>
 
 <P>Other information about YaST2 backup moudule can be found in
 <A HREF="backup_specification.html">Backup module specification</A>.
-If you have another questions or notes contact the author please.
+If you have another questions or notes contact author please.
 </P>
 
 

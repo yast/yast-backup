@@ -8,12 +8,21 @@ Purpose: Backup changed files, partition table and critical ext2 areas
 Features:
 
     * backup files which were changed since package installation
+
     * can backup files which do not belong to any RPM package
       (can exclude selected filesystems/directories from search)
-    * create tar, tar.gz or tar.bz2 backup file
-    * backup partition table (fdisk -l)
+
+    * create tar backup file (with tar, tar.gz or tar.bz2 package archives)
+             or only store list of changed files
+
+    * backup partition table (text: sfdisk -d, raw:dd)
+
     * backup ext2 critical data (e2image)
+
     * additional information is part of the archive (hostname,
-        date of backup, user comment)
+        date of backup, user comment, installed packages...)
+
     * batch mode
+
     * restore files from archive
+

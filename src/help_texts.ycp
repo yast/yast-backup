@@ -32,13 +32,13 @@ global define string backup_help_archive_settings() ``{
     + _("This YaST2 module searches files on your system and creates backup archive from them.<BR></P>")
 
     // For translators: help text in archive setting dialog - part 3/5
-    + _("<P><B>System backup</B><BR>")
+    + _("<P><B>Backup</B><BR>")
 
     // For translators: help text in archive setting dialog - part 4/5
-    + _("To create backup of your system enter archive name and select archive type. <B>Archive description</B> is optional description - you can write some notes here.</P>")
+    + _("To create backup of your system enter archive name and select archive type. <B>Archive description</B> is optional description of the backup archive.</P>")
 
     // For translators: help text in archive setting dialog - part 5/5
-    + _("<P>If you want to store only list of found files instead of creating archive then select '<B>only list of files</B>' as archive type.</P>");
+    + _("<P>If you want to store only file names of found files instead of creating archive then select '<B>only list of file names</B>' as archive type.</P>");
 }
 
 
@@ -64,7 +64,7 @@ global define string backup_help_archive_options() ``{
     + _("If your backup medium is not in the list then select <B>User defined</B> and enter volume size in the textbox.</P>")
 
     // For translators: help text in tar options dialog - part 6/6
-    + _("<P><B>Note:</B> units with 'i' are power of 2, units without 'i' are power of 10.</P>");
+    + _("<P><B>Note:</B> 1 kB = 1000 Bytes, 1 kiB = 1024 Bytes, etc.</P>");
 }
 
 
@@ -131,7 +131,7 @@ global define string backup_help_exclude_fs() ``{
     + _("<P><B>Excluding file system</B><BR>")
 
     // For translators: help text in exclude file system dialog - part 4/5
-    + _("To exclude all directories on certain file system check box with name of file system.</P>")
+    + _("To exclude all directories on certain file system check box with name of the file system.</P>")
 
     // For translators: help text in exclude file system dialog - part 5/5
     + _("<P><B>Note:</B> Root directory will be searched always, even if its file system is selected.</P>");
@@ -215,16 +215,13 @@ global define string backup_help_file_selection() ``{
  */
 
 global define string backup_help_creating_archive() ``{
-    // For translators: help text in  creating archive dialog - part 1/4
+    // For translators: help text in creating archive dialog - part 1/3
     return _("<P><B><BIG>Creating archive</BIG></B><BR>")
 
-    // For translators: help text in creating archive dialog - part 2/4
+    // For translators: help text in creating archive dialog - part 2/3
     + _("<P>Creating archive is in progress.</P>")
 
-    // For translators: help text in creating archive dialog - part 3/4
-    + _("<P>Now files are stored to archive.</P>")
-
-    // For translators: help text in creating archive dialog - part 4/4
+    // For translators: help text in creating archive dialog - part 3/3
     + _("<P>Please wait.</P>");
 }
 
