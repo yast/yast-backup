@@ -25,7 +25,7 @@ import "Popup";
 import "String";
 import "NetworkPopup";
 import "Nfs";
-import "Package";
+import "PackageSystem";
 import "Popup";
 
 include "backup/help_texts.ycp";
@@ -78,6 +78,23 @@ textdomain "backup";
 
  boolean packages_list_stored = false;
  map profilewritten = $[];	// result of writing profile
+
+/**
+ * Function for installing packages
+ */
+define boolean InstallNeededPackages (list<string> packages) {
+    if (size(packages)==0) {
+	y2error("empty list of packages to be installed");
+	return false;
+    }
+
+    if (!PackageSystem::CheckAndInstallPackagesInteractive (packages)) {
+	y2debug("star package wasn't installed");
+	return false;
+    }
+
+    return true;
+}
 
 /**
  * Update widget status in the dialog. Enable/disable widget according to
@@ -611,29 +628,9 @@ Enter the directory name to use.
 		}
 
 		// check if star is installed for star subarchive type
-		if (type == `star || type == `stgz || type == `stbz)
-		{
-		    if (((integer)SCR::Read(.target.size, "/usr/bin/star")) < 0)
-		    {
-			// Popup::YesNo message text - ask to install 'star' package
-			boolean inst = Popup::YesNo(_("Package 'star' is required for
-the selected archive type.
-Install it?
-"));
-
-			if (inst == true)
-			{
-			    // install star - use Package module
-			    inst = Package::DoInstall(["star"]);
-			}
-
-			// if star is still not installed start new UI cycle
-			if (!inst)
-			{
-			    y2debug("star package wasn't installed");
-			    continue;
-			}
-		    }
+		if ((type == `star || type == `stgz || type == `stbz)
+		    && (((integer)SCR::Read(.target.size, "/usr/bin/star")) < 0)) {
+		    InstallNeededPackages( ["star"] );
 		}
 
 		y2milestone("Multivolume: %1", Backup::multi_volume);
