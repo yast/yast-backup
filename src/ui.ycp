@@ -77,7 +77,8 @@ global define ArchDialog() ``{
 
     if (SCR::Read(.runtime.username) != "root" && root_warning_displayed == false)
     {
-	UI::WarningPopup(_("You are not logged as root,\nsome files may not be backuped."));
+	UI::WarningPopup(_("You are not logged as root!") + "\n\n"
+	+ _("Some files can be read only by user root,\ntherefore not all files may be backuped\nand then after accident restored.\n\nAlso system areas on harddisks can be\nbackuped only by user root."));
 	root_warning_displayed = true;
     }
 
@@ -700,11 +701,11 @@ global define SearchingModifiedDialog() ``{
 
     symbol ret = nil;
 
-/* TODO test result of script starting
-   if (!started)
+    if (!started)
     {
-	UI::OpenDialog...
-    }*/
+	UI::ErrorPopup(_("Could not start searching script!\nBackup will be aborted."));
+	return `abort;
+    }
 
 
     integer package_num = 0;
@@ -718,12 +719,13 @@ global define SearchingModifiedDialog() ``{
     string id_file = "Size: ";
     string id_nopackage = "Nopackage:";
     string id_instprefixes = "Installed: ";
-    string id_reading_packages = "Reading installed packages";
-    string id_packages_read = "packages installed";
+    string id_reading_packages = "<installed>";
+    string id_packages_read = "</installed>";
     string id_reading_files = "Reading all files";
     string id_files_read = "Files read";
 
     boolean search_no_package = false;
+    boolean reading_installed_packages = false;
 
     while(SCR::Read(.background.output_open) || (SCR::Read(.background.newlines) > 0) /*|| (size(script_out) > 0)*/)
     {
@@ -734,130 +736,138 @@ global define SearchingModifiedDialog() ``{
 	    line = select(script_out, 0); 		// read line
 	    script_out = remove(script_out, 0);		// remove line
 
-	    if (substring(line, 0, size(id_package)) == id_package)
+	    if (reading_installed_packages)
 	    {
-		// store package's changed files
-		if (size(package_files) > 0)
+		if (line == id_packages_read)
 		{
-		    map package_info = $[
-			"changed_files" : package_files,
-			"install_prefixes" : actual_instprefixes
-		    ];
+		    reading_installed_packages = false;
+		    total_packages = size(list_of_installed_packages);
 
-		    backup_files = add(backup_files, actual_package, package_info /*package_files*/);
-		    package_files = [ ];
-		}
-
-		actual_package = substring(line, size(id_package));
-		package_num = package_num + 1;
-
-		UI::ChangeWidget(`id(`package), `Value, actual_package);
-		UI::ChangeWidget(`id(`progress), `Value, package_num);
-
-	    }
-	    else
-	    {
-		if  (substring(line, 0, size(id_file)) == id_file)
-		{
-		    line = substring(line, size(id_file));
-
-		    string size_str = substring(line, 0, findfirstof(line, " "));
-		    modified_size = modified_size + tointeger(size_str);
-		    modified_num = modified_num + 1;
-
-		    UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", size_text(modified_size)));
-		    UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", modified_num));
-
-		    package_files = add(package_files, substring(line, findfirstof(line, " ") + 1));
+		    y2debug("Number of installed packages: %1", total_packages);
 		}
 		else
 		{
-		    if (line == id_nopackage)
+		    list_of_installed_packages = add(list_of_installed_packages, line);	// add package to the list
+		}
+	    }
+	    else
+	    {
+		if (substring(line, 0, size(id_package)) == id_package)
+		{
+		    // store package's changed files
+		    if (size(package_files) > 0)
 		    {
-			if (size(package_files) > 0)
-			{
-			    map package_info = $[
-				"changed_files" : package_files,
-				"install_prefixes" : actual_instprefixes
-			    ];
+			map package_info = $[
+			    "changed_files" : package_files,
+			    "install_prefixes" : actual_instprefixes
+			];
 
-			    backup_files = add(backup_files, actual_package, package_info);
-			    package_files = [ ];
-			}
+			backup_files = add(backup_files, actual_package, package_info /*package_files*/);
+			package_files = [ ];
+		    }
 
-			actual_package = "";		// empty package name
-			search_no_package = true;	// no package part of output
+		    actual_package = substring(line, size(id_package));
+		    package_num = package_num + 1;
 
-			y2milestone("Searching files which are not in any package started");
+		    UI::ChangeWidget(`id(`package), `Value, actual_package);
+		    UI::ChangeWidget(`id(`progress), `Value, package_num);
 
-			break;
+		}
+		else
+		{
+		    if  (substring(line, 0, size(id_file)) == id_file)
+		    {
+			line = substring(line, size(id_file));
+
+			string size_str = substring(line, 0, findfirstof(line, " "));
+			modified_size = modified_size + tointeger(size_str);
+			modified_num = modified_num + 1;
+
+			UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", size_text(modified_size)));
+			UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", modified_num));
+
+			package_files = add(package_files, substring(line, findfirstof(line, " ") + 1));
 		    }
 		    else
 		    {
-			if (substring(line, 0, size(id_instprefixes)) == id_instprefixes)
+			if (line == id_nopackage)
 			{
-			    actual_instprefixes = substring(line, size(id_instprefixes));
+			    if (size(package_files) > 0)
+			    {
+				map package_info = $[
+				    "changed_files" : package_files,
+				    "install_prefixes" : actual_instprefixes
+				];
+
+				backup_files = add(backup_files, actual_package, package_info);
+				package_files = [ ];
+			    }
+
+			    actual_package = "";		// empty package name
+			    search_no_package = true;	// no package part of output
+
+			    y2milestone("Searching files which are not in any package started");
+
+			    break;
 			}
 			else
 			{
-			    if (line == id_reading_files)
+			    if (substring(line, 0, size(id_instprefixes)) == id_instprefixes)
 			    {
-				UI::SetWizardContents("", `Label(_("Reading packages files...")), backup_help_searching_modified(), false, false);
+				actual_instprefixes = substring(line, size(id_instprefixes));
 			    }
 			    else
 			    {
-				if (line == id_reading_packages)
+				if (line == id_reading_files)
 				{
-				    y2milestone("Reading installed packages");
-				    UI::SetWizardContents("", `Label(_("Reading list of installed packages...")), backup_help_searching_modified(), false, false);
+				    UI::SetWizardContents("", `Label(_("Reading packages files...")), backup_help_searching_modified(), false, false);
 				}
 				else
 				{
-				    if (line == id_files_read)
+				    if (line == id_reading_packages)
 				    {
-					UI::SetWizardContents( _("Searching modified files"),
-					    `Top(
-						`VBox(
-						    `VSpacing(0.5),
-						    `Left(
-							`HBox(
-							    `Label(_("Modified files: ")),
-							    `Label(`id(`numfiles), `opt(`hstretch), sformat("%1", modified_num))
-							)
-						    ),
-						    `VSpacing(0.5),
-						    `Left(
-							`HBox(
-							    `Label(_("Total size: ")),
-							    `Label(`id(`totsize), `opt(`hstretch), size_text(modified_size))
-							)
-						    ),
-						    `VSpacing(0.5),
-						    `Left(
-							`HBox(
-							    `Label(_("Searching in package: ")),
-							    `Label(`id(`package), `opt(`hstretch), "")
-							)
-						    ),
-						    `VSpacing(3.0),
-						    `Left(
-							`ProgressBar(`id(`progress), _("Searching..."), total_packages)
-						    )
-						)
-					    ),
-					    backup_help_searching_modified(), false, false
-					);
-
-					y2milestone("Searching in packages started");
+					y2milestone("Reading installed packages");
+					UI::SetWizardContents("", `Label(_("Reading list of installed packages...")), backup_help_searching_modified(), false, false);
+					reading_installed_packages = true;
 				    }
 				    else
 				    {
-					if (issubstring(line, id_packages_read))
+					if (line == id_files_read)
 					{
-					    string installed_str = substring(line, 0, findfirstof(line, " "));
-					    total_packages = tointeger(installed_str);
+					    UI::SetWizardContents( _("Searching modified files"),
+						`Top(
+						    `VBox(
+							`VSpacing(0.5),
+							`Left(
+							    `HBox(
+								`Label(_("Modified files: ")),
+								`Label(`id(`numfiles), `opt(`hstretch), sformat("%1", modified_num))
+							    )
+							),
+							`VSpacing(0.5),
+							`Left(
+							    `HBox(
+								`Label(_("Total size: ")),
+								`Label(`id(`totsize), `opt(`hstretch), size_text(modified_size))
+							    )
+							),
+							`VSpacing(0.5),
+							`Left(
+							    `HBox(
+								`Label(_("Searching in package: ")),
+								`Label(`id(`package), `opt(`hstretch), "")
+							    )
+							),
+							`VSpacing(3.0),
+							`Left(
+							    `ProgressBar(`id(`progress), _("Searching..."), total_packages)
+							)
+						    )
+						),
+						backup_help_searching_modified(), false, false
+					    );
 
-					    y2debug("Number of installed packages: %1", total_packages);
+					    y2milestone("Searching in packages started");
 					}
 					else
 					{
@@ -1258,6 +1268,14 @@ global define ArchivingDialog() ``{
     UI::ClearWizardContents();
 
     boolean started = SCR::Execute(.background.run_output, script_create_archive + archive_options);
+
+    if (!started)
+    {
+	UI::ErrorPopup(_("Could not start archiving script!\nBackup will be aborted."));
+	return `abort;
+    }
+
+
     list script_out = [ ];
 
     string id_hostname = "Storing hostname: ";
@@ -1487,10 +1505,6 @@ global define SummaryDialog() ``{
 	    if (!read_ptables_info)
 	    {
 		backup_details = backup_details + p + em + _("Detection of disk partitions failed") + _em + br;
-	    }
-	    else
-	    {
-		backup_details = backup_details + p + _("Detection of disk partitions was successful") + br;
 	    }
 
 	    foreach(`failed_pt, failed_ptables,
