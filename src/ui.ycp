@@ -226,7 +226,7 @@ be backed up by root.
 	if (type != `txt)
 	{
 	    Backup::archive_name = AddMissingExtension(Backup::archive_name, ".tar");
-	    UI::ChangeWidget(`id(filename), `Value, Backup::archive_name);
+	    UI::ChangeWidget(`id(`filename), `Value, Backup::archive_name);
 	}
 
 	if (ret == `type)
@@ -2207,7 +2207,7 @@ global define symbol SummaryDialog() ``{
 	}
 
 	// part of summary text - %1 is file name
-	string profilesummary = (lookup(profilewritten, "result", false) == true) ? sformat(_("Autoinstallation profile saved to file %1."), lookup(profilewritten, "profile", "")) : (b + _("Autoinstallation profile was not saved.") + _b);
+	string profilesummary = (lookup(profilewritten, "result", false) == true) ? sformat(_("Autoinstallation profile saved to file %1."), lookup(profilewritten, "profile", "")) : (em + _("Autoinstallation profile was not saved.") + _em);
 
 	backup_result = backup_result
 	    // part of summary text
@@ -2236,6 +2236,17 @@ global define symbol SummaryDialog() ``{
 	    }
 	}
     }
+    
+    term buttons = `HBox(
+		`PushButton(`id(`details), `opt(`key_F2), _("&Details..."))
+	    );
+    if( Backup::selected_profile == nil )
+    {
+	buttons = `HBox(
+		`PushButton(`id(`details), `opt(`key_F2), _("&Details...")),
+		`PushButton(`id(`profile), _("&Save as profile..."))
+	    );
+    }
 
     // dialog header
     Wizard::SetContents( _("Backup summary"),
@@ -2244,10 +2255,7 @@ global define symbol SummaryDialog() ``{
 	    `RichText(backup_result),
 	    `VSpacing(0.5),
 	    // push button label
-	    `HBox(
-		`PushButton(`id(`details), `opt(`key_F2), _("&Details...")),
-		`PushButton(`id(`profiles), _("&Profiles..."))
-	    ),
+	    buttons,
 	    `VSpacing(1.0)
 	),
 	backup_help_summary(), true, true
@@ -2258,12 +2266,12 @@ global define symbol SummaryDialog() ``{
 	UI::ChangeWidget(`id(`details), `Enabled, false);
     }
 
-    Wizard::ReplaceNextButton(`PushButton(`id(`finish), `opt(`default), FinishButtonLabel()));
+    Wizard::ReplaceNextButton(`PushButton(`id(`finish), `opt(`default), OKButtonLabel()));
     UI::SetFocus(`id(`finish));
 
     symbol ret = UI::UserInput();
 
-    while (ret != `finish && ret != `back && ret != `profiles)
+    while (ret != `finish && ret != `back)
     {
 	if (ret == `details)
 	{
@@ -2282,6 +2290,16 @@ global define symbol SummaryDialog() ``{
 		ret = nil;
 	    }
 	}
+	else if( ret == `profile )
+	{
+	    string new_name = AskNewProfileName();
+	    
+	    //if no cancel, store
+	    if( new_name != "" )
+	    {
+		Backup::StoreSettingsToBackupProfile( new_name );
+	    }
+	}
 
 	ret = UI::UserInput();
     }
@@ -2296,165 +2314,80 @@ global define symbol SummaryDialog() ``{
  */
 global define symbol SelectProfileDialog() ``{
 
-    Backup::ReadBackupProfiles();
+    Wizard::ReplaceNextButton (`PushButton(`id(`finish), CloseButtonLabel()));
+    Wizard::ReplaceAbortButton( `Empty() );
+    Wizard::ReplaceBackButton( `Empty() );
 
-    // if there is no stored profile return `next
-    if (size(Backup::backup_profiles) == 0)
-    {
-	return (last_input == nil) ? `next : last_input;
-    }
-
-    Wizard::SetContents(_("Profile Selection"),
-	`VBox(
-	    `VSpacing(1),
-	    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames()),
-	    `VSpacing(1),
-	    `Frame(_("Action"),
-		`RadioButtonGroup(`id(`rb),
-		    `VBox(
-			`VSpacing(0.5),
-			`Left(`RadioButton(`id(`noprofile), _("&Do Not Use Profile"), true)),
-			`Left(`RadioButton(`id(`use), _("&Use Profile without Changes"))),
-			`Left(`RadioButton(`id(`edit), _("Allow &Changes before Use"))),
-			`VSpacing(0.5)
-		    )
-		)
-	    ),
-	    `VSpacing(1.5)
-	),
-	profile_selection_help(), true, true
+    Wizard::SetContents( _("YaST System Backup"),
+        `VBox(
+            `Label(_("Available Profiles") ),
+            `ReplacePoint(`id(`selectionBox),
+            `Table(`id(`profile), `header(_("Name"),_("Description")),Backup::BackupProfileDescriptions() )
+            ),
+            `HBox(
+                `PushButton(`id(`start), _("&Start backup")),
+                `MenuButton(_("Profile mana&gement"),
+                    [
+                        `item(`id(`add), AddButtonLabel()+"..."),
+                        `item(`id(`clone), _("&Duplicate...")),
+                        `item(`id(`edit), EditButtonLabel()+"..."),
+                        `item(`id(`delete), DeleteButtonLabel())
+                    ])
+            ),
+            `PushButton(`id(`manual),_("Backup &manually...")),
+            `VSpacing(1.5)
+        ),
+        profile_help(), false, false
     );
 
-    if (Backup::selected_profile != nil)
-    {
-	// select the original profile in the list
-        UI::ChangeWidget( `id(`profile), `CurrentItem, Backup::selected_profile );
-
-	if (Backup::no_interactive)
-	{
-	    UI::ChangeWidget( `id(`rb), `CurrentButton, `use );
-	}
-	else
-	{
-	    UI::ChangeWidget( `id(`rb), `CurrentButton, `edit );
-	}
-    }
-    else
-    {
-	// select the first profile in the list
-        UI::ChangeWidget( `id(`profile), `CurrentItem, select( Backup::BackupProfileNames(), 0, nil ) );
-    }
-
-    symbol ret = UI::UserInput();
-
-    if( ret == `next )
-    {
-	symbol profile_use = UI::QueryWidget(`id(`rb), `CurrentButton);
-	if( profile_use == `use )
-	{
-	    // use the settings from profile and proceed without user intervention
-	    Backup::RestoreSettingsFromBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
-
-	    Backup::no_interactive = true;
-	}
-	else if( profile_use == `edit )
-	{
-	    // read the settings for the selected profile and continue setup
-	    Backup::RestoreSettingsFromBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
-
-	    // interactive configuration
-	    Backup::no_interactive = false;
-	}
-	else
-	{
-	    // do not use profile at all
-	    Backup::RestoreDefaultSettings();
-
-	    // interactive configuration
-	    Backup::no_interactive = false;
-	}
-    }
-
-    return ret;
-}
-
-/**
- * Dialog for profile management and storing profiles.
- * @return symbol Symbol for wizard sequencer - pressed button
- */
-global define symbol ProfileDialog() ``{
-
-    Wizard::SetContents(_("Profiles"),
-	`VBox(
-	    `ReplacePoint(`id(`selectionBox),
-	    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames()  )
-	    ),
-	    `HBox(
-		`PushButton(`id(`add),`opt(`key_F3), _("&Save as New...")),
-		`PushButton(`id(`replace), _("Re&place")),
-		`PushButton(`id(`delete),`opt(`key_F5), UI::DeleteButtonLabel())
-	    ),
-	    `VSpacing(1.5)
-	),
-	profile_help(), true, true
-    );
-
-    if( size( Backup::backup_profiles ) != 0 )
-    {
-	if (Backup::selected_profile != nil )
-	{
-	    // select the original profile in the list
-	    UI::ChangeWidget( `id(`profile), `CurrentItem, Backup::selected_profile );
-        }
-	else
-	{
-	    // select the first profile in the list
-            UI::ChangeWidget( `id(`profile), `CurrentItem, select( Backup::BackupProfileNames(), 0, nil ) );
-	}
-    }
-
-    Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
-
-
+    // select the first profile in the list
+    UI::ChangeWidget( `id(`profile), `CurrentItem, select( Backup::BackupProfileNames(), 0, nil ) );
+    
     symbol ret = nil;
-    do
-    {
-	// enable correct buttons
-	UI::ChangeWidget( `id(`replace), `Enabled, (size( Backup::backup_profiles ) != 0) );
-	UI::ChangeWidget( `id(`delete), `Enabled, (size( Backup::backup_profiles ) != 0) );
+    Backup::no_interactive = false;
+    
+    do {
+	// select the first profile in the list
+	UI::ChangeWidget( `id(`start), `Enabled, (size( Backup::backup_profiles ) != 0) );
 
 	ret = UI::UserInput();
 
-	if( ret == `add )
+	// load corresponding settings
+	if( size( Backup::backup_profiles ) == 0 )
 	{
-	    // add a new profile with the current settings
-
-	    // Translators: text of a popup dialog
-	    map new_name = ShowEditDialog(_("Enter a name for the new profile."), "");
-
-	    while( lookup( new_name, "clicked", nil ) == `ok && Backup::backup_profiles[ new_name["text"]:nil ]:nil != nil  )
+	    Backup::RestoreDefaultSettings();
+	}
+	else
+	{
+	    Backup::RestoreSettingsFromBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
+	}
+    
+	if( ret == `start )
+	{
+	    Backup::no_interactive = true;
+	}
+	else if( ret == `clone || ret == `add )
+	{
+	    // add a new profile with the current/default settings
+	    if( ret == `add )
 	    {
-		// Translators: error popup, %1 is profile name
-		UI::MessagePopup(sformat(_("A profile '%1' already exists.
-Enter a different name."), new_name["text"]:""));
-
-		new_name = ShowEditDialog(_("Enter a name for the new profile."), "");
+		// restore default settings, don't care about selected profile
+		Backup::RestoreDefaultSettings();
 	    }
+	    
+	    string new_name = AskNewProfileName();
 
-	    if( lookup( new_name, "clicked", nil ) == `ok )
+	    // if the user didn't choose cancel
+	    if(  new_name != "" )
 	    {
-		Backup::StoreSettingsToBackupProfile( lookup( new_name, "text", "" ) );
+		Backup::StoreSettingsToBackupProfile( new_name );
 		UI::ReplaceWidget( `id(`selectionBox),
-		    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames() ) );
-
+		    `Table(`id(`profile), `header(_("Name"),_("Description")),Backup::BackupProfileDescriptions() )
+		);
+		
 		// select the profile in the list
 		UI::ChangeWidget( `id(`profile), `CurrentItem, new_name["text"]:"" );
 	    }
-	}
-	else if( ret == `replace )
-	{
-	    // replace the selected profile with the current settings
-	    Backup::StoreSettingsToBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
 	}
 	else if( ret == `delete )
 	{
@@ -2463,31 +2396,81 @@ Enter a different name."), new_name["text"]:""));
 	    {
 		Backup::RemoveBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
 		UI::ReplaceWidget( `id(`selectionBox),
-		    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames() ) );
+		    `Table(`id(`profile), `header(_("Name"),_("Description")),Backup::BackupProfileDescriptions() ));
 
 		// select the first profile in the list
 		UI::ChangeWidget( `id(`profile), `CurrentItem, select( Backup::BackupProfileNames(), 0, nil ) );
 	    }
 	}
-	else if( ret == `abort )
+	else if( ret == `manual )
 	{
-	    if ( !AbortConfirmation(`changed) )
-	    {
-		// we don't want to abort
-		ret = nil;
-	    }
+	    // load defaults, clear selected_profile
+	    Backup::RestoreDefaultSettings();
+	    Backup::selected_profile = nil;
 	}
+    } while( ret != `finish && ret != `manual && ret != `start && ret != `edit );
 
-    } while( ret != `ok && ret != `cancel && ret != `abort && ret != `back );
-
-    if( ret == `ok )
+    if( ret == `finish )
     {
 	y2milestone(" *** Storing profiles ***");
 	Backup::WriteBackupProfiles();
     }
 
-    Wizard::RestoreNextButton();
+    Wizard::RestoreNextButton ();
+    Wizard::RestoreAbortButton ();
+    Wizard::RestoreBackButton ();
+
     return ret;
+}
+
+/**
+ * Choose the next step - start searching or return to the profile dialog.
+ * @return symbol Symbol for wizard sequencer - `next for searching, `next2 for return to profile dialog
+ */
+global define symbol PrepareSearching() ``{
+    // if the user does not use profile, start searching
+    if( Backup::selected_profile == nil )
+    {
+	return `next;
+    }
+    // there is a profile, store the data and return to profile dialog
+    else
+    {
+	Backup::StoreSettingsToBackupProfile( Backup::selected_profile );
+	return `ok;
+    }
+}
+
+/**
+ * Allow user to enter a new profile name. If the profile already exists, it allows
+ * to replace it.
+ * @return string the name for the new profile, "" for cancel
+ */
+global define string AskNewProfileName() ``{
+    // Translators: text of a popup dialog
+    map new_name = ShowEditDialog(_("Enter a name for the new profile."), "");
+
+    while( lookup( new_name, "clicked", nil ) == `ok && Backup::backup_profiles[ new_name["text"]:nil ]:nil != nil  )
+    {
+	// Translators: error popup, %1 is profile name
+	if( ! UI::YesNoPopup(sformat(_("A profile '%1' already exists.
+Do you want to replace the existing profile?"), new_name["text"]:"")) ) {
+	    new_name = ShowEditDialog(_("Enter a name for the new profile."), "");
+	}
+	else
+	{
+	    // yes, do replace
+	    return new_name[ "text" ]:""; 
+	}
+    }
+    
+    if( lookup( new_name, "clicked", nil ) == `ok ) {
+	return new_name["text"]:"";
+    }
+    else 
+    {
+	return "";
+    }
 }
 
 }

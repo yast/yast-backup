@@ -112,13 +112,12 @@ if (Mode::test == true)
 map sequence = $[
     "ws_start"	: "readprof",
 
-    "profiles" : $[
-	`ok	: "summary",
-	`abort	: `abort
-    ],
     "readprof" : $[
-	`next	: "archive",
-	`abort	: `abort
+	`edit	: "archive",
+	`start  : "do_searching",
+	`manual : "archive",
+	`abort	: `abort,
+	`finish : `ws_finish
     ],
     "archive" : $[
         `next	: "backup",
@@ -150,6 +149,10 @@ map sequence = $[
 	`abort	: `abort
     ],
     "searching"	: $[
+	`next	: "do_searching",
+	`ok	: "readprof"
+    ],
+    "do_searching"	: $[
 	`next	: "files",
 	`next2	: "archiving",
 	`abort	: `abort
@@ -164,15 +167,13 @@ map sequence = $[
     ],
     "summary" : $[
 	`abort	: `abort,
-	`profiles : "profiles",
-	`finish	: `ws_finish
+	`finish	: "readprof"
     ]
 ];
 
 // aliases for dialogs
 map aliases = $[
     "readprof"	: ``(SelectProfileDialog()),
-    "profiles"	: [ ``(ProfileDialog()), true ],
     "files"	: ``(FilesDialog()),
     "tar_opt"	: ``(TarOptionsDialog()),
     "archive"	: ``(ArchDialog()),
@@ -180,7 +181,8 @@ map aliases = $[
     "exclude"	: ``(ExcludeDialog()),
     "excludefs" : ``(ExcludeFilesystemDialog()),
     "system"	: ``(SystemBackupDialog()),
-    "searching"	: [ ``(SearchingModifiedDialog()), true ],
+    "searching" : ``(PrepareSearching()),
+    "do_searching"	: [ ``(SearchingModifiedDialog()), true ],
     "archiving"	: [ ``(ArchivingDialog()), true ],
     "summary"	: ``(SummaryDialog())
 ];
@@ -202,6 +204,7 @@ if (Mode::test == true)
 }
 else
 {
+    Backup::ReadBackupProfiles();
     // start wizard sequencer
     WizardSequencer(aliases, sequence);
 }
