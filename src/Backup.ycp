@@ -215,6 +215,9 @@ global integer undetected_volume_size = 1024*1024*1024;
 global list<string> installable_packages = [];
 global list<string> complete_backup = [];
 
+// list of files to be deleted finishing the backup editation
+global list<string> remove_cron_files = [];
+
 // result of removing old archives
 global map remove_result = $[];
 
@@ -892,7 +895,7 @@ global define void ReadCronSettings() ``{
     {
 	// parse all /etc/cron.d/yast2-backup-* files
 	foreach(string file, files, ``{
-		if (regexpmatch(file, "yast2-backup-[0-9]*") == true)
+		if (regexpmatch(file, "^yast2-backup-[0-9]*$") == true)
 		{
 		    integer cron_index = tointeger(regexpsub(file, "yast2-backup-([0-9]*)", "\\1"));
 
@@ -1077,6 +1080,15 @@ global define boolean WriteBackupProfiles() ``{
 The profile changes will be lost.") );
 	return false;
     }
+
+    foreach (string filename, remove_cron_files, {
+	if (filename != "") {
+	    y2milestone("Removing file: '%1'", filename);
+	    if ( ! (boolean) SCR::Execute (.target.remove, filename) ) {
+		y2warning("Cannot remove cron file '%1'", filename);
+	    }
+	}
+    });
 
     return true;
 }
@@ -1386,12 +1398,20 @@ global define list<term> BackupProfileDescriptions() ``{
 /**
  * Remove given profile.
  * @param profile_name name of a profile to be removed
+ * @param boolean remove_cronfile defines whether also the cron settings (stored in file) should be removed
  * @return If the name of the profile cannot be found, return false, otherwise return true.
  */
-global define boolean RemoveBackupProfile( string profile_name ) ``{
+global define boolean RemoveBackupProfile( string profile_name, boolean remove_cronfile ) ``{
     // return false, is there is no such profile
     if( !haskey( backup_profiles, profile_name ) ) return false;
 
+    // If there is some cronfile assigned to the profile, remove it too
+    if (remove_cronfile && backup_profiles[profile_name,`cron_settings,"cronfile"]:nil != nil) {
+	string filename = backup_profiles[profile_name,`cron_settings,"cronfile"]:"";
+
+	y2milestone("File '%1' has been marked to be removed", filename);
+	remove_cron_files = add(remove_cron_files, filename);
+    }
     backup_profiles = (map<string, map>) remove( backup_profiles, profile_name );
 
     return true;
