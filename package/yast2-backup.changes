@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Mar 25 14:54:01 CET 2003 - lslezak@suse.de
+
+- fixed [Back] button behaviour in the Archive settings dialog
+- improved (faster) MapFilesToString() and MapToTableItems()
+  functions
+
+-------------------------------------------------------------------
 Thu Mar 13 12:57:26 CET 2003 - lslezak@suse.de
 
 - autoyast profile: fixed network configuration clonning (#25201)

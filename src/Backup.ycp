@@ -21,7 +21,6 @@ module	"Backup";
 
 import "AutoinstClone";
 import "Profile";
-import "Lan";
 import "Progress";
 
 include "backup/functions.ycp";

@@ -27,6 +27,8 @@ include "backup/help_texts.ycp";
 
 textdomain "backup";
 
+global symbol last_input = nil;
+
 /**
  * Dialog for setting archive options
  * @return symbol Symbol for wizard sequencer - pressed button
@@ -87,7 +89,11 @@ global define symbol ArchDialog() ``{
 	    }
 	}
 	
-	if( cont ) return `next;
+	if( cont )
+	{
+	    last_input = `next;
+	    return last_input;
+	}
     }
 
     // dialog header
@@ -309,6 +315,7 @@ Enter the file name to use.
 	}
     }
 
+    last_input = ret;
     return ret;
 }
 
@@ -2203,7 +2210,7 @@ global define symbol SelectProfileDialog() ``{
     // if there is no stored profile return `next
     if (size(Backup::backup_profiles) == 0)
     {
-	return `next;
+	return (last_input == nil) ? `next : last_input;
     }
 
     Wizard::SetContents(_("Profile Selection"),

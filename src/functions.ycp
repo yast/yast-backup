@@ -31,6 +31,8 @@ global define list MapToTableItems(boolean check) ``{
     integer idx = 0;
     list items = [];
 
+    list itemsx = [];
+
     if (Backup::backup_files == nil)
     {
 	return [];
@@ -55,7 +57,7 @@ global define list MapToTableItems(boolean check) ``{
 			    {
 				mark =  checkmark;
 			    }
-			    else 
+			    else
 			    {
 				mark = nocheckmark;
 			    }
@@ -65,14 +67,20 @@ global define list MapToTableItems(boolean check) ``{
 			    mark = check ? checkmark : nocheckmark;
 			}
 
-			items = add(items, `item(`id(idx), mark, file, key));
+			itemsx = add(itemsx, `item(`id(idx), mark, file, key));
+
+			if (idx % 300 == 1)
+			{
+			    items = merge(items, itemsx);
+			    itemsx = [];
+			}
 		    }
 		);
 	    }
 	}
     );
 
-    return items;
+    return merge(items, itemsx);
 }
 
 
@@ -391,9 +399,8 @@ global define string MapFilesToString() ``{
 		string tmp = "Package: " + pkg + "\nInstalled: "
 		    + lookup(lookup(Backup::backup_files, pkg, $[]), "install_prefixes", "(none)") + "\n";
 
-                foreach(`file, lookup(info, "changed_files", []), ``{tmp = tmp + file + "\n";});
-
-		result = result + tmp;
+		list chfiles = info["changed_files"]:[];
+		result = result + tmp + mergestring(chfiles, "\n") + "\n";
             }
         }
     );
@@ -402,10 +409,7 @@ global define string MapFilesToString() ``{
 
     if (size(nopkg) > 0)
     {
-	string tmp = "Nopackage:\n";
-        foreach(`file, nopkg, ``{tmp = tmp + file + "\n";} );
-
-	result = result + tmp;
+	result = result + "Nopackage:\n" + mergestring(nopkg, "\n") + "\n";
     }
 
     return result;
