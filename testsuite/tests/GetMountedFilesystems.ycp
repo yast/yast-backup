@@ -2,11 +2,13 @@
 //
 // GetMountedFilesystems function tests
 //
+// testedfiles: backup/functions.ycp
+//
 // $Id$
 //
 
 {
-include "testsuite.ycp";
+import "Testsuite";
 
 map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
@@ -15,7 +17,7 @@ map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
 
 map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
 
-TESTSUITE_INIT([ readmap, $[], execmap ], nil);
+Testsuite::Init([ readmap, $[], execmap ], nil);
 
 include "backup/functions.ycp";
 
@@ -31,8 +33,8 @@ $["file":"/local", "freq":0, "mntops":"rw", "passno":0, "spec":"/dev/hda4", "vfs
 ]];
 
 
-TEST( ``(GetMountedFilesystems()), [ $[], $[], $[] ], nil );
-TEST( ``(GetMountedFilesystems()), [ READ_mounts, $[], $[] ], nil );
+Testsuite::Test( ``(GetMountedFilesystems()), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetMountedFilesystems()), [ READ_mounts, $[], $[] ], nil );
 
 }
 

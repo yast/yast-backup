@@ -2,12 +2,14 @@
 //
 // Backup::MapFilesToString function tests
 //
+// testedfiles: Backup.ycp
+//
 // $Id$
 //
 
 {
 
-include "testsuite.ycp";
+import "Testsuite";
 
 map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
@@ -16,9 +18,7 @@ map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
 
 map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
 
-TESTSUITE_INIT([ readmap, $[], execmap ], nil);
-
-include "backup/functions.ycp";
+Testsuite::Init([ readmap, $[], execmap ], nil);
 
 import "Pkg";	// override packamanager
 import "Backup";
@@ -27,10 +27,10 @@ import "Backup";
 Backup::backup_files = nil;
 Backup::selected_files = $["aaa_base-2001.5.22-0" : $["changed_files" : ["/etc/modules.conf"], /*"install_prefixes" : "(none)"*/]];
 
-DUMP( [ Backup::MapFilesToString() ] );
+Testsuite::Dump( [ Backup::MapFilesToString() ] );
 
 Backup::backup_files = $[];
-DUMP( [ Backup::MapFilesToString() ] );
+Testsuite::Dump( [ Backup::MapFilesToString() ] );
 
 Backup::backup_files = $[
   "pkg1": $["changed_files" : [], "install_prefixes" : []],
@@ -42,7 +42,7 @@ Backup::backup_files = $[
 
 Backup::selected_files = add(Backup::selected_files, "", $["changed_files" : ["/etc/fstab"]]);
 
-DUMP( [ Backup::MapFilesToString() ] );
+Testsuite::Dump( [ Backup::MapFilesToString() ] );
 
 }
 

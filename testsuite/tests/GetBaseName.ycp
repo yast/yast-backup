@@ -2,11 +2,13 @@
 //
 // GetBaseName tests
 //
+// testedfiles: backup/functions.ycp
+//
 // $Id$
 //
 
 {
-include "testsuite.ycp";
+import "Testsuite";
 
 map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
@@ -15,21 +17,21 @@ map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
 
 map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
 
-TESTSUITE_INIT([ readmap, $[], execmap ], nil);
+Testsuite::Init([ readmap, $[], execmap ], nil);
 
 include "backup/functions.ycp";
 
-TEST( ``(GetBaseName(nil) ), [ $[], $[], $[] ], nil );
-TEST( ``(GetBaseName("") ), [ $[], $[], $[] ], nil );
-TEST( ``(GetBaseName("file") ), [ $[], $[], $[] ], nil );
-TEST( ``(GetBaseName("file.ext") ), [ $[], $[], $[] ], nil );
-TEST( ``(GetBaseName("/") ), [ $[], $[], $[] ], nil );
-TEST( ``(GetBaseName("/file") ), [ $[], $[], $[] ], nil );
-TEST( ``(GetBaseName("/file.ext") ), [ $[], $[], $[] ], nil );
-TEST( ``(GetBaseName("/dir/") ), [ $[], $[], $[] ], nil );
-TEST( ``(GetBaseName("/dir/dir2/file.ext") ), [ $[], $[], $[] ], nil );
-TEST( ``(GetBaseName("/dir.1/dir.2/file") ), [ $[], $[], $[] ], nil );
-TEST( ``(GetBaseName("/dir.1/dir.2/file.ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName(nil) ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("file") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("file.ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("/") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("/file") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("/file.ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("/dir/") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("/dir/dir2/file.ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("/dir.1/dir.2/file") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("/dir.1/dir.2/file.ext") ), [ $[], $[], $[] ], nil );
 
 }
 

@@ -2,11 +2,13 @@
 //
 // GetCapacity function tests
 //
+// testedfiles: Backup.ycp
+//
 // $Id$
 //
 
 {
-include "testsuite.ycp";
+import "Testsuite";
 
 map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
@@ -15,20 +17,20 @@ map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
 
 map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
 
-TESTSUITE_INIT([ readmap, $[], execmap ], nil);
+Testsuite::Init([ readmap, $[], execmap ], nil);
 
 import "Pkg";	// override packamanager
 import "Backup";
 
-DUMP( Backup::GetCapacity(nil, nil) );
-DUMP( Backup::GetCapacity([ ], `s) );
-DUMP( Backup::GetCapacity([
+Testsuite::Dump( Backup::GetCapacity(nil, nil) );
+Testsuite::Dump( Backup::GetCapacity([ ], `s) );
+Testsuite::Dump( Backup::GetCapacity([
     $[
 	"capacity" : 1440000
     ]
 ], `s) );
 
-DUMP( Backup::GetCapacity([
+Testsuite::Dump( Backup::GetCapacity([
     $[
 	"label" : "Floppy 1.44 MB",
 	"symbol" : `fd144,

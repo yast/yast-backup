@@ -2,11 +2,13 @@
 //
 // AddIdBool function tests
 //
+// testedfiles: backup/functions.ycp
+//
 // $Id$
 //
 
 {
-include "testsuite.ycp";
+import "Testsuite";
 
 map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
@@ -15,14 +17,14 @@ map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
 
 map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
 
-TESTSUITE_INIT([ readmap, $[], execmap ], nil);
+Testsuite::Init([ readmap, $[], execmap ], nil);
 
 include "backup/functions.ycp";
 
-DUMP( AddIdBool(nil, nil) );
-DUMP( AddIdBool([], true) );
-DUMP( AddIdBool([ `item(`id("ext2"), "ext2", true)], false) );
-DUMP( AddIdBool(["abcd"], true) );
+Testsuite::Dump( AddIdBool(nil, nil) );
+Testsuite::Dump( AddIdBool([], true) );
+Testsuite::Dump( AddIdBool([ `item(`id("ext2"), "ext2", true)], false) );
+Testsuite::Dump( AddIdBool(["abcd"], true) );
 
 }
 
