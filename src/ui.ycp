@@ -155,13 +155,9 @@ global define symbol ArchDialog() ``{
 
     boolean cont = false;
     symbol ret = nil;
+    map id_result = SCR::Execute(.target.bash_output, "/usr/bin/id -u");
 
-    map id_result = SCR::Execute (.target.bash_output, "/usr/bin/id");
-    string out = id_result["stdout"]:"";
-
-    boolean isroot = (id_result["exit"]:-1 == 0 && issubstring(out, "uid=0("));
-
-    if (isroot != true && root_warning_displayed == false)
+    if (id_result["stdout"]:"" != "0\n" && root_warning_displayed == false)
     {
 	// warning popup message
 	UI::WarningPopup(_("You are not logged in as root.

@@ -11,6 +11,7 @@ include "backup/functions.ycp";
 include "testsuite.ycp";
 
 TEST( ``(AddMissingExtension(nil, nil) ), [ $[], $[], $[] ], nil );
+TEST( ``(AddMissingExtension("", ".tar") ), [ $[], $[], $[] ], nil );
 TEST( ``(AddMissingExtension("file", nil) ), [ $[], $[], $[] ], nil );
 TEST( ``(AddMissingExtension("file", ".ext" ) ), [ $[], $[], $[] ], nil );
 TEST( ``(AddMissingExtension("/dir/file", "") ), [ $[], $[], $[] ], nil );

@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Mon Mar 10 15:32:39 CET 2003 - lslezak@suse.de
+
+- always store network config to the autoyast profile (needed
+  when backup archive is moved to the NFS)
+- improved 'root' user detection
+- version 2.7.12
+
+-------------------------------------------------------------------
 Mon Mar  3 13:34:28 CET 2003 - lslezak@suse.de
 
 - merged proof-read texts
