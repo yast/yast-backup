@@ -18,6 +18,7 @@ Changes:
 
 <P>
 <UL>
+  <LI><B>2001-11-29:</B> Changed solutions of some problems</LI>
   <LI><B>2001-10-31:</B> Multi volume archive</LI>
   <LI><B>2001-10-25:</B> Partition table storing updated</LI>
   <LI><B>2001-10-15:</B> New options in <I>Backup settings dialog</I></LI>
@@ -110,6 +111,7 @@ This directory should contain files:
 	<LI><I>partition_table_&lt;device&gt;.txt</I> - partition table info obtained by <TT>fdisk -l &lt;device&gt;</TT> (human readable)</LI>
 	<LI><I>partition_table_&lt;device&gt;</I> - partition table stored by <TT>dd if=/dev/&lt;device&gt; of=&lt;file&gt; bs=512 count=1</TT> (raw data)</LI>
 	<LI><I>e2image_&lt;device&gt;</I> - ext2 metadata obtained by <TT>e2image &lt;device&gt;</TT></LI>
+	<LI><I>installed_packages</I> list of installed packages - output from <TT>rpm -qa</TT> command</LI>
 	<LI><I>files_info</I> - list of files (with absolute path) and packages to which they belong
 <P>
 Format of file:<BR>
@@ -137,6 +139,13 @@ file2
 
 <P>
 <UL>
+
+<LI>How to detect changed files? Most reliable detecting of changed files
+is MD5 sum stored in RPM database. But computing MD5 sum of all files takes
+long time. There is option to use MD5 sum or only use size and modification time flags
+- this is faster, but less reliable.
+</LI>
+
 <LI>What if some package was updated after backup? For restoring must
 be present package of the same version!<BR>
 Solution: Store package version with list of changed files
@@ -150,13 +159,12 @@ Solution: Store installation prefix
 <LI>What if some file is owned by more packages?
 File can be owned by multiple packages, but if in one packge it has different
 modify time (content is equal) then this file will be unnecessary backuped.
+(This is possible if MD5 sum is not used.)
 <BR>
 Solution: Get list of files which are owned by more than one package. If a file has
 only different modify time in the RPM database, but MD5 sum and size tests passes
 and it's in the duplicate list then do not backup it. This check takes some time,
-so it can be turned off by "Extra check files in mupltiple packages" option.
-Default value is do this check because there should be a minimum of files which are
-owned by more than one package.
+but there should be a minimum of files which are owned by more than one package.
 </LI>
 
 <LI>Symbolic link problem:
@@ -164,9 +172,9 @@ If a file in RPM package is installed in directory which is symbolic link to ano
 directory then it seems like file in linked directory is not in any package (because it
 was not reported by <EM>rpm -qal</EM> command), but <EM>rpm -qf</EM> tells
 right owner.<BR>
-Solution: If file is not in packages files list then check owner by <EM>rpm -qf</EM> query.
-This solution takes a lot of time, so default option is do not make this check, but it can be
-turned on by "Enhanced check of file owner" option.
+Solution: Stat all files owned by packages, remember device and inode numbers. While searching files
+not owned by any package check if it is in list of all files. If not check if its device
+and inode is in the list. 
 </LI>
 
 </UL>
