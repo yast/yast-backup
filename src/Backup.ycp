@@ -109,7 +109,7 @@ global boolean do_md5_test = true;
 global list default_dir = [ "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache" ];		// default excluded directoried from search
 global list dir_list = nil;			// selected directoried to exclude
 
-global list fs_exclude = [ ];			// selected filesystems to exclude from search
+global list fs_exclude = [ "iso9660" ];			// selected filesystems to exclude from search
 global list detected_fs = nil;			// detected filesystems
 
 global list detected_ext2 = nil;		// detected mounted ext2 filesystems
@@ -291,6 +291,29 @@ global define string get_archive_script_parameters(string file_list, string file
     return archive_options;
 }
 
+
+/**
+ * Exclude file systems without device
+ */
+
+global define void ExcludeNodevFS() ``{
+    map filesystems = SCR::Read(.proc.filesystems);
+
+    if (filesystems == nil)
+    {
+	return;
+    }
+
+    foreach(`k, `v, filesystems, ``{
+	    if (v == "nodev")
+	    {
+		fs_exclude = add(fs_exclude, k);
+	    }
+	}
+    );
+
+    fs_exclude = toset(fs_exclude);
+}
 
 }
 

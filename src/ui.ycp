@@ -362,6 +362,14 @@ global define symbol ExcludeDialog() ``{
 	}
     }
 
+    // initialize excluded filesystems
+    if (Backup::detected_fs == nil)
+    {
+	Wizard::SetContents("", `Label(_("Detecting filesystems types...")), "", false, false);
+	Backup::detected_fs = GetMountedFilesystems();
+	Backup::ExcludeNodevFS();
+    }
+
     Wizard::SetContents( _("Exclude from search"),
 	`VBox(
 	    `VSpacing(1.0),
@@ -480,12 +488,6 @@ global define symbol ExcludeDialog() ``{
  */
 
 global define symbol ExcludeFilesystemDialog() ``{
-
-    if (Backup::detected_fs == nil)
-    {
-	Wizard::SetContents("", `Label(_("Detecting filesystems types...")), "", false, false);
-	Backup::detected_fs = GetMountedFilesystems();
-    }
 
     list fs = GetListWithFlags(Backup::detected_fs, Backup::fs_exclude);
     string label_multi = _("&Exclude mounted filesystems:");
@@ -928,14 +930,6 @@ global define symbol SearchingModifiedDialog() ``{
 
 	ret = waitForUserOrProcess(wait_time, `changed);
 
-	if (ret == `abort)
-	{
-	    if (AbortConfirmation(`changed) == false)
-	    {
-		ret = nil;	// do not abort
-	    }
-	}
-
 	if (ret != nil)
 	{
 	    return ret;
@@ -1032,14 +1026,6 @@ global define symbol SearchingModifiedDialog() ``{
 	    }
 
 	    ret = waitForUserOrProcess(wait_time, `changed);
-
-	    if (ret == `abort)
-	    {
-		if (AbortConfirmation(`changed) == false)
-		{
-		    ret = nil;	// do not abort
-		}
-	    }
 
 	    if (ret != nil)
 	    {
@@ -1574,14 +1560,6 @@ global define symbol ArchivingDialog() ``{
 
 
 	    ret = waitForUserOrProcess(wait_time, `changed);
-
-	    if (ret == `abort)
-	    {
-		if (AbortConfirmation(`changed) == false)
-		{
-		    ret = nil;	// do not abort
-		}
-	    }
 
 	    if (ret != nil)
 	    {
