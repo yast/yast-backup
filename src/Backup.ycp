@@ -147,6 +147,8 @@ global string archive_name = default_archive_name;		// archive file name
 global string description = default_description;		// user comment
 global symbol archive_type = default_archive_type;		// archive type
 
+global boolean profile_is_new_one = false;	// newly created archive
+
 global boolean multi_volume = default_multi_volume;
 global symbol volume_size = default_volume_size;
 global string user_volume_size = default_user_volume_size;
@@ -1144,6 +1146,9 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
 
     // get the profile data
     map profile = (map) (backup_profiles[profile_name]:nil);
+
+    // editing archive instead of adding new one
+    profile_is_new_one = false;
 
     // setup global settings according to profile
     // TODO: check, if all settings are valid
