@@ -21,9 +21,10 @@ textdomain "backup";
 
 /**
  * Help text for archive dialog
+ * @return string Help text
  */
 
-global define backup_help_archive_settings() ``{
+global define string backup_help_archive_settings() ``{
     // For translators: help text in archive setting dialog - part 1/4
     return _("<P><B><BIG>Backup module</BIG></B><BR>")
 
@@ -40,9 +41,10 @@ global define backup_help_archive_settings() ``{
 
 /**
  * Help text for archive options dialog
+ * @return string Help text
  */
 
-global define backup_help_archive_options() ``{
+global define string backup_help_archive_options() ``{
     // For translators: help text in tar options dialog - part 1/6
     return _("<P><B><BIG>Multi volume archive</BIG></B><BR>")
 
@@ -65,9 +67,10 @@ global define backup_help_archive_options() ``{
 
 /**
  * Help text for backup settings dialog
+ * @return string Help text
  */
 
-global define backup_help_backup_setting() ``{
+global define string backup_help_backup_setting() ``{
     // For translators: help text in backup settings dialog - part 1/
     return _("<P><B><BIG>Search</BIG></B><BR>")
 
@@ -87,9 +90,10 @@ global define backup_help_backup_setting() ``{
 
 /**
  * Help text for exclude directory dialog
+ * @return string Help text
  */
 
-global define backup_help_exclude_dir() ``{
+global define string backup_help_exclude_dir() ``{
     // For translators: help text in exclude directory dialog - part 1/6
     return _("<P><B><BIG>Exclude</BIG></B><BR>")
 
@@ -112,9 +116,10 @@ global define backup_help_exclude_dir() ``{
 
 /**
  * Help text for exclude file system dialog
+ * @return string Help text
  */
 
-global define backup_help_exclude_fs() ``{
+global define string backup_help_exclude_fs() ``{
     // For translators: help text in exclude file system dialog - part 1/5
     return _("<P><B><BIG>Exclude</BIG></B><BR>")
 
@@ -134,9 +139,10 @@ global define backup_help_exclude_fs() ``{
 
 /**
  * Help text for system backup dialog
+ * @return string Help text
  */
 
-global define backup_help_system_backup() ``{
+global define string backup_help_system_backup() ``{
     // For translators: help text in system backup dialog - part 1/2
     return _("<P><B><BIG>System backup</BIG></B><BR>")
 
@@ -147,9 +153,10 @@ global define backup_help_system_backup() ``{
 
 /**
  * Help text for searching modified dialog
+ * @return string Help text
  */
 
-global define backup_help_searching_modified() ``{
+global define string backup_help_searching_modified() ``{
     // For translators: help text in searching modified dialog - part 1/4
     return _("<P><B><BIG>Searching</BIG></B><BR>")
 
@@ -166,9 +173,10 @@ global define backup_help_searching_modified() ``{
 
 /**
  * Help text for searching files dialog
+ * @return string Help text
  */
 
-global define backup_help_searching_files() ``{
+global define string backup_help_searching_files() ``{
     // For translators: help text in searching files dialog - part 1/4
     return _("<P><B><BIG>Searching</BIG></B><BR>")
 
@@ -185,9 +193,10 @@ global define backup_help_searching_files() ``{
 
 /**
  * Help text for file selection dialog
+ * @return string Help text
  */
 
-global define backup_help_file_selection() ``{
+global define string backup_help_file_selection() ``{
     // For translators: help text in file dialog - part 1/4
     return _("<P><B><BIG>Found files</BIG></B><BR>")
 
@@ -204,9 +213,10 @@ global define backup_help_file_selection() ``{
 
 /**
  * Help text for creating archive dialog
+ * @return string Help text
  */
 
-global define backup_help_creating_archive() ``{
+global define string backup_help_creating_archive() ``{
     // For translators: help text in  creating archive dialog - part 1/4
     return _("<P><B><BIG>Creating archive</BIG></B><BR>")
 
@@ -223,9 +233,10 @@ global define backup_help_creating_archive() ``{
 
 /**
  * Help text for backup summary dialog
+ * @return string Help text
  */
 
-global define backup_help_summary() ``{
+global define string backup_help_summary() ``{
     // For translators: help text in summary dialog - part 1/3
     return _("<P><B><BIG>Summary</BIG></B><BR>")
 

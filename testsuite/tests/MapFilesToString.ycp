@@ -10,18 +10,21 @@
 include "backup/functions.ycp";
 include "testsuite.ycp";
 
-// used global variables
-map backup_files = nil;
-map selected_files = $["aaa_base-2001.5.22-0" : $["changed_files" : ["/etc/modules.conf"], /*"install_prefixes" : "(none)"*/]];
+import "Backup";
+
+// initialize variables from Backup module
+Backup::backup_files = nil;
+Backup::selected_files = $["aaa_base-2001.5.22-0" : $["changed_files" : ["/etc/modules.conf"], /*"install_prefixes" : "(none)"*/]];
+
 list list_of_installed_packages = nil;
 
 DUMP( [ MapFilesToString() ] );
 
-backup_files = $[];
+Backup::backup_files = $[];
 list_of_installed_packages = [];
 DUMP( [ MapFilesToString() ] );
 
-backup_files = $[
+Backup::backup_files = $[
   "pkg1": $["changed_files" : [], "install_prefixes" : []],
   "pkg2" : $["changed_files" : nil, "install_prefixes" : nil],
   "aaa_base-2001.5.22-0" : $["changed_files" : ["/etc/inittab", "/etc/modules.conf"]],
@@ -29,7 +32,7 @@ backup_files = $[
   "pkg3" : nil
 ];
 
-selected_files = add(selected_files, "", $["changed_files" : ["/etc/fstab"]]);
+Backup::selected_files = add(Backup::selected_files, "", $["changed_files" : ["/etc/fstab"]]);
 
 list_of_installed_packages = [ "aaa_dir-2001.9.22-0", "gawk-3.1.0-61", "gzip-1.3-102", "bash-2.05-92" ];
 
