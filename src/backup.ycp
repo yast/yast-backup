@@ -24,6 +24,7 @@ y2milestone(" *** Backup module started *** ");
 import "Wizard";
 import "Mode";
 import "Backup";
+import "Report";
 
 include "wizard/sequencer.ycp";
 include "ui/common_popups.ycp";
@@ -253,6 +254,11 @@ else
 
 	// disable user interaction
 	Backup::no_interactive = true;
+
+	// dont'display eny message - there is no UI in cron mode
+	Report::DisplayMessages(false, 0);
+	Report::DisplayWarnings(false, 0);
+	Report::DisplayErrors(false, 0);
     }
 
     // start wizard sequencer
