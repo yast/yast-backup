@@ -2935,7 +2935,7 @@ Replace the existing profile?
  define symbol SelectProfileDialog() ``{
 
     Wizard::ReplaceNextButton (`PushButton(`id(`finish), Label::CloseButton()));
-    Wizard::ReplaceBackButton( `Empty() );
+    Wizard::HideBackButton();
 
     string tableheader1 = _("Name");
     string tableheader2 = _("Description");
