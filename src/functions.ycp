@@ -64,16 +64,52 @@ global define MapToTableItems(boolean check) ``{
 }
 
 
-global define AbortConfirmation() ``{
-/* TODO abort confirmation */
+/**
+ * Display abort confirmation dialog
+ * @param type Select dialog message, possible values: `not_created, `broken, `no_change or `none for none dialog
+ * @return boolean False if user select to not abort, true otherwise.
+ */
 
-/*  UI::AnyQuestionPopup( symbol|string headline, string message, string yes_button_message,
-	string no_button_message, symbol focus ) -> boolean
+global define AbortConfirmation(symbol type) ``{
 
-	Returns true if affirmative button is clicked.
-*/
+    boolean ret = nil;
 
-    return UI::YesNoPopup("Really abort?");
+    string heading = _("Abort confirmation");
+    string question = _("Do you really want to abort backup?");
+    string yes = _("Yes");
+    string no = _("No");
+
+    if (type == `not_created)
+    {
+	ret = UI::AnyQuestionPopup(heading, question + "\n" + _("Backup archive will not be created!"), yes, no, `focus_no);
+    }
+    else
+    {
+	if (type == `broken)
+	{
+	    ret = UI::AnyQuestionPopup(heading, question + "\n" + _("Backup archive will be broken!"), yes, no, `focus_no);
+	}
+	else
+	{
+	    if (type == `no_change)
+	    {
+		ret = UI::AnyQuestionPopup(heading, question, yes, no, `focus_yes);
+	    }
+	    else
+	    {
+		if (type == `none)
+		{
+		    ret = true;
+		}
+		else
+		{
+		    y2warning("Unknown type of abort confirmation dialog: %1", type);
+		}
+	    }
+	}
+    }
+
+    return ret;
 }
 
 
@@ -120,10 +156,11 @@ global define ShowEditDialog(string label, string value) ``{
 /**
  * Wait for output from subprocess or user action. If user press `abort button, then subprocess is terminated.
  * @param wait Delay in miliseconds between user action checks (if no output from subprocess is available)
+ * @param abort_question Symbol for AbortConfirmation function - determine which messgae will be displayed if Abort button was pressed
  * @return symbol Pressed button id or nil if some data is ready from subprocess.
  */
 
-global define waitForUserOrProcess(integer wait) ``{
+global define waitForUserOrProcess(integer wait, symbol abort_question) ``{
     symbol ret = nil;
 
     while (SCR::Read(.background.newlines) == 0 && SCR::Read(.background.output_open))
@@ -134,8 +171,15 @@ global define waitForUserOrProcess(integer wait) ``{
 
 	if (ret == `abort)
 	{
-	    SCR::Execute(.background.kill, nil);
-	    break;
+	    if (AbortConfirmation(abort_question))
+	    {
+		SCR::Execute(.background.kill, nil);
+		break;
+	    }
+	    else
+	    {
+		ret = nil;
+	    }
 	}
     }
 
