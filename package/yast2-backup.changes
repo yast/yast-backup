@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Aug 27 20:00:00 CEST 2002 - jsuchome@suse.cz
+
+- provide/obsolete old translation packages
+
+-------------------------------------------------------------------
 Mon Aug 26 16:33:10 CEST 2002 - lslezak@suse.cz
 
 - preselect all packages to restore in autoyast profile
