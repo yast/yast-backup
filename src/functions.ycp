@@ -1076,4 +1076,82 @@ global define boolean CloneSystem(string filename, list additional, string extra
     return false;
 }
 
+
+global define map DetectMountpoints() ``{
+    import "Storage";
+
+    map targetmap = Storage::GetTargetMap();
+    y2debug("targetmap: %1", targetmap);
+
+    map devices = $[];
+
+    foreach(string disk, map info, targetmap,
+	``{
+	    list(map) partitions = info["partitions"]:$[];
+
+	    foreach(map part_info, partitions,
+		``{
+		    string device = part_info["device"]:nil;
+		    string mpoint = part_info["mount"]:nil;
+		    symbol fs = part_info["detected_fs"]:nil;
+
+		    y2debug("device: %1, mount: %2, fs: %3", device, mpoint, fs);
+
+		    // check for valid device and mount point name, ignore some filesystems
+		    if (device != nil && mpoint != nil && fs != `swap && fs != `lvm
+			&& fs != `raid && fs != `xbootpdisk && fs != `xhibernate)
+		    {
+			devices[device] = $[
+			    "mpoint" : mpoint,
+			    "fs" : fs
+			];
+		    }
+		}
+	    );
+	}
+    );
+
+    y2milestone("Detected mountpoints: %1", devices);
+    return devices;
+}
+
+global define list MpointTableContents(list selected, list all, map description) ``{
+    y2milestone("selected: %1, description: %2", selected, description);
+
+    import "FileSystems";
+
+    list ret = [];
+    map processed = $[];
+
+    if (size(description) > 0)
+    {
+	foreach(string device, map info, description,
+	    ``{
+		string dir = info["mpoint"]:"";
+		string fs = FileSystems::GetName(info["fs"]:`unknown, _("Unknown file system"));
+
+		string mark = contains(selected, dir) ? "X" : " ";
+
+		processed[dir] = true;
+		ret = add(ret, `item(`id(dir), mark, dir + " ", device + " ", fs));
+	    }
+	);
+    }
+
+    if (size(all) > 0)
+    {
+	// check for user defined directories
+	foreach(string d, all,
+	    ``{
+		if (processed[d]:false == false)
+		{
+		    ret = add(ret, `item(`id(d), contains(selected, d) ? "X" : " ", d, "", ""));
+		}
+	    }
+	);
+    }
+
+    return ret;
+}
+
 }
