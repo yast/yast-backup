@@ -1,0 +1,143 @@
+/**
+ *  File:
+ *    help_texts.ycp
+ *
+ *  Module:
+ *    Backup module
+ *
+ *  Authors:
+ *    Ladislav Slezak <lslezak@suse.cz>
+ *
+ *  $Id$
+ *
+ *  Help texts used in workflow dialogs
+ *
+ */
+
+
+{
+
+/**
+ * Help text for archive dialog
+ */
+
+global define backup_help_archive_settings() ``{
+    return _("<P>This module searches package files which were changed since installation and backups them.</P>")
+    + _("<P>It is possible to backup disk system area or files which do not belong to any package too.</P>")
+    + _("<P><B>Archive file name</B> is name of archive.</P>")
+    + _("<P><B>Archive description</B> is optional description of the archive, you can write some notes here about the archive.</P>")
+    + _("<P><B>Archive type</B> selects type of generated archive.</P>");
+}
+
+
+/**
+ * Help text for archive options dialog
+ */
+
+global define backup_help_archive_options() ``{
+    return _("<P>If <B>Create multi volume archive</B> is checked then multi volume archive will be created.</P>")
+    + _("<P>Archive volumes will have number prefix in name.</P>")
+    + _("<P><B>Volume size</B> is size of one part of the archive.</P>")
+    + _("<P>If your backup media is not in the list then select <B>User defined</B> item and enter volume size in textbox.</P>");
+}
+
+
+/**
+ * Help text for backup settings dialog
+ */
+
+global define backup_help_backup_setting() ``{
+    return _("<P>Here you can select which parts of the system will be backuped.</P>")
+    + _("<P>You can set whether files which do not belong to any package or system areas on disk will be backuped.</P>")
+    + _("<P>List of found files can be displayed and checked after search.</P>")
+    + _("<BR><P>File in mupltiple packages may be wrong reported as changed and unnecessary backuped. There is extra check to get right status.</P>")
+    + _("<P>If file is installed in directory which is symbolic link it may be wrong reported as not owned by any package and unnecessary backuped. It is possible to do additional check of owner, but it slows down searching.</P>");
+}
+
+
+/**
+ * Help text for exclude directory dialog
+ */
+
+global define backup_help_exclude_dir() ``{
+    return _("<P>Here is a list of directories which will be excluded from search.</P>")
+    + _("<P>This list can be edited by <B>Add</B>, <B>Edit</B> and <B>Delete</B> buttons.</P>")
+    + _("<P>In the <B>Expert</B> options you can exclude file systems.</P>");
+}
+
+
+/**
+ * Help text for exclude file system dialog
+ */
+
+global define backup_help_exclude_fs() ``{
+    return _("<P>All directories on selected file systems will be excluded from search.</P>")
+    + _("<P>Root directory will be searched always, even if its file system is selected.<P>");
+}
+
+
+/**
+ * Help text for system backup dialog
+ */
+
+global define backup_help_system_backup() ``{
+    return _("<P>Here you can select important parts of system to backup.</P>")
+    + _("<P>It is possible to backup partition tables and Ext2 filesystems critical areas.</P>");
+}
+
+
+/**
+ * Help text for searching modified dialog
+ */
+
+global define backup_help_searching_modified() ``{
+    return _("<P>Searching modified files is in progess.</P>")
+    + _("<P>This will take several minutes depending on speed of your system and number of installed packages.</P>")
+    + _("<P>Please wait.</P>");
+}
+
+
+/**
+ * Help text for searching files dialog
+ */
+
+global define backup_help_searching_files() ``{
+    return _("<P>Now searching of files which do not belong to any package is in progress.</P>")
+    + _("<P>This will take several minutes depending on speed of your system and file system size</P>")
+    + _("<P>Please wait.</P>");
+}
+
+
+/**
+ * Help text for file selection dialog
+ */
+
+global define backup_help_file_selection() ``{
+    return _("<P>Here is list of found files, you can select which files will be backuped.</P>")
+    + _("<P>Check mark at first column indicates that file will be backuped.</P>")
+    + _("<P>To change backup status of a file double click on it.</P>");
+}
+
+
+/**
+ * Help text for creating archive dialog
+ */
+
+global define backup_help_creating_archive() ``{
+    return _("<P>Creating archive is in progress.</P>")
+    + _("<P>Now files are stored to archive.</P>")
+    + _("<P>Please wait.</P>");
+}
+
+
+/**
+ * Help text for backup summary dialog
+ */
+
+global define backup_help_summary() ``{
+    return _("<P>Backup details are displayed here.</P>");
+}
+
+}
+
+

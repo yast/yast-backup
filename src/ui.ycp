@@ -19,6 +19,7 @@
 include "ui/common_popups.ycp";
 include "ui/common_functions.ycp";
 
+include "backup/help_texts.ycp";
 
 /**
  * Dialog for setting archive options
@@ -59,7 +60,7 @@ global define ArchDialog() ``{
 
 	    `VSpacing(1.0)
 	),
-        _("Some help text..."), true, true
+        backup_help_archive_settings(), true, true
     );
 
     if (archive_type == nil)
@@ -160,7 +161,7 @@ global define TarOptionsDialog() ``{
 	    ),
 	    `VSpacing(1.0)
 	),
-        "Some help text...", true, true
+        backup_help_archive_options(), true, true
     );
 
     // replace 'Next' buton with 'Ok'
@@ -264,7 +265,7 @@ global define BackupDialog() ``{
 
 	    `VSpacing(1.0)
 	),
-        _("Some help text..."), true, true
+        backup_help_backup_setting(), true, true
     );
 
     // set values
@@ -336,7 +337,7 @@ global define ExcludeDialog() ``{
             `PushButton(`id(`expert), _("Expert...") ),
 	    `VSpacing(1.0)
 	),
-        _("Some help text..."), true, true
+        backup_help_exclude_dir(), true, true
     );
 
 
@@ -436,7 +437,7 @@ global define ExcludeFilesystemDialog() ``{
 	    ),
 	    `VSpacing(1.0)
 	),
-        "Some help text...", true, true
+        backup_help_exclude_fs()	, true, true
     );
 
     // replace 'Next' buton with 'Ok'
@@ -529,7 +530,7 @@ global define SystemBackupDialog() ``{
 	    ),
 	    `VSpacing(1.0)
 	),
-	_("Some help text..."), true, true
+	backup_help_system_backup(), true, true
     );
 
     UI::ChangeWidget(`id(`par), `Enabled, backup_selected_ext2);
@@ -759,14 +760,14 @@ global define SearchingModifiedDialog() ``{
 			{
 			    if (line == id_reading_files)
 			    {
-				UI::SetWizardContents("", `Label(_("Reading packages files...")), "", false, false);
+				UI::SetWizardContents("", `Label(_("Reading packages files...")), backup_help_searching_modified(), false, false);
 			    }
 			    else
 			    {
 				if (line == id_reading_packages)
 				{
 				    y2milestone("Reading installed packages");
-				    UI::SetWizardContents("", `Label(_("Reading list of installed packages...")), "", false, false);
+				    UI::SetWizardContents("", `Label(_("Reading list of installed packages...")), backup_help_searching_modified(), false, false);
 				}
 				else
 				{
@@ -802,7 +803,7 @@ global define SearchingModifiedDialog() ``{
 						    )
 						)
 					    ),
-					    _("Some help text..."), false, false
+					    backup_help_searching_modified(), false, false
 					);
 
 					y2milestone("Searching in packages started");
@@ -877,7 +878,7 @@ global define SearchingModifiedDialog() ``{
 		    )
 		)
 	    ),
-	    _("Some help text..."), false, false
+	    backup_help_searching_files(), false, false
 	);
 
 
@@ -991,7 +992,7 @@ global define FilesDialog() ``{
 	    ),
 	    `VSpacing(1.0)
 	),
-	_("Some help text..."), true, true
+	backup_help_file_selection(), true, true
     );
 
 
@@ -1288,7 +1289,7 @@ global define ArchivingDialog() ``{
 				    {
 					total_files = tointeger(substring(line, size(id_files)));
 
-					UI::SetWizardContents(title, `ProgressBar(`id(`pbar), _("Creating archive: ") + archive_name + "...", total_files), "", false, false);
+					UI::SetWizardContents(title, `ProgressBar(`id(`pbar), _("Creating archive: ") + archive_name + "...", total_files), backup_help_creating_archive(), false, false);
 					tar_running = true;
 				    }
 				    else
@@ -1436,6 +1437,7 @@ global define SummaryDialog() ``{
     y2debug("added_files: %1", added_files);
     y2debug("total_files: %1", total_files);
 
+    /* TODO report all archive names if multi volume selected */
     backup_result = backup_result + _p
 	+ br + ((selected_files_num + added_files != total_files) ? em + _("Warning: Some files were not backuped") + _em + br : "")
 	+ ((tar_result == 0) ? sformat(_("Archive %1 created successfully"), archive_name) + br +_("Total archived files: ") + archived_num :
@@ -1448,7 +1450,7 @@ global define SummaryDialog() ``{
 	    `RichText(backup_result),
 	    `VSpacing(1.0)
 	),
-	_("Some help text..."), true, true
+	backup_help_summary(), true, true
     );
 
     /* TODO why finish button is not default? */

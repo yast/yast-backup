@@ -57,24 +57,20 @@ symbol user_volume_unit = nil;
 
 
 // media description - capacity is maximum file size which fits
-// to formatted medium using any widely used file system (FAT, Ext2 - any other?)
+// to formatted medium using widely used file system (FAT on floppies)
 
-// TODO: real freespaces
 list media_descriptions = [
     $[
 	"label" : _("Floppy 1.44 MB"),
 	"symbol" : `fd144,
-	"capacity" : 1457664
-    // free space using FAT fs (Ext2 free size is smaller),
-    // write to Ext2 floppy takes much more time than to FAT (approx. 10x)
-    // so only FAT floppies are supported
-    ],
-/*    $[
-	"label" : _("Floppy 1.2 MB"),
-	"symbol" : `fd12,
-	"capacity" : ?????
+	"capacity" : 1457664		// exact size for FAT fs
     ],
     $[
+	"label" : _("Floppy 1.2 MB"),
+	"symbol" : `fd12,
+	"capacity" : 1213952		// exact size for FAT fs
+    ],
+/*    $[
 	"label" : _("ZIP 100 MB"),
 	"symbol" : `zip100,
 	"capacity" : ?????
@@ -85,9 +81,14 @@ list media_descriptions = [
 	"capacity" : ?????
     ],*/
     $[
-	"label" : _("CD-R 650 MB"),
+	"label" : _("CD-R/RW 650 MB (74 min.)"),
 	"symbol" : `cd650,
-	"capacity" : 649*1024*1024	// 649MB
+	"capacity" : 650*1024*1024	// exact size is 650.4 MB - remaining space is for ISO fs
+    ],
+    $[
+	"label" : _("CD-R/RW 700 MB (80 min.)"),
+	"symbol" : `cd700,
+	"capacity" : 702*1024*1024	// exact size is 703.1 MB - remaining space is for ISO fs
     ]
 ];
 
