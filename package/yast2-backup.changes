@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Apr  2 16:13:36 CEST 2004 - lslezak@suse.cz
+
+- Changed license to GPL
+- version 2.9.15
+
+-------------------------------------------------------------------
 Wed Mar 31 12:32:38 CEST 2004 - lslezak@suse.cz
 
 - testsuite update (UML probing)
@@ -6,7 +12,7 @@ Wed Mar 31 12:32:38 CEST 2004 - lslezak@suse.cz
 - version 2.9.14
 
 -------------------------------------------------------------------
-Tue Mar 23 16:24:57 CET 2004 - uml10@suse.cz
+Tue Mar 23 16:24:57 CET 2004 - lslezak@suse.cz
 
 - enable close button
 - removed autoyast2 from Requires and neededforbuild
