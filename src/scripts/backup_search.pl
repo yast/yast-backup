@@ -121,27 +121,22 @@ sub ReadAllPackages()
     open(RPMQA, "rpm -qa |")
 	or die "Command 'rpm -qa' failed\n";
 
-    if ($output_progress)
-    {
-	print "Reading installed packages\n";
-    }
+    print "<installed>\n";
 
     my $line;
     my @all_packages;
 
     while ($line = <RPMQA>) 
     {
+	print $line;
+
 	chomp($line);
 	push(@all_packages, $line);
     }
 
     close(RPMQA);
 
-    if ($output_progress)
-    {
-	my $num = @all_packages;
-	print "$num packages installed\n";
-    }
+    print "</installed>\n";
 
     return @all_packages;
 }
