@@ -25,7 +25,7 @@ include "ui/common_functions.ycp";
  */
 
 global define ArchDialog() ``{
-    UI::SetWizardContents( _("Archive settings"),
+    UI::SetWizardContents(_("Archive settings"),
 	`VBox(
 	    `VSpacing(0.5),
 	    `TextEntry(`id(`filename), _("Archive file name:")),
@@ -34,27 +34,41 @@ global define ArchDialog() ``{
 	    `MultiLineEdit(`id(`description), _("Archive description:")),
 
 	    `VSpacing(0.5),
-	    `Frame(_("Archive type"),
-		`RadioButtonGroup(`id(`rb),
-		    `VBox(
-			`Left(`RadioButton(`id(`tgz), "tar.gz")),
-			`Left(`RadioButton(`id(`tbz), "tar.bz2")),
-			`Left(`RadioButton(`id(`tar), "tar"))
-		    )
+	    `Frame( _("Archive type"),
+		`VBox(
+		    `VSpacing(`opt(`hstretch), 0.5),
+		    `Left(
+			`HBox(
+			    `HSpacing(2.0),
+			    `ComboBox(`id(`type), _("Select archive type:"),
+				[ `item(`id(`tgz), "Gzipped tar (*.tar.gz)"),
+				  `item(`id(`tbz), "Bzipped tar (*.tar.bz2)"),
+				  `item(`id(`tar), "Tar (*.tar)"),
+				]
+			    ),
+			    `HSpacing(3.0),
+			    `VBox(
+				`VSpacing(1.0),
+				`PushButton(`id(`opts), _("Options..."))
+			    )
+			)
+		    ),
+		    `VSpacing(0.5)
 		)
 	    ),
+
 	    `VSpacing(1.0)
 	),
         _("Some help text..."), true, true
     );
 
     if (archive_type == nil)
-	archive_type = tgz;
+	archive_type = `tgz;
 
     // set values
     UI::ChangeWidget(`id(`filename), `Value, archive_name);
     UI::ChangeWidget(`id(`description), `Value, description);
-    UI::ChangeWidget(`id(`rb), `CurrentButton, archive_type);
+    UI::ChangeWidget(`id(`type), `Value, archive_type);
 
     boolean cont = false;
     symbol ret = nil;
@@ -72,7 +86,6 @@ global define ArchDialog() ``{
 
 	if (ret == `next)
 	{
-
 	    if (size(archive_name) == 0)
 	    {
 		UI::WarningPopup(_("Archive file name can not be empty\nPlease enter archive file name"));
@@ -97,10 +110,78 @@ global define ArchDialog() ``{
 
     // get values
     description = UI::QueryWidget(`id(`description), `Value);
-    archive_type = UI::QueryWidget(`id(`rb), `CurrentButton);
+    archive_type = UI::QueryWidget(`id(`type), `Value);
+
+    if (ret == `opts)
+    {
+	if (archive_type == `tar || archive_type == `tgz || archive_type == `tbz)
+	{
+	    ret = `tar_opt;
+	}
+    }
 
     return ret;
 }
+
+
+global define TarOptionsDialog() ``{
+    UI::SetWizardContents( _("Archive file options"),
+	`VBox(
+	    `VSpacing(0.5),
+	    `Frame(_("Multi volume archive"),
+		`VBox(
+		    `VSpacing(`opt(`hstretch), 0.5),
+		    `Left(`CheckBox(`id(`multi_volume), _("Create multi volume archive"), false)),
+		    `VSpacing(0.5),
+
+		    `HBox(
+			`HSpacing(3.5),
+
+			`VBox(
+			    `Left(`ComboBox(`id(`vol), _("Volume size:"), [`item(`id(`fd144), _("Floppy 1.44 MB")), `item(`id(`fd12), _("Floppy 1.2 MB")), `item(`id(`zip100), _("ZIP 100 MB")), `item(`id(`zip250), _("ZIP 250 MB")), `item(`id(`cd650), _("CD-R 650 MB")), `item(`id(`user), _("User defined"))])),
+			    `VSpacing(0.5),
+
+			    `Left(
+				`HBox(
+				    `TextEntry(`id(`user_size), _("User defined size:")),
+				    `ComboBox(`id(`user_unit), "", [`item(`id(`B), _("bytes")), `item(`id(`kB), _("kB")), `item(`id(`kiB), _("kiB")), `item(`id(`MB), _("MB")), `item(`id(`MiB), _("MiB"))]),
+				    `HStretch()
+				)
+			    ),
+			    `VSpacing(0.5)
+			),
+			`HSpacing(1.0)
+		    )
+		)
+	    ),
+	    `VSpacing(1.0)
+	),
+        "Some help text...", true, true
+    );
+
+    // replace 'Next' buton with 'Ok'
+    UI::ReplaceWizardNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
+
+    symbol ret = UI::UserInput();
+
+    while (ret != `ok && ret != `back && ret != `abort)
+    {
+	ret = UI::UserInput();
+    }
+
+
+    /* TODO: 'Back' doesn't save dialog content, is it right?? */
+/*    if (ret == `ok)
+    {
+	fs_exclude = UI::QueryWidget(`id(`fss), `SelectedItems);
+    }
+*/
+    // Restore 'next' button
+    UI::RestoreWizardNextButton();
+
+    return ret;
+}
+
 
 
 /**

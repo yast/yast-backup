@@ -31,7 +31,8 @@ include "ui/common_popups.ycp";
 include "ui/common_functions.ycp";
 
 include "backup/functions.ycp";
-include "backup/ui.ycp";
+//TODO: restore this: include "backup/ui.ycp";
+include "./ui.ycp";
 
 
 /* TODO move user setting to map?? But some big variables should remain global... */
@@ -102,6 +103,11 @@ map sequence = $[
 
     "archive" : $[
         `next	: "backup",
+	`tar_opt: "tar_opt",
+	`abort	: `abort
+    ],
+    "tar_opt" : $[
+	`ok : "archive",
 	`abort	: `abort
     ],
     "backup" : $[
@@ -146,6 +152,7 @@ map sequence = $[
 // aliases for dialogs
 map aliases = $[
     "files"	: ``(FilesDialog()),
+    "tar_opt"	: ``(TarOptionsDialog()),
     "archive"	: ``(ArchDialog()),
     "backup"	: ``(BackupDialog()),
     "exclude"	: ``(ExcludeDialog()),
