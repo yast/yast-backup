@@ -22,6 +22,8 @@ import "Report";
 import "AutoinstClone";
 import "Profile";
 import "Nfs";
+import "Backup";
+import "Popup";
 
 textdomain "backup";
 

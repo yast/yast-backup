@@ -1,3 +1,20 @@
+/**
+ *  File:
+ *    backup_save_profile.ycp
+ *
+ *  Module:
+ *    Backup module
+ *
+ *  Authors:
+ *    Ladislav Slezak <lslezak@suse.cz>
+ *
+ *  $Id$
+ *
+ *  Client for saving AutoYaST profile to file, profile contains
+ *  information about current system.
+ */
+
+
 {
 
 include "backup/functions.ycp";

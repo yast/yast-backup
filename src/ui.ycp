@@ -24,6 +24,7 @@ import "Label";
 import "Popup";
 import "String";
 import "NetworkPopup";
+import "Nfs";
 
 import "Popup";
 include "ui/file_popups.ycp";
