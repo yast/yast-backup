@@ -204,7 +204,10 @@ be backed up by root.
 		    if (SCR::Read(.target.size, "/usr/bin/star") < 0)
 		    {
 			// YesNoPopup message text - ask to install 'star' package
-			boolean inst = UI::YesNoPopup(_("Package 'star' is required for\nselected archive type.\nDo you want to install it?"));
+			boolean inst = UI::YesNoPopup(_("Package 'star' is required for
+the selected archive type.
+Install it?
+"));
 
 			if (inst == true)
 			{
@@ -2216,9 +2219,9 @@ global define symbol SelectProfileDialog() ``{
 		`RadioButtonGroup(`id(`rb),
 		    `VBox(
 			`VSpacing(0.5),
-			`Left(`RadioButton(`id(`noprofile), _("&Don't Use Profile"), true)),
-			`Left(`RadioButton(`id(`use), _("&Use Profile Without Changes"))),
-			`Left(`RadioButton(`id(`edit), _("Allow &Changes Before Use"))),
+			`Left(`RadioButton(`id(`noprofile), _("&Do Not Use Profile"), true)),
+			`Left(`RadioButton(`id(`use), _("&Use Profile without Changes"))),
+			`Left(`RadioButton(`id(`edit), _("Allow &Changes before Use"))),
 			`VSpacing(0.5)
 		    )
 		)
@@ -2293,7 +2296,7 @@ global define symbol ProfileDialog() ``{
 	    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames()  )
 	    ),
 	    `HBox(
-		`PushButton(`id(`add),`opt(`key_F3), _("&Save As New...")),
+		`PushButton(`id(`add),`opt(`key_F3), _("&Save as New...")),
 		`PushButton(`id(`replace), _("Re&place")),
 		`PushButton(`id(`delete),`opt(`key_F5), UI::DeleteButtonLabel())
 	    ),
@@ -2333,7 +2336,7 @@ global define symbol ProfileDialog() ``{
 	    // add a new profile with the current settings
 	    
 	    // Translators: text of a popup dialog
-	    map new_name = ShowEditDialog(_("Enter name for the new profile"), "");
+	    map new_name = ShowEditDialog(_("Enter a name for the new profile."), "");
 
 	    while( lookup( new_name, "clicked", nil ) == `ok && Backup::backup_profiles[ new_name["text"]:nil ]:nil != nil  )
 	    {
@@ -2341,7 +2344,7 @@ global define symbol ProfileDialog() ``{
 		UI::MessagePopup(sformat(_("A profile '%1' already exists.
 Enter a different name."), new_name["text"]:""));
 
-		new_name = ShowEditDialog(_("Enter name for the new profile"), "");
+		new_name = ShowEditDialog(_("Enter a name for the new profile."), "");
 	    }
 
 	    if( lookup( new_name, "clicked", nil ) == `ok )
@@ -2362,7 +2365,7 @@ Enter a different name."), new_name["text"]:""));
 	else if( ret == `delete )
 	{
 	    // remove the selected profile
-	    if ( UI::YesNoPopup ( _("Do you want to remove the selected profile?") ) )
+	    if ( UI::YesNoPopup ( _("Remove the selected profile?") ) )
 	    {
 		Backup::RemoveBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
 		UI::ReplaceWidget( `id(`selectionBox), 

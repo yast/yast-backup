@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Mar  3 13:34:28 CET 2003 - lslezak@suse.de
+
+- merged proof-read texts
+- version 2.7.11
+
+-------------------------------------------------------------------
 Mon Feb 24 17:31:18 CET 2003 - lslezak@suse.cz
 
 - don't replace existing profile (#24197)
