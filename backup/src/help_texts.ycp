@@ -1,0 +1,257 @@
+/**
+ *  File:
+ *    help_texts.ycp
+ *
+ *  Module:
+ *    Backup module
+ *
+ *  Authors:
+ *    Ladislav Slezak <lslezak@suse.cz>
+ *
+ *  $Id$
+ *
+ *  Help texts used in workflow dialogs
+ *
+ */
+
+
+{
+
+textdomain "backup";
+
+/**
+ * Help text for archive dialog
+ * @return string Help text
+ */
+
+ define string backup_help_archive_settings() ``{
+    // For translators: help text in archive setting dialog - part 1/5
+    return _("<P><B><BIG>Backup module</BIG></B><BR>This YaST2 module searches files on your system and creates backup archive from them.</P>")
+
+    // For translators: help text in archive setting dialog - part 2/5
+    + _("<P>The YaST2 backup module is a small, easy-to-use backup program. If you need advanced features, such as incremental backup or network backup, you should use another expert tool.</P>")
+
+    // For translators: help text in archive setting dialog - part 3/5
+    + _("<P><B>Backup</B><BR>To create a backup of your system, enter the archive name and select the archive type.</P>")
+
+    // For translators: help text in archive setting dialog - part 4/5
+    + _("<P>The backup module creates a tar archive with changed files and an autoinstallation profile for easy and fast system reinstallation. To store only names of detected file instead of creating an archive, select <B>Only Create List of Files Found</B>.</P>")
+
+    // For translators: help text in archive setting dialog - part 5/5
+    + _("<P>If you use ACLs (Access Control List) for file access and want to back them up, select the subarchive type star.</P>");
+}
+
+
+/**
+ * Help text for archive options dialog
+ * @return string Help text
+ */
+
+ define string backup_help_archive_options() ``{
+    // For translators: help text in tar options dialog - part 1/3
+    return _("<P><B><BIG>Multivolume archive</BIG></B><BR>A backup archive can be divided into several smaller parts. This is useful if archive is larger than the space available on the backup medium.</P>")
+
+    // For translators: help text in tar options dialog - part 2/3
+    + _("<P><B>Creating a multivolume archive</B><BR>Check the option to create a multivolume archive and select your backup medium.<BR>If your backup medium is not in the list, select <B>User defined</B> and enter the volume size in the field.</P>")
+
+    // For translators: help text in tar options dialog - part 3/3
+    + _("<P><B>Note:</B> 1 kB = 1000 Bytes, 1 kiB = 1024 Bytes, etc. Volume size is truncated to multiples of 2048.</P>");
+}
+
+
+/**
+ * Help text for backup settings dialog
+ * @return string Help text
+ */
+
+ define string backup_help_backup_setting() ``{
+    // For translators: help text in backup settings dialog - part 1/4
+    return _("<P><B><BIG>Search</BIG></B><BR>Here, select which parts of the system to search and back up. <B>Archive Description</B> is an optional description of the backup archive.</P>")
+
+    // For translators: help text in backup settings dialog - part 2/4
+    + _("<P>The archive will contain files from packages that were changed since
+package installation or upgrade. Files that do not belong to any
+package can be optionally added to the archive.</P>")
+
+    // For translators: help text in backup settings dialog - part 3/4
+    + _("<P>Check <B>Display List of Files...</B> to show and edit a list of files found before creating the backup archive.</P>")
+
+    // For translators: help text in backup settings dialog - part 4/4
+    + _("<P><B>Search options</B><BR>MD5 sum can be used to determine if the file was changed. It is more reliable than checking size or modification time, but takes more time.</P>");
+
+}
+
+
+
+/**
+ * Help text for system backup dialog
+ * @return string Help text
+ */
+
+ define string backup_help_system_backup() ``{
+    // For translators: help text in system backup dialog
+    return _("<P><B><BIG>System backup</BIG></B><BR>Critical disk system areas can be added to the backup archive. They can be used to restore the system in case of a crash.</P>");
+}
+
+
+/**
+ * Help text for searching modified dialog
+ * @return string Help text
+ */
+
+ define string backup_help_searching_modified() ``{
+    // For translators: help text in searching modified dialog - part 1/3
+    return _("<P><B><BIG>Searching</BIG></B><BR>The modified file search is in progess.</P>")
+
+    // For translators: help text in searching modified dialog - part 2/3
+    + _("<P>This will take several minutes, depending on the speed of your system and the number of installed packages.</P>")
+
+    // For translators: help text in searching modified dialog - part 3/3
+    + _("<P>Please wait.</P>");
+}
+
+
+/**
+ * Help text for searching files dialog
+ * @return string Help text
+ */
+
+ define string backup_help_searching_files() ``{
+    // For translators: help text in searching files dialog - part 1/3
+    return _("<P><B><BIG>Searching</BIG></B><BR>Search is in progress for files that do not belong to a package.</P>")
+
+    // For translators: help text in searching files dialog - part 2/3
+    + _("<P>This will take several minutes, depending on the speed of your system and the size of the file system.</P>")
+
+    // For translators: help text in searching files dialog - part 3/3
+    + _("<P>Please wait.</P>");
+}
+
+
+/**
+ * Help text for file selection dialog
+ * @return string Help text
+ */
+
+ define string backup_help_file_selection() ``{
+    // For translators: help text in file dialog - part 1/2
+    return _("<P><B><BIG>Detected files</BIG></B><BR>This is a list of files found. Select which files to store in the archive.</P>")
+
+    // For translators: help text in file dialog - part 2/2
+    + _("<P>A check mark in the first column indicates that the file will be backed up.</P>");
+}
+
+
+/**
+ * Help text for creating archive dialog
+ * @return string Help text
+ */
+
+ define string backup_help_creating_archive() ``{
+    // For translators: help text in creating archive dialog - part 1/2
+    return _("<P><B><BIG>Creating archive</BIG></B><BR>Archive creation is in progress.</P>")
+
+    // For translators: help text in creating archive dialog - part 2/2
+    + _("<P>Please wait.</P>");
+}
+
+
+/**
+ * Help text for backup summary dialog
+ * @return string Help text
+ */
+
+ define string backup_help_summary() ``{
+    // For translators: help text in summary dialog - part 1/2
+    return _("<P><B><BIG>Summary</BIG></B><BR>Displays the result of the backup.</P>")
+
+    // For translators: help text in summary dialog - part 2/2
+    + _("<P>Click <B>Details...</B> to see more information.</P>");
+}
+
+
+/**
+ * Return help text for the automatic backup (cron setting) dialog
+ * @return string Translated help text
+ */
+
+ define string backup_help_cron_dialog() ``{
+
+    // For translators: help text in the automatic backup dialog (1/3)
+    return _("<P><B><BIG>Automatic Backup</BIG></B><BR>The selected profile can be started automatically in the background without any user interaction.</P>")
+
+    // For translators: help text in the automatic backup dialog (2/3)
+    + _("<P>To start backup automatically with the selected profile, check <B>Start Backup Automatically</B> and set how often and when the backup should be started. Use the 24-hour clock format for hour value.</P>")
+
+    // For translators: help text in the automatic backup dialog (3/3)
+    + _("<P>The previous backup archive, if it exists, will be renamed -- the date in the form YYYYMMDDHHMMSS will be prepended to the file name. If the number of old archives is greater than the predefined value, the oldest archives will be deleted.</P>");
+
+}
+
+/**
+ * Help text displayed in profile management dialog
+ * @return Translated help text
+ */
+
+ define string profile_help() ``{
+
+    // For translators: help text in profile management dialog - part 1/6
+    return _("<P><B>Profiles</B><BR>This dialog shows the list of currently stored backup profiles.</P>")
+	// For translators: help text in profile management dialog - part 2/6
+	+ _("<P>A backup profile is used to name a group of different settings, such as name of an archive and how to search for files.</P>")
+	// For translators: help text in profile management dialog - part 3/6
+	+ _("<P>You could have a number of profiles, each with a unique name.</P>")
+	// For translators: help text in profile management dialog - part 4/6
+	+ _("<P>Using the actions in <B>Profile Management</B>, you can <B>Add...</B> a new profile based on default values, <B>Duplicate...</B> an existing profile, <B>Change...</B> the settings stored in a profile, or <B>Remove</B> a profile.</P>")
+	// For translators: help text in profile management dialog - part 5/6
+	+ _("<P>Press <B>Start Backup</B> to start the backup using settings stored in the currently selected profile.</P>")
+	// For translators: help text in profile management dialog - part 6/6
+	+ _("<P>Press <B>Backup Manually...</B> to use default settings that can be modified before starting the backup process.</P>");
+}
+
+
+/**
+ * Help text displayed in expert options dialog
+ * @return Translated help text
+ */
+
+ define string expert_options_help() ``{
+
+	// For translators: help text in backup expert options dialog - part 1/3
+    return _("<P><BIG><B>Expert Options</B></BIG><BR>Some advanced configuration options
+can be set in this dialog. Usually there is no need to modify the default values.</P>")
+	// For translators: help text in backup expert options dialog - part 3/3
+	+ _("<P>System areas (partition table, ext2 image) can be added to the backup archive. These system areas can only be restored from an archive manually.</P>")
+	// For translators: help text in backup expert options dialog - part 2/3
+	+ _("<P><B>Temporary Directory</B><BR>You can change the location in which parts
+of the archive are stored before the final archive is created. The temporary directory should have enough
+free space for the entire achive.</P>\n");
+
+}
+
+/**
+ * Help text displayed in constraints dialog
+ * @return Translated help text
+ */
+
+ define string backup_help_constraints() ``{
+
+    // For translators: help text in exclude directory dialog - part 1/5
+    return _("<P><BIG><B>Constraints</B></BIG><BR>It is possible to exclude some files from backup. Search constraints can be a directory, file system, or regular expression.</P>")
+
+    // For translators: help text in exclude directory dialog - part 2/5
+    + _("<P><B>Directories</B><BR>All files located in the specified directories will not be backed up.</P>")
+
+    // For translators: help text in exclude directory dialog - part 3/5
+    + _("<P><B>File Systems</B><BR>It is possible to exclude all files located on a certain type of file system (e.g., ReiserFS, Ext2). The root directory will always be searched, even if its file system is selected.</P>")
+
+    // For translators: help text in exclude directory dialog - part 4/5
+    + _("<P>File systems that cannot be used on local disk (e.g., network file systems) are excluded by default.</P>")
+
+    // For translators: help text in exclude directory dialog - part 5/5
+    + _("<P><B>Regular Expressions</B><BR>Any file name that matches any of the regular expressions will not be backed up. Use perl regular expresions. To exclude, for example, <I>*.bak</I> files, add the regular expression <I>\\.bak$</I></P>");
+
+}
+
+
+}

@@ -1,0 +1,196 @@
+/**
+ *  File:
+ *    backup.ycp
+ *
+ *  Module:
+ *    Backup module
+ *
+ *  Authors:
+ *    Ladislav Slezak <lslezak@suse.cz>
+ *
+ *  $Id$
+ *
+ *  Main file for backup module - definition of workflow
+ *
+ */
+
+
+{
+
+y2milestone(" *** Backup module started *** ");
+
+import "Wizard";
+//import "Mode";
+import "Backup";
+import "Report";
+import "Sequencer";
+import "Popup";
+
+include "backup/functions.ycp";
+include "backup/ui.ycp";
+
+textdomain "backup";
+
+boolean confirm_abort = false;	// confirm abort
+
+// sequence of dialogs
+map sequence = $[
+    "ws_start"	: "readprof",
+
+    "readprof" : $[
+	`edit	: "archive",
+	`start  : "do_searching",
+	`start  : "constraint",
+	`manual : "archive",
+	`cron	: "cron",
+	`abort	: `abort,
+	`finish : `ws_finish
+    ],
+    "cron" :$[
+	`next	: "readprof",
+	`abort	: `abort
+    ],
+    "archive" : $[
+        `next	: "backup",
+	`tar_opt: "tar_opt",
+	`abort	: `abort
+    ],
+    "tar_opt" : $[
+	`ok : "archive",
+	`abort	: `abort
+    ],
+    "backup" : $[
+        `next	: "constraint",
+	`next2	: "searching",
+	`xpert	: "options",
+	`abort	: `abort
+    ],
+    "constraint" : $[
+	`next	: "searching",
+	`abort	: `abort
+    ],
+    "options" : $[
+	`finish	: "backup",
+	`set_system : "system",
+	`abort	: `abort
+    ],
+    "system" : $[
+	`finish : "options",
+	`abort	: `abort
+    ],
+    "searching"	: $[
+	`next	: "do_searching",
+	`ok	: "readprof"
+    ],
+    "do_searching"	: $[
+	`next	: "files",
+	`next2	: "archiving",
+	`abort	: `abort
+    ],
+    "files" : $[
+        `next	: "archiving",
+	`abort	: `abort,
+	// from "files" <back points to "constraint"
+	`back_from_files : "constraint"
+    ],
+    "archiving" : $[
+	`next	: "summary",
+	`abort	: `abort
+    ],
+    "summary" : $[
+	`abort	: `abort,
+	`finish	: "readprof"
+    ]
+];
+
+// aliases for dialogs
+map aliases = $[
+    "readprof"	: ``(SelectProfileDialog()),
+    "cron"	: [ ``(CronDialog()), true ],
+    "files"	: ``(FilesDialog()),
+    "tar_opt"	: ``(TarOptionsDialog()),
+    "archive"	: ``(ArchDialog()),
+    "backup"	: ``(BackupDialog()),
+    "options"	: ``(ExpertOptionsDialog()),
+    "constraint": ``(ConstraintDialog()),
+    "system"	: ``(SystemBackupDialog()),
+    "searching" : ``(PrepareSearching()),
+    "do_searching"	: [ ``(SearchingModifiedDialog()), true ],
+    "archiving"	: [ ``(ArchivingDialog()), true ],
+    "summary"	: ``(SummaryDialog())
+];
+
+
+list args = WFM::Args();
+y2milestone("args: %1", args);
+
+if (args[0]:"" == "cron")
+{
+    y2milestone("Starting in cron mode");
+    Backup::cron_mode = true;
+
+    if (args[1]:nil != nil)
+    {
+	Backup::cron_profile = regexpsub(args[1]:"", "^[ \t]*profile[ \t]*=[ \t]*(.*)", "\\1");
+	y2milestone("Using profile: '%1'", Backup::cron_profile);
+    }
+}
+
+if (Backup::cron_mode != true)
+{
+    import "Wizard";
+
+    // create wizard dialog
+    Wizard::CreateDialog();
+    // set icon
+    Wizard::SetDesktopIcon("backup");
+}
+
+Backup::ReadBackupProfiles();
+
+if (Backup::cron_mode == true)
+{
+    if (Backup::RestoreSettingsFromBackupProfile(Backup::cron_profile) == false)
+    {
+	y2error("Cannot read settings from profile '%1'", Backup::cron_profile);
+	return false;
+    }
+
+    // change workflow - start searching immediately, exit at summary stage
+    sequence["ws_start"] = "do_searching";
+    sequence["summary"] = $[
+	`abort	: `abort,
+	`finish	: `finish
+    ];
+
+    // disable user interaction
+    Backup::no_interactive = true;
+
+    // dont'display eny message - there is no UI in cron mode
+    Report::DisplayMessages(false, 0);
+    Report::DisplayWarnings(false, 0);
+    Report::DisplayErrors(false, 0);
+
+    map sel_profile = (map)eval(Backup::backup_profiles[Backup::cron_profile]:$[]);
+
+    // prepare backup - e.g. mount NFS share
+    Backup::PrepareBackup();
+
+    // check existing archive, remove old archives
+    string localfilename = Backup::GetLocalArchiveName();
+    Backup::remove_result = Backup::RemoveOldArchives(localfilename, sel_profile[`cron_settings, "old"]:100000, Backup::multi_volume);
+}
+
+// start wizard sequencer
+Sequencer::Run(aliases, sequence);
+
+if (Backup::cron_mode != true)
+{
+    // close dialog
+    Wizard::CloseDialog();
+}
+
+y2milestone(" *** Backup module finished *** ");
+
+}
+

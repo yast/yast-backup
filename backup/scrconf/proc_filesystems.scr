@@ -1,0 +1,43 @@
+/**
+ * File:
+ *   proc_filesystems.scr
+ * Summary:
+ *   SCR Agent for reading /proc/filesystems
+ * Access:
+ *   read-only
+ * Authors:
+ *   Unknown <yast2-hacker@suse.de>
+ * See:
+ *   anyagent
+ *   libscr
+ * Example:
+ *   Read(.proc.filesystems)
+ *   ($["autofs":"nodev", 
+ *      "devpts":"nodev", 
+ *      "ext2":"\t", 
+ *      "iso9660":"\t", 
+ *      "minix":"\t", 
+ *      "msdos":"\t", 
+ *      "nfs":"nodev", 
+ *      "proc":"nodev", 
+ *      "reiserfs":"\t", 
+ *      "umsdos":"\t", 
+ *      "vfat":"\t"
+ *    ])
+ * 
+ * $Id$
+ *
+ * Returns a <b>map</b> of filesystems. The fs-type is the key, 
+ * the value is the additional info from /proc/filesystems, 
+ * usually "\t" or "nodev".
+ */
+.proc.filesystems
+
+`ag_anyagent(
+  `Description (
+  (`File("/proc/filesystems")),	// real file name
+  "#\n",			// Comment
+  true,				// read-only
+  (`Tuple (`Value (`Or (`Whitespace(), "nodev")), `Optional (`Whitespace()), `Name (`String("^ \n")), `Continue("\n")))
+  )
+)

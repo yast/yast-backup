@@ -1,0 +1,50 @@
+/**
+ *  File:
+ *    backup_save_profile.ycp
+ *
+ *  Module:
+ *    Backup module
+ *
+ *  Authors:
+ *    Ladislav Slezak <lslezak@suse.cz>
+ *
+ *  $Id$
+ *
+ *  Client for saving AutoYaST profile to file, profile contains
+ *  information about current system.
+ */
+
+
+{
+
+include "backup/functions.ycp";
+
+y2milestone(" *** backup_save_profile client started ***");
+y2milestone("Arguments: %1", WFM::Args());
+
+if (size(WFM::Args()) >= 4 && is(WFM::Args(0), string) && is(WFM::Args(1), list) && is(WFM::Args(2), string) && is(WFM::Args(3), map))
+{
+    string filename = (string)WFM::Args(0);
+    list<string> additional = (list<string>)WFM::Args(1);
+    string extra_key = (string)WFM::Args(2);
+    map extra_options = (map)WFM::Args(3);
+
+    if (size(filename) > 0)
+    {
+	// create profile and save it to the file
+	boolean res = CloneSystem(filename, additional, extra_key, extra_options);
+
+	if (!res)
+	{
+	    y2error("Cannot create or save autoinstallation to file %1", filename);
+	}
+    }
+}
+else
+{
+    y2error("Missing arguments or they have wrong type");
+}
+
+y2milestone(" *** backup_save_profile client finished ***");
+
+}

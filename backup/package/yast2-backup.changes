@@ -1,0 +1,667 @@
+-------------------------------------------------------------------
+Wed Jan 26 09:24:56 CET 2005 - locilka@suse.cz
+
+- Fixed user-defined-size entry got disabled wrong in UI (#48651)
+- Fixed creating empty profiles (#41878)
+- 2.11.3
+
+-------------------------------------------------------------------
+Fri Dec 17 10:05:24 CET 2004 - visnov@suse.cz
+
+- Removed firewall from NFB
+- 2.11.2 
+
+-------------------------------------------------------------------
+Thu Nov 11 16:50:13 CET 2004 - locilka@suse.cz
+
+- Added testing for the path accuracy of new archive
+- Added error message if backup would be unable to create archive
+
+-------------------------------------------------------------------
+Fri Nov  5 16:00:10 CET 2004 - locilka@suse.cz
+
+- Adjusted for new Mode implementation
+- Replaced deprecated 'select' and 'lookup' commands
+- 2.11.1
+
+-------------------------------------------------------------------
+Thu Oct 21 14:38:53 CEST 2004 - locilka@suse.cz
+
+- Partly solved bug #45748, back button from "files to backup"
+  pointed to wrong destination. 
+- 2.11.0
+
+-------------------------------------------------------------------
+Thu Oct 14 15:24:13 CEST 2004 - locilka@suse.cz
+
+- Partly solved Bug #43604, redrawing buttons during creating
+  archive
+
+-------------------------------------------------------------------
+Tue Aug 31 00:37:45 CEST 2004 - nashif@suse.de
+
+- Added yast2-firewall to neededforbuild 
+
+-------------------------------------------------------------------
+Mon Aug  9 14:37:58 CEST 2004 - jsrain@suse.cz
+
+- added missing type casts
+- 2.10.2
+
+-------------------------------------------------------------------
+Wed Jun 16 16:30:19 CEST 2004 - lslezak@suse.cz
+
+- updated testsuite (use Testsuite:: module, set testedfiles)
+- version 2.10.1
+
+-------------------------------------------------------------------
+Mon Jun 14 17:28:25 CEST 2004 - lslezak@suse.cz
+
+- backup files with backslash in file name (#40915)
+- temporary files are removed automatically
+- version 2.10.0
+
+-------------------------------------------------------------------
+Fri May 14 14:40:14 CEST 2004 - lslezak@suse.cz
+
+- NFS mount bugfix (pass empty string as paramater instead
+  of nil) (#40564)
+- version 2.9.19
+
+-------------------------------------------------------------------
+Wed May  5 13:33:13 CEST 2004 - lslezak@suse.cz
+
+- directory excluding didn't work correctly for files owned
+  by a RPM package (#36233)
+- version 2.9.18
+
+-------------------------------------------------------------------
+Tue May  4 13:52:57 CEST 2004 - lslezak@suse.cz
+
+- merged proofread texts
+- 2.9.17
+
+-------------------------------------------------------------------
+Sun Apr  4 14:10:19 CEST 2004 - kkaempf@suse.de
+
+- fix testsuite
+- 2.9.16
+
+-------------------------------------------------------------------
+Fri Apr  2 16:13:36 CEST 2004 - lslezak@suse.cz
+
+- Changed license to GPL
+- version 2.9.15
+
+-------------------------------------------------------------------
+Wed Mar 31 12:32:38 CEST 2004 - lslezak@suse.cz
+
+- testsuite update (UML probing)
+- reset size counter before start (#36239)
+- version 2.9.14
+
+-------------------------------------------------------------------
+Tue Mar 23 16:24:57 CET 2004 - lslezak@suse.cz
+
+- enable close button
+- removed autoyast2 from Requires and neededforbuild
+- version 2.9.13
+
+-------------------------------------------------------------------
+Wed Mar 17 08:19:13 CET 2004 - kkaempf@suse.de
+
+- needs yast2-update for RootPart module  
+- 2.9.12
+
+-------------------------------------------------------------------
+Wed Mar 10 01:45:25 CET 2004 - sh@suse.de
+
+- V 2.9.11
+- Migration to new wizard 
+
+-------------------------------------------------------------------
+Mon Mar  8 17:01:38 CET 2004 - lslezak@suse.cz
+
+- use Sequencer::, Package::
+- set icon
+- version 2.9.10
+
+-------------------------------------------------------------------
+Sun Mar  7 15:27:52 CET 2004 - kkaempf@suse.de
+
+- fix types
+- version 2.9.9
+
+-------------------------------------------------------------------
+Mon Mar  1 18:00:38 CET 2004 - lslezak@suse.cz
+
+- merged proofread texts
+- typed lists and maps
+- exclude /sys directory
+- testsuite update
+- version 2.9.8
+
+-------------------------------------------------------------------
+Tue Feb 10 15:12:09 CET 2004 - lslezak@suse.cz
+
+- fixed testsuite (initialize testsuite in all test cases)
+- removed hwinfo from neededforbuild
+- version 2.9.7
+
+-------------------------------------------------------------------
+Mon Feb  9 17:48:54 CET 2004 - lslezak@suse.cz
+
+- removed *.y2cc file
+- version 2.9.6
+
+-------------------------------------------------------------------
+Tue Feb  3 15:22:32 CET 2004 - lslezak@suse.cz
+
+- testsuite update
+- version 2.9.5
+
+-------------------------------------------------------------------
+Fri Jan 30 11:00:34 CET 2004 - lslezak@suse.cz
+
+- fixes for the new interpreter (data types, removed globals)
+- build fix (ycp hook, testsuite update)
+- version 2.9.4
+
+-------------------------------------------------------------------
+Mon Jan 12 16:38:17 CET 2004 - lslezak@suse.cz
+
+- fixes for the new interpreter
+- require autoyast2 package
+- version 2.9.3
+
+-------------------------------------------------------------------
+Thu Dec 18 13:12:59 CET 2003 - lslezak@suse.cz
+
+- fixes for the new interpreter
+- remember RPM restoration option when file selection dialog is
+  displayed
+
+-------------------------------------------------------------------
+Tue Nov 25 12:33:18 CET 2003 - lslezak@suse.cz
+
+- use UI:: file popups
+- new constraints dialog (replaces old exclude dialogs)
+- store excluded directories as list of strings to profile file
+- testsuite update
+
+-------------------------------------------------------------------
+Wed Nov  5 13:20:04 CET 2003 - lslezak@suse.cz
+
+- exclude files matching specified regular expressions:
+  new dialog, workflow changes
+- small fixes in searching and archiving script
+- testsuite update
+- version 2.9.2
+
+-------------------------------------------------------------------
+Wed Oct 29 11:37:07 CET 2003 - lslezak@suse.cz
+
+- simply check available free space (#30042)
+- version 2.9.1
+
+-------------------------------------------------------------------
+Wed Oct 22 09:31:10 CEST 2003 - lslezak@suse.cz
+
+- exclude /media and /windows directories, exclude ntfs file
+  system (it's readonly, cannot be restored) (#20192)
+- new expert options dialog (temporary directory location (#30042),
+  system area backup)
+- small workflow changes
+- testsuite update
+- version 2.9.0
+
+-------------------------------------------------------------------
+Thu Sep 25 13:31:40 CEST 2003 - lslezak@suse.cz
+
+- use Require module (#31673)
+
+-------------------------------------------------------------------
+Mon Sep 15 16:00:10 CEST 2003 - lslezak@suse.de
+
+- check for nil value (#30232)
+- don't disable profile description if archive type is file list
+- log more debug messages
+- version 2.8.13
+
+-------------------------------------------------------------------
+Sun Sep 14 21:08:41 CEST 2003 - adrian@suse.de
+
+- make it working in kcontrol
+
+-------------------------------------------------------------------
+Mon Sep  8 16:34:13 CEST 2003 - lslezak@suse.de
+
+- start configuration workflow for the new profile
+- fixed backup_search.pl script (syntax error in the generated
+  YCP structure)
+- fixed map change
+- merged text from proofreading
+- version 2.8.11
+
+-------------------------------------------------------------------
+Tue Sep  2 10:55:15 CEST 2003 - lslezak@suse.cz
+
+- fixed testsuite (constructor was changed in imported module)
+- version 2.8.10
+
+-------------------------------------------------------------------
+Mon Sep  1 16:04:02 CEST 2003 - lslezak@suse.de
+
+- added missing imports and file descriptions
+- version 2.8.9
+
+-------------------------------------------------------------------
+Mon Aug 25 17:32:01 CEST 2003 - lslezak@suse.cz
+
+- backup RPM DB if some updated package was found
+- version 2.8.8
+
+-------------------------------------------------------------------
+Tue Aug 19 13:22:19 CEST 2003 - arvin@suse.de
+
+- use String::FormatSize
+
+-------------------------------------------------------------------
+Tue Aug 19 02:12:06 CEST 2003 - nashif@suse.de
+
+- Fixed testsuite
+- 2.8.6
+
+-------------------------------------------------------------------
+Mon Aug 18 15:57:42 CEST 2003 - lslezak@suse.cz
+
+- fixed rpm verification options in the search script
+  (removed --noscripts option)
+- version 2.8.5
+
+-------------------------------------------------------------------
+Tue Aug 12 08:26:38 CEST 2003 - lslezak@suse.cz
+
+- fixed testuite (some constructor was again changed...)
+- version 2.8.4
+
+-------------------------------------------------------------------
+Mon Aug 11 13:38:08 CEST 2003 - lslezak@suse.de
+
+- cron mode bugfixes
+- archive can be stored the NFS server
+- option for sending summary mail in the cron mode
+- merged proofread texts
+- summary text fixes
+- updated testsuite
+- version 2.8.3
+
+-------------------------------------------------------------------
+Mon Jun 30 14:53:52 CEST 2003 - lslezak@suse.de
+
+- make complete backup of updated packages
+- fixed testsuites
+- version 2.8.2
+
+-------------------------------------------------------------------
+Fri Apr 18 15:44:12 CEST 2003 - lslezak@suse.de
+
+- changed profile management dialog
+- automatic backup (cron mode):
+  new dialog for setting backup time
+  cron wrapper script
+  remove/rename existing archives
+  send summary mail to root
+  updated testsuite
+- version 2.8.1
+
+-------------------------------------------------------------------
+Thu Apr  3 13:04:31 CEST 2003 - lslezak@suse.de
+
+- fixed testsuites and help texts
+- version 2.8.0
+
+-------------------------------------------------------------------
+Tue Apr  1 16:29:40 CEST 2003 - lslezak@suse.de
+
+- help texts and button labels improved, changed archive type
+  selection (#23367)
+
+-------------------------------------------------------------------
+Fri Mar 28 12:49:11 CET 2003 - lslezak@suse.de
+
+- speed improvement: create table content in backup_search.pl
+  script, do not update progress dialog too often, changed user
+  input handling in file selection dialog
+- fixed map assigning
+
+-------------------------------------------------------------------
+Tue Mar 25 14:54:01 CET 2003 - lslezak@suse.de
+
+- fixed [Back] button behaviour in the Archive settings dialog
+- improved (faster) MapFilesToString() and MapToTableItems()
+  functions
+
+-------------------------------------------------------------------
+Thu Mar 13 12:57:26 CET 2003 - lslezak@suse.de
+
+- autoyast profile: fixed network configuration clonning (#25201)
+- version 2.7.13
+
+-------------------------------------------------------------------
+Mon Mar 10 15:32:39 CET 2003 - lslezak@suse.de
+
+- always store network config to the autoyast profile (needed
+  when backup archive is moved to the NFS)
+- improved 'root' user detection
+- version 2.7.12
+
+-------------------------------------------------------------------
+Mon Mar  3 13:34:28 CET 2003 - lslezak@suse.de
+
+- merged proof-read texts
+- version 2.7.11
+
+-------------------------------------------------------------------
+Mon Feb 24 17:31:18 CET 2003 - lslezak@suse.cz
+
+- don't replace existing profile (#24197)
+- version 2.7.10
+
+-------------------------------------------------------------------
+Mon Feb 24 09:40:32 CET 2003 - lslezak@suse.de
+
+- fixed [abort] button in profile dialog (#24064)
+- disable [replace] and [delete] buttons if there is
+  no stored profile (#24063)
+- version 2.7.9
+
+-------------------------------------------------------------------
+Thu Feb 20 09:33:24 CET 2003 - lslezak@suse.de
+
+- fixed root user detection (#23880)
+- fixed testsuites
+- version 2.7.8
+
+-------------------------------------------------------------------
+Tue Feb 18 14:10:54 CET 2003 - lslezak@suse.de
+
+- add .tar extension to the archive name if it's missing (#23367)
+- save autoinstallation profile to <archive_name>.xml file
+  instead of fixed name (autoinst.xml)
+- new testsuites
+- ydoc comments
+- F-key shortcuts
+- version 2.7.7
+
+-------------------------------------------------------------------
+Mon Feb 17 15:54:55 CET 2003 - lslezak@suse.de
+
+- added profile manager (reuse previous settings)
+- documentation update
+- fixed testsuite
+- version 2.7.6
+
+-------------------------------------------------------------------
+Mon Feb 10 15:04:12 CET 2003 - lslezak@suse.de
+
+- use new autoinstallation API
+- version 2.7.5
+
+-------------------------------------------------------------------
+Fri Feb  7 13:27:26 CET 2003 - lslezak@suse.cz
+
+- fixed root user detection
+- merged proofread text
+- updated documentation
+- version 2.7.4
+
+-------------------------------------------------------------------
+Wed Feb  5 10:50:47 CET 2003 - lslezak@suse.cz
+
+- fixed neededforbuild
+- fixed testsuite (override paths used by module constructors)
+- version 2.7.3
+
+-------------------------------------------------------------------
+Mon Feb  3 17:12:14 CET 2003 - lslezak@suse.cz
+
+- merged proof-read texts
+- use new functions from AIClone::
+- version 2.7.2
+
+-------------------------------------------------------------------
+Thu Jan 30 15:16:47 CET 2003 - lslezak@suse.cz
+
+- star archiver related bugfixes
+- install star only if it is needed (removed from Requires:)
+- use .star suffix for star archives
+- version 2.7.1
+
+-------------------------------------------------------------------
+Fri Jan 17 16:12:01 CET 2003 - lslezak@suse.cz
+
+- star archiver support (ACLs backup)
+- function keys in ncurses UI
+- cloning functions update
+- version 2.7.0
+
+-------------------------------------------------------------------
+Wed Sep  4 16:03:52 CEST 2002 - lslezak@suse.cz
+
+- autoyast profile writing fixed
+- use new icon in y2cc
+- version 2.6.7
+
+-------------------------------------------------------------------
+Mon Sep  2 16:07:58 CEST 2002 - lslezak@suse.cz
+
+- version 2.6.6
+
+-------------------------------------------------------------------
+Tue Aug 27 20:00:00 CEST 2002 - jsuchome@suse.cz
+
+- provide/obsolete old translation packages
+
+-------------------------------------------------------------------
+Mon Aug 26 16:33:10 CEST 2002 - lslezak@suse.cz
+
+- preselect all packages to restore in autoyast profile
+- added hwinfo to neededforbuild
+- version 2.6.5
+
+-------------------------------------------------------------------
+Mon Aug 19 16:56:00 CEST 2002 - lslezak@suse.cz
+
+- store lan settings to autoyast profile if archive is
+  stored on NFS server
+- requires yast2-network
+- version 2.6.4
+
+-------------------------------------------------------------------
+Mon Aug  5 15:21:02 CEST 2002 - lslezak@suse.cz
+
+- added help texts for translators
+- fixed #neededforbuild and Requires
+- version 2.6.3
+
+-------------------------------------------------------------------
+Mon Jul 22 16:18:33 CEST 2002 - jsrain@suse.cz
+
+- merged proofread texts
+- version 2.6.2
+
+-------------------------------------------------------------------
+Fri Jul 05 12:55:28 CEST 2002 - arvin@suse.de
+
+- moved non binary files to /usr/share/YaST2
+
+-------------------------------------------------------------------
+Mon Jul  1 17:12:03 CEST 2002 - lslezak@suse.cz
+
+- package renamed to yast2-backup
+- version 2.6.0
+
+-------------------------------------------------------------------
+Mon Jul  1 17:06:22 CEST 2002 - lslezak@suse.cz
+
+- backup even special files
+- backup files with new line character in file name (bug #15259)
+
+-------------------------------------------------------------------
+Wed Apr 10 11:18:30 CEST 2002 - lslezak@suse.cz
+
+- SuSE-8_0-Branch merged to the head
+
+-------------------------------------------------------------------
+Wed Mar 13 15:19:40 CET 2002 - lslezak@suse.cz
+
+- accept `cancel - close by WM is possible
+- version 2.5.21
+
+-------------------------------------------------------------------
+Fri Mar  8 13:07:43 CET 2002 - lslezak@suse.cz
+
+- added missing _() in combo box texts (archive type option)
+- version 2.5.20
+
+-------------------------------------------------------------------
+Mon Mar  4 16:50:25 CET 2002 - lslezak@suse.cz
+
+- changed icon in Y2CC to system.png
+- version 2.5.19
+
+-------------------------------------------------------------------
+Mon Mar  4 08:56:43 CET 2002 - lslezak@suse.cz
+
+- supports test mode
+- version 2.5.18
+
+-------------------------------------------------------------------
+Wed Feb 20 15:15:10 CET 2002 - lslezak@suse.cz
+
+- display message to see details in summary dialog if some
+  error occur
+- added help text (bug #13587) - changed files from packages
+  are backed up default
+- version 2.5.17
+
+-------------------------------------------------------------------
+Mon Feb 18 13:23:53 CET 2002 - lslezak@suse.cz
+
+- .run.mktemp replaced by .target.tmpdir
+- added check if archive already exists
+- version 2.5.16
+
+-------------------------------------------------------------------
+Mon Feb 18 12:03:56 CET 2002 - kkaempf@suse.de
+
+- provide proc_filesystems.scr config file.
+
+-------------------------------------------------------------------
+Thu Feb 14 16:52:44 CET 2002 - lslezak@suse.cz
+
+- archive file name must have absolute path (for relative path
+  used user have to know which directory is current -> problem if
+  backup module is started from KDE)		(bug #13231)
+
+-------------------------------------------------------------------
+Mon Feb 11 10:49:33 CET 2002 - lslezak@suse.cz
+
+- added missing rich text tag
+- updated COPY* files
+- version 2.5.13
+
+-------------------------------------------------------------------
+Fri Feb  1 09:57:37 CET 2002 - lslezak@suse.cz
+
+- fixed edit dialog: default 'OK' button, TextEntry widget has focus
+- set default excluded iso9660 and "nodev" file systems (from /proc/filesystems)
+- texts from proofreading
+- version 2.5.12
+
+-------------------------------------------------------------------
+Mon Jan 28 17:47:32 CET 2002 - lslezak@suse.cz
+
+- Abort confirmation changes
+- version 2.5.11
+
+-------------------------------------------------------------------
+Fri Jan 25 16:29:25 CET 2002 - lslezak@suse.cz
+
+- better check of user defined volume size
+- display device mount point in Ext2 system backup dialog
+- testsuite changes
+- version 2.5.10
+
+-------------------------------------------------------------------
+Mon Jan 14 13:51:07 CET 2002 - lslezak@suse.cz
+
+- help text paragraph parts joined to one string
+- version 2.5.9
+
+-------------------------------------------------------------------
+Thu Jan  3 14:58:52 CET 2002 - lslezak@suse.cz
+
+- small bugfixes
+- tar multi volume archive: block size changed to 4
+- documetation update
+- version 2.5.8
+
+-------------------------------------------------------------------
+Wed Dec 19 17:33:41 CET 2001 - lslezak@suse.cz
+
+- do not create volumes larger than specified
+- storing files which do not belong to any package fixed
+- reporting all created volumes in summary fixed
+- version 2.5.7
+
+-------------------------------------------------------------------
+Tue Dec 18 20:19:10 CET 2001 - lslezak@suse.cz
+
+- format of backup archive was changed to package oriented archive
+- target archive is tar
+- changed creation of multi volume archives
+- Progress module used
+- version 2.5.6
+
+-------------------------------------------------------------------
+Tue Dec  4 09:20:43 CET 2001 - lslezak@suse.cz
+
+- added 3rd parameter in select() call
+- version 2.5.5
+
+-------------------------------------------------------------------
+Mon Dec  3 14:07:46 CET 2001 - lslezak@suse.cz
+
+- summary dialog fixes
+- storing only list of found files is possible
+- device/inode numbers are used in searching files
+  not owned by any package
+- documentation: *.ui files moved to ui.tar.bz2
+- version 2.5.4
+
+-------------------------------------------------------------------
+Thu Nov 22 16:08:44 CET 2001 - lslezak@suse.cz
+
+- added option for RPM MD5 test
+- added missing modules/Backup.ycp entry in spec file
+- version 2.5.3
+
+-------------------------------------------------------------------
+Thu Nov 22 11:24:40 CET 2001 - lslezak@suse.cz
+
+- changed to YaST2 modules: created Backup::
+- version 2.5.2
+
+-------------------------------------------------------------------
+Fri Nov  9 13:51:54 CET 2001 - lslezak@suse.cz
+
+- multi volume archive support
+- added help texts
+- version 2.5.1
+
+-------------------------------------------------------------------
+Tue Oct 16 10:57:50 2001 - lslezak@suse.cz
+
+- initial version
