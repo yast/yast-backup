@@ -24,6 +24,8 @@ import "Profile";
 import "Lan";
 import "Progress";
 
+include "backup/functions.ycp";
+
 textdomain "backup";
 
 global string script_store_ext2_area = "/sbin/e2image";
@@ -349,6 +351,7 @@ global define void ExcludeNodevFS() ``{
 
 /**
  * Write autoinstallation profile to file autoinst.xml to the same directory as archive
+ * @param volumes list of created archives (it is written to the XML profile as restoration source)
  * @return map map $[ "result" : boolean (true on success), "profile" : string (profile file name) ]
  */
 
@@ -479,20 +482,22 @@ global define map WriteProfile(list volumes) ``{
     restore["selection"] = packages_sel;
 
     Profile::Flat["restore"] = restore;
-    
-
 
     if (directory == "")
     {
 	directory = "/";
     }
 
-    string profilefile = directory + "autoinst.xml";
+    string profilefile = directory + GetBaseName(archive_name) + ".xml";
 
     return $[ "result" : Profile::Save(profilefile), "profile" : profilefile ];
 }
 
-// Read backup profiles form file, do not set any global settings
+/**
+ * Read backup profiles from file, do not set any global settings, just
+ * @see backup_profiles. The profiles are stored in hardcoded place (/var/adm/YaST/backup/profiles).
+ * @return boolean true if there are some profiles available
+ */
 global define boolean ReadBackupProfiles() ``{
     backup_profiles = SCR::Read( .target.ycp, "/var/adm/YaST/backup/profiles" );
     
@@ -502,7 +507,10 @@ global define boolean ReadBackupProfiles() ``{
     return ( backup_profiles != $[] ) ;
 }
 
-// Write current backup profiles to a file
+/**
+ * Write the backup profiles to a file - hardcoded /var/adm/YaST/backup/profiles.
+ * @return boolean true if the write operation was successful.
+ */
 global define boolean WriteBackupProfiles() ``{
     if( !SCR::Write (.target.ycp, "/var/adm/YaST/backup/profiles", backup_profiles ) )
     {
@@ -512,8 +520,11 @@ global define boolean WriteBackupProfiles() ``{
     return true;
 }
 
-// Store current settings into a backup profile. If the name of the profile 
-// cannot be found, create a new one
+/**
+ * Take the current profile information and store it into a given profile.
+ * If the profile already exists, it will be overwritten.
+ * @param profile_name name of a profile to be stored into
+ */
 global define void StoreSettingsToBackupProfile( string profile_name ) ``{
     
     // if there is an old profile, remove it
@@ -551,8 +562,11 @@ global define void StoreSettingsToBackupProfile( string profile_name ) ``{
     backup_profiles = add( backup_profiles, profile_name, new_profile );    
 }
 
-// Restore the global settings from a given backup profile. If the name of the
-// profile cannot be found, return false, otherwise return true.
+/**
+ * Restore the global settings from a given backup profile. 
+ * @param profile_name name of a profile to be used
+ * @return If the name of the profile cannot be found, return false, otherwise return true.
+ */
 global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``{
 
     // return false, is there is no such profile
@@ -594,7 +608,9 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
     return true;
 }
 
-// Restore the default global settings.
+/**
+ * Restore the default global settings.
+ */
 global define void RestoreDefaultSettings() ``{
 
     // setup global settings according to defaults
@@ -627,14 +643,21 @@ global define void RestoreDefaultSettings() ``{
     selected_profile = nil;
 }
 
-// helper function to extract the list of currently available profiles
+/**
+ * Get a sorted list of profile names currently available.
+ * @return the list of strings (possibly empty).
+ */
 global define list BackupProfileNames() ``{
     list result = maplist( `key, `value, backup_profiles, ``(key) );
     if( result == nil ) return [];
     else return sort( result );
 }
 
-// Remove a given profile. Returns false if there is no such profile.
+/**
+ * Remove given profile.
+ * @param profile_name name of a profile to be removed
+ * @return If the name of the profile cannot be found, return false, otherwise return true.
+ */
 global define boolean RemoveBackupProfile( string profile_name ) ``{
     // return false, is there is no such profile
     if( !haskey( backup_profiles, profile_name ) ) return false;

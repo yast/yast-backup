@@ -177,6 +177,9 @@ be backed up by root.
         ret = UI::UserInput();
         Backup::archive_name = UI::QueryWidget(`id(`filename), `Value);
 
+	// add extension ".tar" if it is missing
+	Backup::archive_name = AddMissingExtension(Backup::archive_name, ".tar");
+
 	if (ret == `type)
 	{
 	    boolean stat = UI::QueryWidget(`id(`type), `Value) != `txt;
@@ -811,11 +814,11 @@ global define symbol SystemBackupDialog() ``{
 
 			`HBox(
 			    // push button label
-			    `PushButton(`id(`addnew), _("A&dd...") ) ,
+			    `PushButton(`id(`addnew),`opt(`key_F3), _("A&dd...") ) ,
 			    // push button label
-			    `PushButton(`id(`edit), _("&Edit...") ) ,
+			    `PushButton(`id(`edit),`opt(`key_F4), _("&Edit...") ) ,
 			    // push button label
-			    `PushButton(`id(`delete), _("De&lete") )
+			    `PushButton(`id(`delete),`opt(`key_F5), _("De&lete") )
 		        ),
 		        `VSpacing(0.4)
 		    )
@@ -2186,10 +2189,9 @@ global define symbol SummaryDialog() ``{
 }
 
 /**
- * Dialog for setting archive options
+ * Dialog for selection of a profile before backup
  * @return symbol Symbol for wizard sequencer - pressed button
  */
-
 global define symbol SelectProfileDialog() ``{
 
     Backup::ReadBackupProfiles();
@@ -2274,7 +2276,10 @@ global define symbol SelectProfileDialog() ``{
     return ret;
 }
 
-// select a profile, where to save the current settings
+/**
+ * Dialog for profile management and storing profiles.
+ * @return symbol Symbol for wizard sequencer - pressed button
+ */
 global define symbol ProfileDialog() ``{
 
     Wizard::SetContents(_("Profiles"),
@@ -2283,9 +2288,9 @@ global define symbol ProfileDialog() ``{
 	    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames()  )
 	    ),
 	    `HBox(
-		`PushButton(`id(`add), _("&Save As New...")),
+		`PushButton(`id(`add),`opt(`key_F3), _("&Save As New...")),
 		`PushButton(`id(`replace), _("Re&place")),
-		`PushButton(`id(`delete), UI::DeleteButtonLabel())
+		`PushButton(`id(`delete),`opt(`key_F5), UI::DeleteButtonLabel())
 	    ),
 	    `VSpacing(1.5)
 	),
@@ -2333,9 +2338,12 @@ global define symbol ProfileDialog() ``{
 	else if( ret == `delete )
 	{
 	    // remove the selected profile
-	    Backup::RemoveBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
-	    UI::ReplaceWidget( `id(`selectionBox), 
-		`SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames() ) );
+	    if ( UI::YesNoPopup ( _("Do you want to remove the selected profile?") ) )
+	    {
+		Backup::RemoveBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
+		UI::ReplaceWidget( `id(`selectionBox), 
+		    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames() ) );
+	    }
 	}
     } while( ret != `ok && ret != `cancel && ret != `abort && ret != `back );
     

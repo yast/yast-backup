@@ -199,14 +199,22 @@ global define string backup_help_summary() ``{
     + _("<P>Click <B>Details...</B> to see more information.</P>");
 }
 
+/**
+ * Help text for profile selection dialog before starting backup
+ * @return string Help text
+ */
 global define string profile_selection_help() ``{
-    // For translators: help text in profile selection dialog - part 1/3
+    // For translators: help text in profile selection dialog - part 1/2
     return _("<P><B>Profile found</B><BR>Backup module found at least one stored profile. Each profile contains previously used settings.</P>")
 
-        // For translators: help text in profile selection dialog - part 2/3
+        // For translators: help text in profile selection dialog - part 2/2
 	+ _("<P><B>Don't use profile</B><BR>Select this option if Backup module should not use any profile.<BR>	<B>Use profile without changes</B><BR>Select this option for starting the backup immediately using values defined in the profile.<BR><B>Allow changes before use</B><BR>This option will start workflow based on the values from profile.</P>");
 }
 
+/**
+ * Help text for profile management dialog
+ * @return string Help text
+ */
 global define string profile_help() ``{
 
     return _("<P><B>Profiles</B><BR>Here you can save the current values into profiles.</P>")
