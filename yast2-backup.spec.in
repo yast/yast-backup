@@ -1,6 +1,5 @@
 @HEADER-COMMENT@
-
-# neededforbuild  yast2-devel-packages autoyast2 autoyast2-installation yast2-transfer yast2-xml yast2-network yast2-bootloader yast2-installation yast2-country yast2-tune yast2-storage yast2-nfs-client yast2-packager
+# neededforbuild yast2-devel-packages autoyast2 autoyast2-installation yast2-transfer yast2-xml yast2-network yast2-bootloader yast2-installation yast2-country yast2-tune yast2-storage yast2-nfs-client
 
 @HEADER@
 
