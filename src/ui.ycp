@@ -24,6 +24,7 @@ import "Label";
 
 include "ui/common_popups.ycp";
 include "ui/common_functions.ycp";
+include "ui/file_popups.ycp";
 
 include "backup/help_texts.ycp";
 
@@ -2767,17 +2768,90 @@ global define symbol Test_PartitionSelection() ``{
             `Left(`Label(_("Available Disk Partitions") )),
             `Table(`id(`pts), `header(" ", "Directory", "Partition", "File system"), [`item(`id(1), " ", "/boot", "/dev/hda1", "ext2"), `item(`id(1), "X", "/", "/dev/hda2", "reiserfs"), `item(`id(1), " ", "/usr", "/dev/hda3", "reiserfs")] ),
             `HBox(
-                `PushButton(`id(`s1), _("Add")),
-                `PushButton(`id(`s2), _("Edit")),
-                `PushButton(`id(`s3), _("Delete"))
+		// Push button label
+                `PushButton(`id(`add), _("Add...")),
+		// Push button label
+                `PushButton(`id(`edit), _("Edit...")),
+		// Push button label
+                `PushButton(`id(`delete), _("Remove from table..."))
             ),
             `VSpacing(1.5)
         ),
-        "note: in the first columnt is the selection mark", false, true
+        "note: in the first column is the selection mark", false, true
     );
 
-    return UI::UserInput();
+    symbol ret = UI::UserInput();
+
+    while (ret != `next && ret != `abort && ret != `back)
+    {
+	if (ret == `add)
+	{
+	    map res = DirPopup(_("Directory selection"), "");
+	}
+	else if (ret == `edit)
+	{
+	    map res = DirPopup(_("Directory selection"), "");
+	}
+	else if (ret == `delete)
+	{
+	}
+
+	ret = UI::UserInput();
+    }
+
+    return ret;
 }
+
+
+global define map DirPopup(string label, string dir) ``{
+
+    UI::OpenDialog(
+	`VBox(
+	    `VSpacing(0.5),
+		`HBox(
+		    `HSpacing(1.0),
+		    `TextEntry(`id(`dir), _("&Directory:")),
+		    `HSpacing(1),
+		    `VBox(
+			`Label(""),
+			`PushButton(`id(`browse), _("Browse..."))
+		    ),
+		    `HSpacing(1.0)
+	    ),
+	    `VSpacing(1.0),
+	    `HBox(
+		`PushButton(`id(`ok), Label::OKButton()),
+		`PushButton(`id(`cancel), Label::CancelButton())
+	    ),
+	    `VSpacing(0.3)
+	)
+    );
+
+    symbol input = UI::UserInput();
+
+    while (input != `ok && input != `cancel)
+    {
+	if (input == `browse)
+	{
+	    string new = PopupDir(dir);
+
+	    if (size(new) > 0)
+	    {
+		UI::ChangeWidget(`id(`dir), `Value, new);
+	    }
+	}
+
+	input = UI::UserInput();
+    }
+
+    string newval = UI::QueryWidget(`id(`dir), `Value);
+
+    UI::CloseDialog();
+
+    return $[ "input" : input, "dir" : newval ];
+}
+
+
 
 global define symbol Test_LocationSelection() ``{
     Wizard::SetContents( _("YaST Backup - Proposal"),
@@ -2852,8 +2926,11 @@ global define symbol Test_LocationSelection() ``{
         "help", true, true
     );
 
+    Wizard::ReplaceNextButton(`PushButton(`id(`next), `opt(`default, `key_F10), Label::FinishButton));
+    UI::SetFocus(`id(`next));
+
     symbol s = nil;
-    while (s != `next && s!= `abort && s!= `abort)
+    while (s != `next && s!= `abort && s!= `back)
     {
 	s = UI::UserInput();
 
@@ -2866,6 +2943,8 @@ global define symbol Test_LocationSelection() ``{
 	    Test_LocationExpertOptions();
 	}
     }
+
+    Wizard::RestoreNextButton();
 
     return s;
 }
@@ -2978,33 +3057,84 @@ global define symbol Test_BackupOptions() ``{
 			`VBox(
 			    `VSpacing(0.49),
 			    // radio button label
-			    `Left(`RadioButton(`id(`file), `opt(`notify), _("Exclude unmodified RPM files"), true)),
+			    `Left(`RadioButton(`id(`system), `opt(`notify), _("Exclude unmodified RPM files"), true)),
 			    `VSpacing(0.49),
 			    // radio button label
-			    `Left(`RadioButton(`id(`nfs), `opt(`notify), _("All files"), false)),
+			    `Left(`RadioButton(`id(`data), `opt(`notify), _("All files"), false)),
 			    `VSpacing(0.49)
 			)
 		    )
 		)
-	    )
+	    ),
+	    `VSpacing(1),
+	    `Frame(_("Backup type"),
+		`HBox(
+		    `RadioButtonGroup(`id(`data), `opt(`notify),
+			`VBox(
+			    `VSpacing(0.49),
+			    // radio button label
+			    `Left(`RadioButton(`id(`full), `opt(`notify), _("Full backup"), true)),
+			    `VSpacing(0.49),
+			    // radio button label
+			    `Left(`RadioButton(`id(`incremental), `opt(`notify), _("Incremental backup"), false)),
+			    `VSpacing(0.49)
+			)
+		    )
+		)
+	    ),
+	    `VSpacing(1),
+	    `Left(`CheckBox(`id(`lvm_snapshot), _("Use LVM snapshot if possible"))),
+	    `VSpacing(1),
+	    `Left(`CheckBox(`id(`only_test), _("Only test, don't store backup archive file"))),
+	    `VSpacing(1),
+	    `PushButton(`id(`services), _("Stop services..."))
         ),
         "help", true, true
     );
 
     symbol s = nil;
-    while (s != `next && s!= `abort && s != `back)
+    while (s != `next && s!= `abort && s != `back && s!= `services)
     {
 	s = UI::UserInput();
 
-	if (s == `services)
-	{
-	}
     }
 
     return s;
 }
 
 
+global define symbol Test_ServiceSelection() ``{
+
+    Wizard::SetContents( _("YaST Backup - Proposal"),
+        `VBox(
+            `Left(`Label(_("Stop selected services") )),
+            `Table(`id(`pts), `header(" ", _("Service"), _("Description")),
+		[
+		    `item(`id(1), "X", "apache", "Start the httpd daemon Apache"),
+		    `item(`id(2), " ", "cups", "Start CUPS printer daemon"),
+		    `item(`id(3), "X", "mysql", "Start the MySQL database server"),
+		    `item(`id(4), " ", "syslog", "Start the system logging daemons"),
+		    `item(`id(5), " ", "xntpd", "Start network time protocol daemon (NTPD).")
+		]
+	    ),
+            `VSpacing(1.5)
+        ),
+        "note: in the first column is the selection mark", true, true
+    );
+
+    Wizard::ReplaceNextButton(`PushButton(`id(`next), `opt(`default, `key_F10), Label::OKButton));
+    UI::SetFocus(`id(`next));
+
+    symbol ret = UI::UserInput();
+    while (ret != `next && ret != `abort && ret != `cancel)
+    {
+	ret = UI::UserInput();
+    }
+
+    Wizard::RestoreNextButton();
+
+    return ret;
+}
 
 }
 

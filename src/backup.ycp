@@ -119,16 +119,21 @@ map sequence = $[
 
 //    "ws_start" : "test_pts",
 
-    "test_pts"	: $[
-	`next	: "test_loc",
-	`abort	: `abort
-    ],
-    "test_loc"	: $[
+    "test_pts" : $[
 	`next	: "test_opt",
 	`abort	: `abort
     ],
-    "test_opt"	: $[
+    "test_loc" : $[
 	`next	: `ws_finish,
+	`abort	: `abort
+    ],
+    "test_opt" : $[
+	`next	: "test_loc",
+	`abort	: `abort,
+	`services : "test_srv"
+    ],
+    "test_srv" : $[
+	`next	: "test_opt",
 	`abort	: `abort
     ],
 
@@ -201,6 +206,7 @@ map aliases = $[
     "test_pts"	: ``(Test_PartitionSelection()),
     "test_loc"	: ``(Test_LocationSelection()),
     "test_opt"	: ``(Test_BackupOptions()),
+    "test_srv"	: [ ``(Test_ServiceSelection()), true ],
     "readprof"	: ``(SelectProfileDialog()),
     "cron"	: [ ``(CronDialog()), true ],
     "files"	: ``(FilesDialog()),
