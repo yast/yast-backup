@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Aug 31 00:37:45 CEST 2004 - nashif@suse.de
+
+- Added yast2-firewall to neededforbuild 
+
+-------------------------------------------------------------------
 Mon Aug  9 14:37:58 CEST 2004 - jsrain@suse.cz
 
 - added missing type casts
