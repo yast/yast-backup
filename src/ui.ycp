@@ -166,6 +166,8 @@ global define symbol CronDialog() ``{
 				`IntField(`id(`old), _("Ma&x. number of old backups"), 0, 100, current_settings["old"]:3),
 				`HStretch()
 			    ),
+			    `VSpacing(0.45),
+			    `Left(`CheckBox(`id(`mail), _("Send summary mail to user 'root'"), Backup::mail_summary)),
 			    `VSpacing(0.45)
 			)
 		    )
@@ -222,6 +224,7 @@ global define symbol CronDialog() ``{
 	    current_settings["cron_changed"] = cron_changed;
 
 	    current_profile[`cron_settings] = eval(current_settings);
+	    current_profile[`mail_summary] = UI::QueryWidget(`id(`mail), `Value);
 	    Backup::backup_profiles[Backup::selected_profile] = eval(current_profile);
 
 	    y2milestone("Profile: %1, New settings: %2", Backup::selected_profile, current_settings);
@@ -289,6 +292,22 @@ global define symbol ArchDialog() ``{
 	    // list directory content
 	    string dir = substring(Backup::archive_name, 0, findlastof(Backup::archive_name, "/"));
 	    string fn = substring(Backup::archive_name, findlastof(Backup::archive_name, "/") + 1);
+	    string nfsdir = "";
+
+	    if (Backup::target_type == `nfs)
+	    {
+		nfsdir = Nfs::Mount(Backup::nfsserver, Backup::nfsexport, nil, nil);
+
+		if (nfsdir == nil)
+		{
+		    // error popup message - NFS mount failed
+		    Popup::Error(_("Cannot mount selected NFS share."));
+		}
+		else
+		{
+		    dir = nfsdir + "/" + dir;
+		}
+	    }
 
 	    y2debug("dir: %1", dir);
 	    y2debug("file: %1", fn);
@@ -324,6 +343,12 @@ global define symbol ArchDialog() ``{
 	    {
 		cont = true;
 	    }
+	}
+
+	// unmount mounted directory
+	if (size(nfsdir) > 0)
+	{
+	    Nfs::Unmount(nfsdir);
 	}
 
 	if( cont )
@@ -737,7 +762,7 @@ global define symbol TarOptionsDialog() ``{
 	    ),
 	    `VSpacing(1.0)
 	),
-        backup_help_archive_options(), true, true
+	backup_help_archive_options(), true, true
     );
 
     // replace 'Next' buton with 'Ok'
@@ -2222,6 +2247,15 @@ Backup will be aborted.
 			if (substring(line, 0, size(id_new_volume)) == id_new_volume)
 			{
 			    string vol_name = substring(line, size(id_new_volume));
+
+			    // update NFS archive name
+			    if (Backup::target_type == `nfs)
+			    {
+				y2milestone("vol_name: %1, nfsmount: %2, size(nfsmount):%3", vol_name, Backup::nfsmount, size(Backup::nfsmount));
+				string location = substring(vol_name, size(Backup::nfsmount));
+				vol_name = Backup::nfsserver + ":" + location;
+			    }
+
 			    created_archive_files = add(created_archive_files, vol_name);
 			}
 			else if (line == id_creating_target)
@@ -2681,7 +2715,10 @@ global define symbol SummaryDialog() ``{
     // cron mode
     if (cron_mode == true)
     {
-	SendSummary(remove_result);
+	if (Backup::mail_summary == true)
+	{
+	    SendSummary(remove_result);
+	}
 
 	return `finish;
     }

@@ -31,6 +31,10 @@ fi
 # set language
 set_lang_from_sysconfig
 
+# add /sbin to PATH - needed in cron mode when target is NFS
+# (otherwise command checkproc in 'rcportmap status' fails
+export PATH=$PATH:/sbin
+
 # start backup - set cron mode, set nice level to not slowdown other processes
 # set server component testsuite to parse UI requests 
 nice -n 15 /usr/lib/YaST2/bin/y2base backup '("cron")' '("'$PROFILE'")' testsuite > /dev/null

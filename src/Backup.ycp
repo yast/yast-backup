@@ -134,6 +134,8 @@ global string default_temporary_dir = "/var/lib/YaST2/backup/tmp";
 global string default_nfsserver = "";
 global string default_nfsexport = "";
 
+global boolean default_mail_summary = true;
+
 // global variables initialized to default values:
 global string archive_name = eval( default_archive_name );		// archive file name
 global string description = eval( default_description );		// user comment
@@ -146,6 +148,7 @@ global symbol user_volume_unit = eval( default_user_volume_unit );
 
 global integer user_vol_size = 0;
 global string temporary_dir = default_temporary_dir;
+global boolean mail_summary = default_mail_summary;
 
 global boolean search = eval( default_search );			// search files which do not belong to any package
 global boolean system = eval( default_system );			// backup system areas
@@ -179,7 +182,7 @@ global boolean systembackup = default_systembackup;
 
 global string nfsserver = default_nfsserver;
 global string nfsexport = default_nfsexport;
-string nfsmount = nil;	// NFS mount point, remember for unmounting
+global string nfsmount = nil;	// NFS mount point, remember for unmounting
 
 global map backup_files = eval( default_backup_files );		// all found files to backup
 global map selected_files = eval( default_selected_files );	// selected files to backup
@@ -243,11 +246,11 @@ global list zip_media_descriptions = [
 ];
 
 global list misc_descriptions = [
-    $[
+/*    $[
 	"label" : _("Default volume size"),
 	"symbol" : `default_size,
 	"capacity" : 1024*1024*1024
-    ]
+    ]*/
 ];
 
 global list media_descriptions = merge(merge(merge(cd_media_descriptions, floppy_media_descriptions), zip_media_descriptions), misc_descriptions);
@@ -374,7 +377,7 @@ global define string get_search_script_parameters() ``{
  */
 
 global define boolean PrepareBackup() ``{
-    if (target_type == `nfs)
+    if (target_type == `nfs && nfsmount == nil)
     {
 	nfsmount = Nfs::Mount(nfsserver, nfsexport, nil, nil);
 	return nfsmount != nil;
@@ -404,7 +407,7 @@ global define boolean PostBackup() ``{
 global define string get_archive_script_parameters(string file_list, string file_comment) ``{
     string archive_options = " --verbose --files-info " + file_list + " --comment-file " + file_comment;
 
-    y2warning("nfsmount: %1, archive_name: %2", nfsmount, archive_name);
+    y2debug("nfsmount: %1, archive_name: %2", nfsmount, archive_name);
 
     archive_options = archive_options + " --archive-name " + ((target_type == `file) ? archive_name :
 	sformat("%1/%2", nfsmount, archive_name));
@@ -470,7 +473,7 @@ global define string get_archive_script_parameters(string file_list, string file
 	}
 	else
 	{
-	    archive_options = archive_options + " --multi-volume " + GetCapacity(media_descriptions, volume_size);
+	    archive_options = archive_options + " --multi-volume " + tointeger(tofloat(GetCapacity(media_descriptions, volume_size)) / 1024.0);
 	}
     }
 
@@ -511,7 +514,7 @@ global define void ExcludeNodevFS() ``{
  */
 
 global define map WriteProfile(list volumes) ``{
-    string archive = archive_name;
+    string archive = ((target_type == `nfs && nfsmount != nil) ? nfsmount + "/" : "") + archive_name;
     integer pos = findlastof(archive, "/");
     string dir = "";
     string file = archive;
@@ -620,8 +623,22 @@ global define map WriteProfile(list volumes) ``{
     // store profile to this file
     string profilefile = directory + GetBaseName(archive_name) + ".xml";
 
+    y2debug("Profile location: %1", profilefile);
+
     // create and save autoinstallation profile
     boolean res = CloneSystem(profilefile, ["lan"], "restore", restore);
+
+    if (target_type == `nfs)
+    {
+	pos = findlastof(archive_name, "/");
+	string nm = (pos > 0) ? substring(archive_name, 0, pos) : "";
+
+	y2debug("pos: %1, nm: %2", pos, nm);
+
+	// update XML location if it was stored on NFS
+	profilefile = nfsserver + ":" + nfsexport + "/" + nm + (size(nm) > 0 ? "/" : "") + GetBaseName(archive_name) + ".xml";
+	y2debug("Updated profile location: %1", profilefile);
+    }
 
     return $[ "result" : res, "profile" : profilefile ];
 }
@@ -976,6 +993,7 @@ global define void StoreSettingsToBackupProfile( string profile_name ) ``{
 	`perms			: perms,
 	`nfsserver		: nfsserver,
 	`nfsexport		: nfsexport,
+	`mail_summary		: mail_summary,
 	`target_type		: target_type,
 	`target_device		: target_device,
 	`target_devices_options	: target_devices_options
@@ -1034,6 +1052,7 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
     target_type =	profile[ `target_type ]:	default_target_type;
     target_device =	profile[ `target_device ]:	default_target_device;
     target_devices_options = profile[ `target_devices_options ]:	default_target_devices_options;
+    mail_summary =	profile[ `mail_summary ]:	default_mail_summary;
 
     selected_files = default_selected_files;
     backup_files = default_backup_files;
@@ -1082,6 +1101,7 @@ global define void RestoreDefaultSettings() ``{
     nfsexport = default_nfsexport;
     target_type = default_target_type;
     target_devices_options = eval(default_target_devices_options);
+    mail_summary = default_mail_summary;
 
     selected_files = eval( default_selected_files );
     backup_files = eval( default_backup_files );
@@ -1428,6 +1448,7 @@ global define map RemovableDevices(boolean only_writable) ``{
 
 global define void ReadInstallablePackages() ``{
     installable_packages = GetInstallPackages();
+    y2debug("installable_packages: %1", installable_packages);
 }
 
 global define map DetectedMountPoints() ``{
@@ -1438,6 +1459,17 @@ global define map DetectedMountPoints() ``{
     }
 
     return detected_mpoints;
+}
+
+global define string GetLocalArchiveName() ``{
+    string ret = archive_name;
+
+    if (target_type == `nfs && nfsmount != nil)
+    {
+	ret = nfsmount + "/" + archive_name;
+    }
+
+    return ret;
 }
 
 }
