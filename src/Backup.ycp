@@ -25,6 +25,7 @@ import "Progress";
 import "Report";
 
 include "backup/functions.ycp";
+include "hwinfo/classnames.ycp";
 
 textdomain "backup";
 
@@ -130,6 +131,8 @@ global symbol volume_size = eval( default_volume_size );
 global string user_volume_size = eval( default_user_volume_size );
 global symbol user_volume_unit = eval( default_user_volume_unit );
 
+global integer user_vol_size = 0;
+
 global boolean search = eval( default_search );			// search files which do not belong to any package
 global boolean system = eval( default_system );			// backup system areas
 global boolean display = eval( default_display );		// display files before creating archive
@@ -162,38 +165,46 @@ global string selected_profile = nil;   // name of the selected profile, nil for
 // media description - capacity is maximum file size which fits
 // to formatted medium using widely used file system (FAT on floppies)
 
-global list media_descriptions = [
+global list cd_media_descriptions = [
+    $[
+	"label" : _("CD-R/RW 650 MB (74 min.)"),
+	"symbol" : `cd650,
+	"capacity" : 649*1024*1024	// exact size is 650.4 MB - remaining space is for ISO fs
+    ],
+    $[
+	"label" : _("CD-R/RW 700 MB (80 min.)"),
+	"symbol" : `cd700,
+	"capacity" : 702*1024*1024	// exact size is 703.1 MB - remaining space is for ISO fs
+    ]
+];
+
+global list floppy_media_descriptions = [
     $[
 	"label" : _("Floppy 1.44 MB"),
 	"symbol" : `fd144,
-	"capacity" : 1423 // 1457664B is exact size for FAT fs
+	"capacity" : 1423*1024		// 1457664B is exact size for FAT fs
     ],
     $[
 	"label" : _("Floppy 1.2 MB"),
 	"symbol" : `fd12,
-	"capacity" : 1185 // 1213952B is exact size for FAT fs
-    ],
+	"capacity" : 1185*1024 // 1213952B is exact size for FAT fs
+    ]
+];
+
+global list zip_media_descriptions = [
     $[
 	"label" : _("ZIP 100 MB"),
 	"symbol" : `zip100,
-	"capacity" : 95*1024	// exact size is 96MiB (64 heads, 32 sectors, 96 cylinders, 512B sector)
-    ],
+	"capacity" : 95*1024*1024	// exact size is 96MiB (64 heads, 32 sectors, 96 cylinders, 512B sector)
+    ]
 /*    $[
 	"label" : _("ZIP 250 MB"),
 	"symbol" : `zip250,
 	"capacity" : ?????
     ],*/
-    $[
-	"label" : _("CD-R/RW 650 MB (74 min.)"),
-	"symbol" : `cd650,
-	"capacity" : 649*1024	// exact size is 650.4 MB - remaining space is for ISO fs
-    ],
-    $[
-	"label" : _("CD-R/RW 700 MB (80 min.)"),
-	"symbol" : `cd700,
-	"capacity" : 702*1024	// exact size is 703.1 MB - remaining space is for ISO fs
-    ]
 ];
+
+global list media_descriptions = merge(merge(cd_media_descriptions, floppy_media_descriptions), zip_media_descriptions);
 
 global list units_description = [
     $[
@@ -1113,6 +1124,172 @@ global define string CreateCronDescription(string profilename) ``{
 	    // table item - start backup once a month (%1 is day (ordinal number, e.g. 5th), %2 is time)
 	    ret = sformat(_("Backup monthly (%1 day at %2)"), ordinal_numbers[day]:"?", ltime);
 	}
+    }
+
+    return ret;
+}
+
+/**
+ * Try to detect all removable devices present in the system
+ * @return map Removable devices info
+ */
+
+global define map RemovableDevices(boolean only_writable) ``{
+    map ret = $[];
+
+    // detect SCSI, IDE and floppy devices
+    list devs = merge(merge(SCR::Read(.probe.scsi), SCR::Read(.probe.ide)), SCR::Read(.probe.floppy));
+
+    if (size(devs) > 0)
+    {
+	foreach(map dev, devs,
+	    ``{
+		if (dev["class_id"]:nil == 262 && dev["sub_class_id"]:0 != 0)	// Mass storage device, but not a disk
+		{
+		    string dev_name = dev["dev_name"]:"";
+		    string model = dev["model"]:"";
+		    string bus = dev["bus"]:"";
+		    integer sub_class_id = dev["sub_class_id"]:128;		// default is "Storage device"
+
+		    // use non-rewinding tape device
+		    if (size(dev_name) > 0 && sub_class_id == 1)		// check if device is tape
+		    {
+			list parts = splitstring(dev, "/");
+
+			// add 'n' to the device name if it is missing
+			// e.g. /dev/st0 (rewinding) -> /dev/nst0 (non-rewinding)
+			if (!regexpmatch(parts[size(parts) - 1]:"", "^n"))
+			{
+			    parts[size(parts) - 1] = "n" + parts[size(parts) - 1]:"";
+
+			    dev_name = mergestring(parts, "/");
+
+			    dev["dev_name"] = dev_name;
+			}
+		    }
+
+		    // type of device (cdrom, disk, tape...) was not detected
+		    string type = ClassNames[262, sub_class_id]:_("Unknown device type");
+
+		    // remove read only devices if it was requested
+		    // remove CD/DVD-ROM devices, other devices are considered as writable,
+		    // it doesn't check if inserted medium is writable!
+
+		    if (sub_class_id == 2 && only_writable)
+		    {
+			// CD-ROM sub class, only writable devices are requested
+			// if CD device is not CD-R/RW or DVD-R/RW/RAM it is read only
+			if (!(dev["cdr"]:false || dev["cdrw"]:false
+			    || dev["dvdram"]:false || dev["dvdr"]:false))
+			{
+			    dev_name = "";
+			}
+		    }
+
+		    // predefined media sizes for device - initialize to all types
+		    list media = media_descriptions;
+		    symbol preselected = nil;
+		    integer user_size = 0;
+
+		    if (dev["dvd"]:false)
+		    {
+			type = "DVD-ROM";
+
+			if (only_writable)
+			{
+			    dev_name = "";
+			}
+		    }
+		    else if (dev["cdr"]:false || dev["cdrw"]:false)
+		    {
+			// CD-R or CD-RW writer device
+			type = _("CD writer");
+			media = cd_media_descriptions;
+			preselected = `cd700;
+		    }
+		    else if (dev["dvdr"]:false)
+		    {
+			// DVD-R, DVD+R... writer device
+			type = _("DVD writer");
+		    }
+		    else if (dev["dvdram"]:false)
+		    {
+			type = "DVD-RAM";
+		    }
+		    else if (dev["zip"]:false && dev["sub_class_id"]:0 == 3)
+		    {
+			type = "ZIP";
+			media = zip_media_descriptions;
+
+			// get medium size
+			map geometry = dev["resource", "disk_log_geo"]:$[];
+			integer sz = geometry["cylinders"]:0 * geometry["heads"]:0 * geometry["sectors"]:0;
+			integer sect_sz = (dev["size", "unit"]:"" == "sectors") ? (dev["size", "y"]:512) : 0;
+			integer raw_size = sz * sectors;
+
+			// preselect medium size
+			if (raw_size == 96*64*32*512)
+			{
+			    // this is ZIP-100
+			    preselected = `zip100;
+			}
+			else if (raw_size > 0)
+			{
+			    // unknown medium, use raw size minus 1MB for file system
+			    preselected = `user;
+			    user_size = raw - 1024*1024;
+			}
+
+		    }
+		    // floppy
+		    else if (dev["sub_class_id"]:0 == 3)
+		    {
+			media = floppy_media_descriptions;
+			list sizes = dev["resource", "size"]:[];
+			integer sect_sz = 0;
+
+			foreach(map m, sizes,
+			    ``{
+				string unit = m["unit"]:"";
+
+				if (unit == "sectors")
+				{
+				    sect_sz = m["x"]:0 * m["y"]:512;
+				}
+			    }
+			);
+
+			y2milestone("sect_sz: %1", sect_sz);
+
+			if (sect_sz > 0)
+			{
+			    if (sect_sz == 2880*512)
+			    {
+				// 1.44 floppy
+				preselected = `fd144;
+			    }
+/*			    else if (sect_sz == 1186*512)
+			    {
+				// 1.2 floppy
+				preselected = `fd12;
+			    }*/
+			}
+		    }
+
+		    // volume size was'nt detected, use default value 512MiB
+		    if (preselected == nil)
+		    {
+			preselected = `user;
+			user_size = 512*1024*1024;
+		    }
+
+		    if (size(dev_name) > 0)
+		    {
+			ret = add(ret, dev_name, $[ "model" : model, "type" : type, "bus" : bus, "media" : media, "preselected" : preselected, "user_size" : user_size ]);
+		    }
+		}
+	    }
+	);
     }
 
     return ret;

@@ -2777,7 +2777,7 @@ global define symbol Test_PartitionSelection() ``{
     Wizard::SetContents( _("YaST Backup - Proposal"),
         `VBox(
             `Left(`Label(_("Available Disk Partitions") )),
-            `Table(`id(`pts), `header("Directory", "Partition", "File system"), [`item(`id(1), "/boot", "/dev/hda1", "ext2"), `item(`id(1), "/", "/dev/hda2", "reiserfs"), `item(`id(1), "/usr", "/dev/hda3", "reiserfs")] ),
+            `Table(`id(`pts), `header(" ", "Directory", "Partition", "File system"), [`item(`id(1), " ", "/boot", "/dev/hda1", "ext2"), `item(`id(1), "X", "/", "/dev/hda2", "reiserfs"), `item(`id(1), "X", "/usr", "/dev/hda3", "reiserfs")] ),
             `HBox(
 		// Push button label
                 `PushButton(`id(`add), _("Add...")),
@@ -2872,18 +2872,25 @@ global define map DirPopup(string label, string dir) ``{
 
 
 global define symbol Test_LocationSelection() ``{
+
+    // detect all writable removable devices
+    map removable = Backup::RemovableDevices(false);	// FIXME: false -> true
+
+    symbol sel_vol = Backup::volume_size;
+    integer user_vol = Backup::user_vol_size;
+
     Wizard::SetContents( _("YaST Backup - Proposal"),
 	`VBox(
-	    `Frame(_("Backup archive"),
-		`VBox(
+//	    `Frame(_("Backup archive"),
+//		`VBox(
 		    `HBox(
 			`HSpacing(0.5),
 			`TextEntry(`id(`filename), _("Archive file na&me:"), ""),
 			`HSpacing(0.5)
 		    ),
-		    `VSpacing(0.49)
-		)
-	    ),
+//		    `VSpacing(0.49)
+//		)
+//	    ),
 	    `VSpacing(0.49),
 	    // frame label
 	    `Frame(_("Backup location"),
@@ -2924,7 +2931,7 @@ global define symbol Test_LocationSelection() ``{
 				`HBox(
 				    `HSpacing(2),
 				    // combo box label
-				    `Left(`ComboBox(`id(`device), `opt(`editable), _("&Device"), [`item(`id("/dev/sr0"), "CDRW-482448 (CD-RW - /dev/sr0)"), `item(`id("/dev//fd0"), "Floppy Disk (Floppy Disk - /dev/fd0)")]))
+				    `Left(`ComboBox(`id(`device), `opt(`notify), _("&Device"), CreateRemovableList(removable) ))
 				),
 				`VSpacing(0.49)
 			    )
@@ -2933,12 +2940,17 @@ global define symbol Test_LocationSelection() ``{
 		    )
 		),
 		`VSpacing(0.49),
-		`CheckBox(`id(`replace), _("Replace existing archive")),
-		`VSpacing(0.49),
 		`HBox(
-		    `PushButton(`id(`volume), _("Volume size...")),
-		    `PushButton(`id(`expert), `opt(`key_F7), _("Expert..."))
+		    `Label(_("Volume size:")),
+		    `HSpacing(1),
+		    `Label(`id(`vol_sz), `opt(`outputField, `hstretch), symbol2string(sel_vol, user_vol)),
+		    `HSpacing(1),
+		    `PushButton(`id(`volume), _("Change..."))
 		),
+		`VSpacing(0.49),
+		`PushButton(`id(`expert), `opt(`key_F7), _("Expert...")),
+//		`CheckBox(`id(`replace), _("Replace existing archive")),
+//		`VSpacing(0.49),
 		`VSpacing(0.49)
         ),
         "help", true, true
@@ -2960,6 +2972,29 @@ global define symbol Test_LocationSelection() ``{
 	{
 	    Test_LocationExpertOptions();
 	}
+	else if (s == `device)
+	{
+	    string sel_dev = UI::QueryWidget(`id(`device), `Value);
+
+	    y2milestone("sel_dev: %1, removable: %2", sel_dev, removable);
+
+	    if (sel_vol != `user)
+	    {
+		symbol new_vol = removable[sel_dev, "preselected"]:nil;
+
+		if (new_vol == `user)
+		{
+		    user_vol = removable[sel_dev, "user_size"]:0;
+		}
+
+		if (new_vol != nil)
+		{
+		    UI::ChangeWidget(`id(`vol_sz), `Value, symbol2string(new_vol, user_vol));
+		}
+	    }
+
+	    y2milestone("%1", sel_dev);
+	}
     }
 
     Wizard::RestoreNextButton();
@@ -2968,12 +3003,31 @@ global define symbol Test_LocationSelection() ``{
 }
 
 
-global define symbol Test_VolumeSizeDialog() ``{
+global define symbol Test_VolumeSizeDialog(/*list supported_media*/) ``{
 
-    list media = [`item (`id (`fd144),
-    "Floppy 1.44 MB"), `item (`id (`fd12), "Floppy 1.2 MB"), `item (`id (`zip100), "ZIP 100 MB"), `item (`id (`cd650), "CD-R/RW 650 MB (74 min.)"), `item (`id (`cd700), "CD-R/RW 700 MB (80 min.)"), `item (`id (`user_defined), "User-defined")];
-    list units = [`item (`id (`B), "bytes"), `item (`id (`kB), "kB"), `item (`id (`kiB), "kiB"), `item (`id (`MB), "MB"), `item (`id (`MiB),
-    "MiB")];
+/*    list media = [];
+
+    foreach(map m, supported_media,
+	``{
+	    media = add(media, `item(`id(m[""]
+	}
+    );
+*/
+    list media = [`item (`id (`fd144), "Floppy 1.44 MB"), `item (`id (`fd12), "Floppy 1.2 MB"), `item (`id (`zip100), "ZIP 100 MB"), `item (`id (`cd650), "CD-R/RW 650 MB (74 min.)"), `item (`id (`cd700), "CD-R/RW 700 MB (80 min.)"), `item (`id (`user_defined), "User-defined")];
+
+    list units = [];
+
+    foreach(map unit, Backup::units_description,
+	``{
+	    symbol s = unit["symbol"]:nil;
+	    string label = unit["lable"]:nil;
+
+	    if (s != nil && size(label) > 0)
+	    {
+		units = add(units, `item(`id(s), label);
+	    }
+	}
+
 
     UI::OpenDialog(
 	`HBox(
@@ -3238,6 +3292,132 @@ global define symbol Test_RPMoptions() ``{
     Wizard::RestoreNextButton();
 
     return input;
+}
+
+
+global define list CreateRemovableList(map removable) ``{
+    list ret = [];
+
+    // create item list
+    if (size(removable) > 0)
+    {
+	foreach(string d, map descr, removable, ``{
+		string model = descr["model"]:"";
+		string type = descr["type"]:"";
+		string bus = descr["bus"]:"";
+
+		ret = add(ret, `item(`id(d), sformat("%1  (%2 %3 - %4)", model, bus, type, d)));
+	    }
+	);
+    }
+
+    return ret;
+}
+
+global define string symbol2string(symbol s, integer user_size) ``{
+
+    y2milestone("s: %1, user_size: %2", s, user_size);
+
+    string ret = "";
+
+    if (s == nil)
+    {
+	return ret;
+    }
+
+    if (s == `user)
+    {
+	return size2string(user_size);
+    }
+
+    foreach(map m, Backup::media_descriptions,
+	``{
+	    symbol sym = m["symbol"]:nil;
+	    integer cap = m["capacity"]:nil;
+	    string label = m["label"]:"";
+
+	    y2milestone("symbol: %1", m["symbol"]:nil);
+
+	    if (sym == s)
+	    {
+		ret = label;
+
+		if (cap > 0)
+		{
+		    ret = ret + sformat(" (%1)", size2string(cap));
+		}
+	    }
+	}
+    );
+
+    return ret;
+}
+
+global define string size2string(integer sz) ``{
+    string ret = "";
+    map unit_descr = $[];
+
+    if (sz == nil)
+    {
+	return ret;
+    }
+
+    foreach(map m, Backup::units_description,
+	``{
+	    symbol s = m["symbol"]:nil;
+	    string label = m["label"]:nil;
+
+	    if (s != nil && size(label) > 0)
+	    {
+		unit_descr[s] = label;
+	    }
+	}
+    );
+
+    if (sz % 1024 == 0)
+    {
+	// size in kiB
+	sz = sz / 1024;
+
+	if (sz % 1024 == 0)
+	{
+	    // size in MiB
+	    sz = sz / 1024;
+
+	    // return MiB
+	    return sformat("%1", sz) + " " + unit_descr[`MiB]:"";
+	}
+	else
+	{
+	    // return kiB
+	    return sformat("%1", sz) + " " + unit_descr[`kiB]:"";
+	}
+    }
+    else if (sz % 1000 == 0)
+    {
+	// size in kB
+	sz = sz / 1000;
+
+	if (sz % 1000 == 0)
+	{
+	    // size in MB
+	    sz = sz / 1000;
+
+	    // return MB
+	    return sformat("%1", sz) + " " + unit_descr[`MB]:"";
+	}
+	else
+	{
+	    // return kB
+	    return sformat("%1", sz) + " " + unit_descr[`kB]:"";
+	}
+    }
+    else
+    {
+	ret = sformat("%1", sz) + " " + unit_descr[`B]:"";
+    }
+
+    return ret;
 }
 
 }
