@@ -39,7 +39,7 @@ global define boolean AbortConfirmation(symbol type) ``{
     string heading = _("Abort confirmation");
     // popup dialog question
     string question = _("Do you really want to abort the backup?");
-    string yes = Label::YesButton();	// from common_messages.ycp
+    string yes = Label::YesButton();
     string no = Label::NoButton();
 
     if (type == `changed)
