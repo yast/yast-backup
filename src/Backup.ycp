@@ -437,7 +437,15 @@ global define map WriteProfile(list volumes) ``{
 
     foreach(string pkg, map info, selected_files, ``{
 	    // get package base name
-	    pkg = regexpsub(pkg, "(.*)-.*-.*", "\\1");
+	    if (pkg != "")
+	    {
+		pkg = regexpsub(pkg, "(.*)-.*-.*", "\\1");
+	    }
+	    else
+	    {
+		pkg = "_NoPackage_";
+	    }
+
 	    packages_sel[pkg] = $["sel_type" : "X"];
 	}
     );
