@@ -52,6 +52,19 @@ sub harddisks($)
     return @disks;
 }
 
+# create parent directories for new file
+sub create_dirs($)
+{
+    my ($f) = @_;
+    my $ix = rindex($f, '/');
+
+    if ($ix > 0)
+    {
+	my $dirs = substr($f, 0, $ix);
+	system("/bin/mkdir -p $dirs");		# create directory with parents
+    }
+}
+
 # command line options
 my $archive_name = '';
 my $archive_type = '';
@@ -83,12 +96,12 @@ if ($help or $files_info eq '' or $archive_name eq '')
     
     print "  --help                Display this help\n\n";
     print "  --archive-name <file> Target archive file name\n";
-    print "  --archive-type <type> Type of compression used by tar, type can be 'tgz' - compressed by gzip, 'tbz2' - compressed by bzip2 or 'tar' - no compression, default is 'tgz'\n";
+    print "  --archive-type <type> Type of compression used by tar, type can be 'tgz' - compressed by gzip, 'tbz2' - compressed by bzip2, 'tar' - no compression or 'txt' - only list of files is generated instead crating archive. Default is 'tgz'\n";
     print "  --multi-volume <size> Create multiple volume archive, size is volume size in bytes\n";
     print "  --verbose             Print progress information\n";
     print "  --store-ptable        Add partition tables information to archive\n";
     print "  --store-ext2 <device> Store Ext2 system area from device\n";
-    print "  --files-info          Data file from backup_search script\n";
+    print "  --files-info <file>         Data file from backup_search script\n";
     print "  --comment-file <file> Use comment stored in file\n\n";
         
     exit 0;
@@ -98,7 +111,7 @@ if ($help or $files_info eq '' or $archive_name eq '')
 $| = 1;
 
 # archive type option
-if ($archive_type ne 'tgz' && $archive_type ne 'tbz2' && $archive_type ne 'tar')
+if ($archive_type ne 'tgz' && $archive_type ne 'tbz2' && $archive_type ne 'tar' && $archive_type ne 'txt')
 {
     $archive_type = 'tgz';
 }
@@ -106,7 +119,41 @@ if ($archive_type ne 'tgz' && $archive_type ne 'tbz2' && $archive_type ne 'tar')
 # for security reasons set permissions only to owner
 umask(0077);
 
-my $tmp_dir_root = tempdir(CLEANUP => 1);	# remove directory content at extit
+# only store list of files - filter input list
+if ($archive_type eq 'txt')
+{
+    print "Storing list\n";
+
+    create_dirs($archive_name);
+
+    open(OUT, '>', $archive_name)
+	or die "Error storing file list\n";
+
+    if (defined open(FILES, $files_info))
+    {
+	while (my $line = <FILES>)
+	{
+	    chomp($line);
+	    
+	    if ($line =~ /^\/.+/)
+	    {
+		print OUT $line."\n";
+	    }
+	}
+	
+	close(FILES);
+    }
+
+    close(FILES_INFO);
+
+    print "File list stored\n";
+    
+    exit 0;
+}
+
+
+
+my $tmp_dir_root = tempdir(CLEANUP => 1);	# remove directory content at exit
 
 my $tmp_dir = $tmp_dir_root."/tmp";
 if (!mkdir($tmp_dir))
@@ -369,13 +416,7 @@ if ($verbose)
 }
 
 # create required subdirs
-my $idx = rindex($archive_name, '/');
-
-if ($idx > 0)
-{
-    my $dirs = substr($archive_name, 0, $idx);
-    system("/bin/mkdir -p $dirs");
-}
+create_dirs($archive_name);
 
 
 # used tar options:

@@ -25,17 +25,20 @@ textdomain "backup";
  */
 
 global define string backup_help_archive_settings() ``{
-    // For translators: help text in archive setting dialog - part 1/4
+    // For translators: help text in archive setting dialog - part 1/5
     return _("<P><B><BIG>Backup module</BIG></B><BR>")
 
-    // For translators: help text in archive setting dialog - part 2/4
+    // For translators: help text in archive setting dialog - part 2/5
     + _("This YaST2 module searches files on your system and creates backup archive from them.<BR></P>")
 
-    // For translators: help text in archive setting dialog - part 3/4
+    // For translators: help text in archive setting dialog - part 3/5
     + _("<P><B>System backup</B><BR>")
 
-    // For translators: help text in archive setting dialog - part 4/4
-    + _("To create backup of your system enter archive name and select archive type. <B>Archive description</B> is optional description - you can write some notes here.");
+    // For translators: help text in archive setting dialog - part 4/5
+    + _("To create backup of your system enter archive name and select archive type. <B>Archive description</B> is optional description - you can write some notes here.</P>")
+
+    // For translators: help text in archive setting dialog - part 5/5
+    + _("<P>If you want to store only list of found files instead of creating archive then select '<B>only list of files</B>' as archive type.</P>");
 }
 
 
