@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Feb  3 15:22:32 CET 2004 - lslezak@suse.cz
+
+- testsuite update
+- version 2.9.5
+
+-------------------------------------------------------------------
 Fri Jan 30 11:00:34 CET 2004 - lslezak@suse.cz
 
 - fixes for the new interpreter (data types, removed globals)
