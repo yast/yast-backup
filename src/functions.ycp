@@ -136,8 +136,8 @@ global define map ShowEditDialog(string label, string value) ``{
 	    `TextEntry(`id(`te), label, value),
 	    `VSpacing(1.0),
 	    `HBox(
-	        `PushButton(`id(`ok), `opt(`default), OKButtonLabel()),
-		`PushButton(`id(`cancel), CancelButtonLabel())
+	        `PushButton(`id(`ok), `opt(`default, `key_F10), OKButtonLabel()),
+		`PushButton(`id(`cancel), `opt(`key_F9), CancelButtonLabel())
 	    )
 	)
     );

@@ -25,14 +25,20 @@ textdomain "backup";
  */
 
 global define string backup_help_archive_settings() ``{
-    // For translators: help text in archive setting dialog - part 1/3
+    // For translators: help text in archive setting dialog - part 1/5
     return _("<P><B><BIG>Backup module</BIG></B><BR>This YaST2 module searches files on your system and creates backup archive from them.</P>")
 
-    // For translators: help text in archive setting dialog - part 2/3
+    // For translators: help text in archive setting dialog - part 2/5
+    + _("<P>Yast2 backup module is small, easy to use backup programm. If you need advanced features (e.g. incremental backup, network backup...) you should use another expert tool.</P>")
+
+    // For translators: help text in archive setting dialog - part 3/5
     + _("<P><B>Backup</B><BR>To create a backup of your system, enter the archive name and select the archive type. <B>Archive description</B> is an optional description of the backup archive.</P>")
 
-    // For translators: help text in archive setting dialog - part 3/3
-    + _("<P>If you want to store only names of detected file instead of creating an archive then select '<B>only list of file names</B>' as archive type.</P>");
+    // For translators: help text in archive setting dialog - part 4/5
+    + _("<P>If you want to store only names of detected file instead of creating an archive then select '<B>only list of file names</B>' as archive type.</P>")
+
+    // For translators: help text in archive setting dialog - part 5/5
+    + _("<P>If you use ACL (Access Control List) for file access and if you want to backup them select subarchive type star.</P>");
 }
 
 

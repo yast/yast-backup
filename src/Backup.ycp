@@ -236,35 +236,18 @@ global define string get_archive_script_parameters(string file_list, string file
     }
 
 
-    if (archive_type == `tgz)
-    {
-	archive_options = archive_options + " --archive-type tgz";
-    }
-    else
-    {
-	if (archive_type == `tbz)
-	{
-	    archive_options = archive_options + " --archive-type tbz2";
-	}
-	else
-	{
-	    if (archive_type == `tar)
-	    {
-		archive_options = archive_options + " --archive-type tar";
-	    }
-	    else
-	    {
-		if (archive_type == `txt)
-		{
-		    archive_options = archive_options + " --archive-type txt";
-		}
-		else
-		{
-		    y2error("Unknown type of archive: %1", archive_type);
-		}
-	    }
-	}
-    }
+    map typemap = $[
+	`tgz : "tgz",
+	`tbz : "tbz2",
+	`tar : "tar",
+	`stgz : "stgz",
+	`stbz : "stbz2",
+	`star : "star",
+	`txt : "txt"
+    ];
+
+    archive_options = archive_options + " --archive-type " + typemap[archive_type]:"tgz";
+
 
     if (multi_volume)
     {
@@ -344,7 +327,7 @@ global define map WriteProfile(list volumes) ``{
     y2debug("dir: %1, file: %2", dir, file);
 
     // create profile with with currently available resources (partitioning, software etc.)
-    AIClone::constructProfile();
+    AIClone::constructProfile([]);
 
     // add backup information to the profile
     map configure = AIClone::Profile["configure"]:$[];
@@ -464,7 +447,7 @@ global define map WriteProfile(list volumes) ``{
 
     string profilefile = directory + "autoinst.xml";
 
-    return $[ "result" : AIClone::writeProfile(profilefile), "profile" : profilefile ];
+    return $[ "result" : AIClone::writeProfile(profilefile, []), "profile" : profilefile ];
 }
 
 }

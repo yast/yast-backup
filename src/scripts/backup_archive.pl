@@ -162,7 +162,9 @@ if ($help or $files_info eq '' or $archive_name eq '')
 $| = 1;
 
 # archive type option
-if ($archive_type ne 'tgz' && $archive_type ne 'tbz2' && $archive_type ne 'tar' && $archive_type ne 'txt')
+if ($archive_type ne 'tgz' && $archive_type ne 'tbz2' && $archive_type ne 'tar'
+    && $archive_type ne 'txt' && $archive_type ne 'stgz' && $archive_type ne 'stbz2'
+    && $archive_type ne 'star')
 {
     $archive_type = 'tgz';
 }
@@ -495,10 +497,16 @@ if (defined open(FILES, $files_info))
 
 		    my $command = "/bin/tar -c -v --no-recursion --files-from $tmp_dir_root/$package_name --ignore-failed-read -S -f $tmp_dir_root/tmp/$package_name-$date_str-0.tar";
 
+		    if ($archive_type eq 'stgz' || $archive_type eq 'stbz2' || $archive_type eq 'star')
+		    {
+			# set exustar archive type, enable ACLs
+			$command = "/usr/bin/star -c -v -D list=$tmp_dir_root/$package_name -sparse -f $tmp_dir_root/tmp/$package_name-$date_str-0.tar -acl H=exustar";
+		    }
+
 		    print OUT "$package_name-$date_str-0.tar";
 		    $files_num++;
 
-		    if ($archive_type eq 'tgz')
+		    if ($archive_type eq 'tgz' || $archive_type eq 'stgz')
 		    {
 			$command .= '.gz -z';
 			print OUT ".gz\n";
@@ -508,6 +516,11 @@ if (defined open(FILES, $files_info))
 			if ($archive_type eq 'tbz2')
 			{
 			    $command .= '.bz2 -j';
+			    print OUT ".bz2\n";
+			}
+			elsif ($archive_type eq 'stbz2')
+			{
+			    $command .= ".bz2 -bz";
 			    print OUT ".bz2\n";
 			}
 			else
@@ -551,10 +564,15 @@ if (defined $opened)
 
     my $command = "/bin/tar -c -v --no-recursion --files-from $tmp_dir_root/$package_name --ignore-failed-read -S -f $tmp_dir_root/tmp/$package_name-$date_str-0.tar";
 
+    if ($archive_type eq 'stgz' || $archive_type eq 'stbz2' || $archive_type eq 'star')
+    {
+	$command = "/usr/bin/star -c -v -D list=$tmp_dir_root/$package_name -sparse -f $tmp_dir_root/tmp/$package_name-$date_str-0.tar";
+    }
+
     print OUT "$package_name-$date_str-0.tar";
     $files_num++;
 
-    if ($archive_type eq 'tgz')
+    if ($archive_type eq 'tgz' || $archive_type eq 'stgz')
     {
 	$command .= '.gz -z';
 	print OUT ".gz\n";
@@ -564,6 +582,11 @@ if (defined $opened)
 	if ($archive_type eq 'tbz2')
 	{
 	    $command .= '.bz2 -j';
+	    print OUT ".bz2\n";
+	}
+	elsif ($archive_type eq 'stbz2')
+	{
+	    $command .= ".bz2 -bz";
 	    print OUT ".bz2\n";
 	}
 	else

@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Jan 17 16:12:01 CET 2003 - lslezak@suse.cz
+
+- star archiver support (ACLs backup)
+- function keys in ncurses UI
+- cloning functions update
+- version 2.7.0
+
+-------------------------------------------------------------------
 Wed Sep  4 16:03:52 CEST 2002 - lslezak@suse.cz
 
 - autoyast profile writing fixed
