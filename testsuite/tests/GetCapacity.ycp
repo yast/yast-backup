@@ -17,7 +17,7 @@ include "testsuite.ycp";
 
 TESTSUITE_INIT([ $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
-    "probe" : $["has_smp" : false, "cdrom" : $["manual" : []]]  ], [], [] ] ,nil);
+    "probe" : $["has_smp" : false, "cdrom" : $["manual" : []]]  ], $[], $[] ] ,nil);
 
 import "Pkg";	// override packamanager
 import "Backup";

@@ -1,8 +1,21 @@
 Read	.target.size "/etc/install.inf" -1
 Read	.target.tmpdir "/tmp"
 Read	.target.tmpdir "/tmp"
-Read	.target.size "/tmp/autoinst.xml" -1
-Dir	.autoinst.menuentry.s: []
+Read	.sysconfig.autoinstall.REPOSITORY "/var/lib/autoinstall/repository"
+Read	.sysconfig.autoinstall.ALICE_REPOSITORY "/var/lib/autoinstall/repository"
+Read	.sysconfig.autoinstall.CLASS_DIR "/var/lib/autoinstall/repository/classes"
+Read	.sysconfig.autoinstall.XSLT_DONTMERGE "addon,conf"
+Dir	.autoyast2.desktop."s": []
+Dir	.yast2.groups.s: []
+Read	.probe.architecture nil
+Read	.probe.has_apm nil
+Read	.probe.has_pcmcia nil
+Read	.probe.has_smp false
+Read	.probe.system nil
+Read	.sysconfig.console.CONSOLE_ENCODING nil
+Execute	.target.bash_output "locale -k charmap" $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]
+Read	.probe.floppy.manual nil
+Read	.probe.cdrom.manual []
 Read	.proc.filesystems nil
 Return	nil
 Dump	["iso9660", "ntfs"]
