@@ -9,11 +9,24 @@
 
 include "testsuite.ycp";
 
-TESTSUITE_INIT([ $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
+map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
-        "probe" : $["has_smp" : false, "cdrom" : $["manual" : []]]  ], [], [] ] ,nil);
+    "probe" : $["has_smp" : false, "cdrom" : $["manual" : []]],
+    "sysconfig" : $[ "autoinstall" : $[
+      "REPOSITORY" : "/var/lib/autoinstall/repository",
+      "ALICE_REPOSITORY" : "/var/lib/autoinstall/repository",
+      "CLASS_DIR" : "/var/lib/autoinstall/repository/classes",
+      "XSLT_DONTMERGE" : "addon,conf"
+    ]]
+    ];
+
+
+map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
+
+TESTSUITE_INIT([ readmap, $[], execmap ] ,nil);
+
 import "Pkg";   // override packamanager
-	
+
 import "Backup";
 
 map READ = 

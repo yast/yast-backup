@@ -9,17 +9,28 @@
 
 include "testsuite.ycp";
 
-TESTSUITE_INIT([ $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
+map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
-    "probe" : $["has_smp" : false, "cdrom" : $["manual" : []]]  ], [], [] ] ,nil);
+    "probe" : $["has_smp" : false, "cdrom" : $["manual" : []]],
+    "sysconfig" : $[ "autoinstall" : $[
+      "REPOSITORY" : "/var/lib/autoinstall/repository",
+      "ALICE_REPOSITORY" : "/var/lib/autoinstall/repository",
+      "CLASS_DIR" : "/var/lib/autoinstall/repository/classes",
+      "XSLT_DONTMERGE" : "addon,conf"
+    ]]
+    ];
+
+map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
+
+TESTSUITE_INIT([ readmap, $[], execmap ], nil);
+
 import "Pkg";   // override packamanager
-	
 import "Backup";
 
 DUMP( Backup::backup_profiles);
 
     // setup global settings
-    Backup::archive_name = "Does not work"; 
+    Backup::archive_name = "Does not work";
     Backup::description = "Does not work - profile";
     Backup::archive_type = nil;
     Backup::multi_volume = nil;
@@ -34,14 +45,14 @@ DUMP( Backup::backup_profiles);
     Backup::dir_list = nil;
     Backup::fs_exclude = nil;
     Backup::detected_fs = nil;
-    Backup::detected_ext2 = nil; 
+    Backup::detected_ext2 = nil;
     Backup::ext2_backup = nil;
     Backup::backup_pt = nil;
     Backup::backup_all_ext2 = nil;
     Backup::backup_none_ext2 = nil;
     Backup::backup_selected_ext2 = nil;
     Backup::unselected_files = nil;
-    
+
     Backup::selected_files = nil;
     Backup::backup_files = $[ ];
 
