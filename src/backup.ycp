@@ -207,7 +207,7 @@ if (args[0]:"" == "cron")
 
     if (args[1]:nil != nil)
     {
-	cron_profile = args[1]:"";
+	cron_profile = regexpsub(args[1]:"", "^[ \t]*profile[ \t]*=[ \t]*(.*)", "\\1");
 	y2milestone("Using profile: '%1'", cron_profile);
     }
 }

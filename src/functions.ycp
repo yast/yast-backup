@@ -640,7 +640,7 @@ global define boolean SendSummary(map remove_result) ``{
     if (Report::NumErrors() > 0)
     {
 	// text added to the subject if an error occured
-	subject = subject + _(" - FAILED");
+	subject = subject + _(" -- FAILED");
     }
 
     y2debug("remove_result: %1", remove_result);
@@ -649,7 +649,7 @@ global define boolean SendSummary(map remove_result) ``{
     if (size(remove_result["removed"]:[]) > 0)
     {
 	// header in email body followed by list of files
-	removed = _("Removed old archives:") + br;
+	removed = _("Removed Old Archives:") + br;
 
 	foreach(string f, remove_result["removed"]:[], ``{
 		removed = removed + f + br;
@@ -661,7 +661,7 @@ global define boolean SendSummary(map remove_result) ``{
     if (size(remove_result["renamed"]:$[]) > 0)
     {
 	// header in email body followed by list of files
-	renamed = _("Renamed old archives:") + br;
+	renamed = _("Renamed Old Archives:") + br;
 
 	foreach(string from, string to, remove_result["renamed"]:$[], ``{
 		renamed = renamed + from + " -> " + to + br;
@@ -670,7 +670,7 @@ global define boolean SendSummary(map remove_result) ``{
     }
 
     // header in email body
-    string oldarch = _("Changed existing archives:");
+    string oldarch = _("Changed Existing Archives:");
     string ren_header = (size(renamed) > 0 || size(removed) > 0) ? oldarch + br + CreateUnderLine(oldarch, "=") : "";
 
     // header in email body
@@ -679,9 +679,9 @@ global define boolean SendSummary(map remove_result) ``{
     string detail_heading = _("Details:");
 
     // header in email body
-    string body = sformat(_("YAST2 BACKUP REPORT - Profile '%1'"), cron_profile) + br + br + br
+    string body = sformat(_("YAST2 BACKUP REPORT -- Profile '%1'"), cron_profile) + br + br + br
 	// header in email body followed by errors or warnings
-	+ ((size(reported) > 0) ? _("Some problems occured during automatic backup:") + br + reported + br + br : "")
+	+ ((size(reported) > 0) ? _("Some Problems Occurred During Automatic Backup:") + br + reported + br + br : "")
 	+ summary_heading + br + CreateUnderLine(summary_heading, "=") + br + br + backup_result + br
 	+ ((size(ren_header) > 0) ? ren_header + br + br + renamed + br + br + removed + br + br : "")
 	+ detail_heading + br + CreateUnderLine(detail_heading, "=") + br + br + backup_details;
@@ -782,12 +782,28 @@ global define map RemoveOldSingleArchives(string name, integer max) ``{
 	    command = "/bin/rm -f " + oldarchive;
 	    y2milestone("Removing old archive: %1", oldarchive);
 	    result = SCR::Execute(.target.bash_output, command);
-	    removed = add(removed, oldarchive);
+
+	    string removedoldarchive = oldarchive;
+
+	    // update NFS archive name
+	    if (Backup::target_type == `nfs)
+	    {
+		removedoldarchive = Backup::nfsserver + ":" + Backup::nfsexport + substring(oldarchive, size(Backup::nfsmount));
+	    }
+
+	    removed = add(removed, removedoldarchive);
 
 	    // remove old XML profile
 	    string oldXML = dir + "/" + GetBaseName(oldarchive) + ".xml";
 	    command = "/bin/rm -f " + oldXML;
 	    result = SCR::Execute(.target.bash_output, command);
+
+	    // update NFS archive name
+	    if (Backup::target_type == `nfs)
+	    {
+		oldXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(oldXML, size(Backup::nfsmount));
+	    }
+
 	    removed = add(removed, oldXML);
 
 	    files = remove(files, size(files) - 1);
@@ -801,13 +817,37 @@ global define map RemoveOldSingleArchives(string name, integer max) ``{
     // rename existing archive
     command = "/bin/mv -f " + name + " " + dir + "/" + ctime_str + "-" + fname;
     result = SCR::Execute(.target.bash_output, command);
-    renamed[name] = dir + "/" + ctime_str + "-" + fname;
+
+    string old_name = name;
+    string new_name = dir + "/" + ctime_str + "-" + fname;
+
+    // update NFS archive name
+    if (Backup::target_type == `nfs)
+    {
+	old_name = Backup::nfsserver + ":" + Backup::nfsexport + substring(name, size(Backup::nfsmount));
+	new_name = Backup::nfsserver + ":" + Backup::nfsexport + substring(new_name, size(Backup::nfsmount));
+	y2debug("NFS archive, old_name: %1, new_name: %2", old_name, new_name);
+    }
+
+
+//    renamed[name] = dir + "/" + ctime_str + "-" + fname;
+    renamed[old_name] = new_name;
 
     // rename autoinstallation profile
     string oldXML = dir + "/" + GetBaseName(name) + ".xml";
     string newXML = dir + "/" + ctime_str + "-" + GetBaseName(fname) + ".xml";
+
     command = "/bin/mv -f " + oldXML + " " + newXML;
     result = SCR::Execute(.target.bash_output, command);
+
+    // update NFS archive name
+    if (Backup::target_type == `nfs)
+    {
+	oldXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(oldXML, size(Backup::nfsmount));
+	newXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(newXML, size(Backup::nfsmount));
+	y2debug("NFS archive, oldXML: %1, newXML: %2", oldXML, newXML);
+    }
+
     renamed[oldXML] = newXML;
 
     return $[ "removed" : removed, "renamed" : renamed ];
@@ -896,6 +936,13 @@ global define map RemoveOldMultiArchives(string name, integer max) ``{
 			// remove old archive
 			command = "/bin/rm -f " + fn;
 			y2milestone("Removing old volume: %1", fn);
+
+			// update NFS archive name
+			if (Backup::target_type == `nfs)
+			{
+			    fn = Backup::nfsserver + ":" + Backup::nfsexport + substring(fn, size(Backup::nfsmount));
+			}
+
 			removed = add(removed, fn);
 			SCR::Execute(.target.bash_output, command);
 		    }
@@ -905,6 +952,13 @@ global define map RemoveOldMultiArchives(string name, integer max) ``{
 	    // remove old XML profile
 	    string oldXML = dir + "/" + oldarchivedate + "-" + GetBaseName(fname) + ".xml";
 	    command = "/bin/rm -f " + oldXML;
+
+	    // update NFS archive name
+	    if (Backup::target_type == `nfs)
+	    {
+		oldXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(oldXML, size(Backup::nfsmount));
+	    }
+
 	    removed = add(removed, oldXML);
 	    result = SCR::Execute(.target.bash_output, command);
 
@@ -934,6 +988,14 @@ global define map RemoveOldMultiArchives(string name, integer max) ``{
         command = "/bin/mv -f " + from + " " + to;
 	result = SCR::Execute(.target.bash_output, command);
 
+	// update NFS archive name
+	if (Backup::target_type == `nfs)
+	{
+	    from = Backup::nfsserver + ":" + Backup::nfsexport + substring(from, size(Backup::nfsmount));
+	    to = Backup::nfsserver + ":" + Backup::nfsexport + substring(to, size(Backup::nfsmount));
+	    y2debug("NFS archive, from: %1, to: %2", from, to);
+	}
+
 	renamed[from] = to;
 
 	y2milestone("renamed volume %1", volume);
@@ -943,14 +1005,28 @@ global define map RemoveOldMultiArchives(string name, integer max) ``{
     // rename autoinstallation profile
     string oldXML = dir + "/" + GetBaseName(name) + ".xml";
     string newXML = dir + "/" + ctime_str + "-" + GetBaseName(fname) + ".xml";
+
     command = "/bin/mv -f " + oldXML + " " + newXML;
     result = SCR::Execute(.target.bash_output, command);
+
+    // update NFS archive name
+    if (Backup::target_type == `nfs)
+    {
+	oldXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(oldXML, size(Backup::nfsmount));
+	newXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(newXML, size(Backup::nfsmount));
+	y2debug("NFS archive, oldXML: %1, newXML: %2", oldXML, newXML);
+    }
+
     renamed[oldXML] = newXML;
 
     return $[ "removed" : removed, "renamed" : renamed ];
 }
 
-
+/**
+ * Read packages available on the installation sources
+ * (Requires at least one installation source, otherwise return empty list)
+ * @return list(string) available packages
+ */
 global define list(string) GetInstallPackages() ``{
     y2milestone("Reading packages available on the installation sources...");
 
@@ -1050,6 +1126,14 @@ global define list(string) GetInstallPackages() ``{
     return installation_packages;
 }
 
+/**
+ * Store autoyast profile of the system to file
+ * @param filename where setting will be saved
+ * @param additional additional part of system to clone
+ * @param extra_key name of the extra configuration
+ * @param extra_options options for extra_key
+ * @return boolean true on success
+ */
 global define boolean CloneSystem(string filename, list additional, string extra_key, map extra_options) ``{
     boolean ret = false;
 
@@ -1077,7 +1161,10 @@ global define boolean CloneSystem(string filename, list additional, string extra
     return false;
 }
 
-
+/**
+ * Detect mount points
+ * @return map map of mount points
+ */
 global define map DetectMountpoints() ``{
     import "Storage";
 
@@ -1116,6 +1203,13 @@ global define map DetectMountpoints() ``{
     return devices;
 }
 
+/**
+ * Create table content with detected mount points
+ * @param selected selected mount points to use
+ * @param all all detected mount points + user defined dirs
+ * @param description detected mount points
+ * @return list table content
+ */
 global define list MpointTableContents(list selected, list all, map description) ``{
     y2milestone("selected: %1, description: %2", selected, description);
 
@@ -1155,6 +1249,13 @@ global define list MpointTableContents(list selected, list all, map description)
     return ret;
 }
 
+/**
+ * Check whether file on the NFS server exists
+ * @param server remote server name
+ * @param share exported directory
+ * @param filename name of the file
+ * @return boolean true - file exists, false - file doesn't exist, nil - error (mount failed)
+ */
 
 global define boolean NFSFileExists(string server, string share, string filename) ``{
     if (size(server) == 0 || size(share) == 0 || size(filename) == 0)
@@ -1176,6 +1277,13 @@ global define boolean NFSFileExists(string server, string share, string filename
     return ret;
 }
 
+/**
+ * Create NFS file description string
+ * @param server server name
+ * @param share exported directory name
+ * @param filename remote file name
+ * @return string result (nil if any of the parameter is nil)
+ */
 global define string NFSfile(string server, string share, string filename) ``{
     if (size(server) == 0 || size(share) == 0 || size(filename) == 0)
     {
