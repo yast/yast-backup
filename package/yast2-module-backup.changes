@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Dec 19 17:33:41 CET 2001 - lslezak@suse.cz
+
+- do not create volumes larger than specified
+- storing files which do not belong to any package fixed
+- reporting all created volumes in summary fixed
+- version 2.5.7
+
+-------------------------------------------------------------------
 Tue Dec 18 20:19:10 CET 2001 - lslezak@suse.cz
 
 - format of backup archive was changed to package oriented archive

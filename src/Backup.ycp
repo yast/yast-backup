@@ -267,14 +267,9 @@ global define string get_archive_script_parameters(string file_list, string file
 	if (volume_size == `user_defined)
 	{
 	    // compute volume size (in kiB)
-
-	    y2warning("tofloat(user_volume_size): %1", tofloat(user_volume_size));
-	    y2warning("tofloat(GetCapacity(units_description, user_volume_unit)): %1", tofloat(GetCapacity(units_description, user_volume_unit)));
-	    y2warning("%1", ((tofloat(user_volume_size)) * (tofloat(GetCapacity(units_description, user_volume_unit)))));
-	    y2warning("%1", tointeger( ((tofloat(user_volume_size)) * (tofloat(GetCapacity(units_description, user_volume_unit)))) / 1024.0 ));
-
-
 	    integer vol_size = tointeger( ((tofloat(user_volume_size)) * (tofloat(GetCapacity(units_description, user_volume_unit)))) / 1024.0 );
+
+	    y2debug("Volume size is %1 kiB", vol_size);
 
 	    if (vol_size > 0)
 	    {
