@@ -76,6 +76,13 @@ global define symbol CronDialog() ``{
     symbol cday = current_settings["every"]:`none;
     integer cweekday = current_settings["weekday"]:0;
 
+    list items = [];
+    // create combo box content
+    foreach(integer num, string name, Backup::daynames, ``{
+	    items = add(items, `item(`id(num), name, cweekday == num));
+	}
+    );
+
     // dialog header - %1 is profile name
     Wizard::SetContents(sformat(_("Automatic backup options - Profile '%1'"), Backup::selected_profile),
 	`VBox(
@@ -113,16 +120,7 @@ global define symbol CronDialog() ``{
 			    `HBox(
 				`HSpacing(1),
 				// combo box label
-				`ComboBox(`id(`weekday), _("&Weekday"), [
-					`item(`id(0), _("Monday"), cweekday == 0),
-					`item(`id(1), _("Tuesday"), cweekday == 1),
-					`item(`id(2), _("Wednesday"), cweekday == 2),
-					`item(`id(3), _("Thursday"), cweekday == 3),
-					`item(`id(4), _("Friday"), cweekday == 4),
-					`item(`id(5), _("Saturday"), cweekday == 5),
-					`item(`id(6), _("Sunday"), cweekday == 6),
-				    ]
-				),
+				`ComboBox(`id(`weekday), _("&Weekday"), items),
 				`HSpacing(2),
 				// integer field widget label
 				`IntField(`id(`day), _("&Day of Month"), 1, 31, current_settings["day"]:0),
@@ -158,7 +156,7 @@ global define symbol CronDialog() ``{
 		`HSpacing(2)
 	    )
 	),
-	"help", true, true
+	backup_help_cron_dialog(), true, true
     );
 
     // replace 'Next' buton with 'Ok'
@@ -2411,7 +2409,7 @@ global define symbol SummaryDialog() ``{
 	    }
 	}
     }
-    
+
     term buttons = `HBox(
 		`PushButton(`id(`details), `opt(`key_F2), _("&Details..."))
 	    );
@@ -2468,7 +2466,7 @@ global define symbol SummaryDialog() ``{
 	else if( ret == `profile )
 	{
 	    string new_name = AskNewProfileName();
-	    
+
 	    //if no cancel, store
 	    if( new_name != "" )
 	    {
@@ -2490,14 +2488,17 @@ global define symbol SummaryDialog() ``{
 global define symbol SelectProfileDialog() ``{
 
     Wizard::ReplaceNextButton (`PushButton(`id(`finish), CloseButtonLabel()));
-    Wizard::ReplaceAbortButton( `Empty() );
     Wizard::ReplaceBackButton( `Empty() );
+
+    string tableheader1 = _("Name");
+    string tableheader2 = _("Description");
+    string tableheader3 = _("Automatic Backup");
 
     Wizard::SetContents( _("YaST System Backup"),
         `VBox(
-            `Label(_("Available Profiles") ),
+            `Left(`Label(_("Available Profiles") )),
             `ReplacePoint(`id(`selectionBox),
-            `Table(`id(`profile), `header(_("Name"),_("Description")),Backup::BackupProfileDescriptions() )
+            `Table(`id(`profile), `header(tableheader1, tableheader2, tableheader3), Backup::BackupProfileDescriptions() )
             ),
             `HBox(
                 `PushButton(`id(`start), _("&Start backup")),
@@ -2507,7 +2508,7 @@ global define symbol SelectProfileDialog() ``{
                         `item(`id(`clone), _("&Duplicate...")),
                         `item(`id(`edit), EditButtonLabel()+"..."),
                         `item(`id(`delete), DeleteButtonLabel()),
-			`item(`id(`cron), _("Automatic backup..."))
+			`item(`id(`cron), tableheader3 + "...")
                     ])
             ),
             `PushButton(`id(`manual),_("Backup &manually...")),
@@ -2517,11 +2518,11 @@ global define symbol SelectProfileDialog() ``{
     );
 
     // select the first profile in the list
-    UI::ChangeWidget( `id(`profile), `CurrentItem, select( Backup::BackupProfileNames(), 0, nil ) );
-    
+    UI::ChangeWidget( `id(`profile), `CurrentItem, (Backup::selected_profile == nil) ? select( Backup::BackupProfileNames(), 0, nil ) : Backup::selected_profile);
+
     symbol ret = nil;
     Backup::no_interactive = false;
-    
+
     do {
 	// select the first profile in the list
 	UI::ChangeWidget( `id(`start), `Enabled, (size( Backup::backup_profiles ) != 0) );
@@ -2537,7 +2538,7 @@ global define symbol SelectProfileDialog() ``{
 	{
 	    Backup::RestoreSettingsFromBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
 	}
-    
+
 	if( ret == `start )
 	{
 	    Backup::no_interactive = true;
@@ -2550,7 +2551,7 @@ global define symbol SelectProfileDialog() ``{
 		// restore default settings, don't care about selected profile
 		Backup::RestoreDefaultSettings();
 	    }
-	    
+
 	    string new_name = AskNewProfileName();
 
 	    // if the user didn't choose cancel
@@ -2558,9 +2559,9 @@ global define symbol SelectProfileDialog() ``{
 	    {
 		Backup::StoreSettingsToBackupProfile( new_name );
 		UI::ReplaceWidget( `id(`selectionBox),
-		    `Table(`id(`profile), `header(_("Name"),_("Description")),Backup::BackupProfileDescriptions() )
+		    `Table(`id(`profile), `header(tableheader1, tableheader2, tableheader3), Backup::BackupProfileDescriptions() )
 		);
-		
+
 		// select the profile in the list
 		UI::ChangeWidget( `id(`profile), `CurrentItem, new_name["text"]:"" );
 	    }
@@ -2572,7 +2573,7 @@ global define symbol SelectProfileDialog() ``{
 	    {
 		Backup::RemoveBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
 		UI::ReplaceWidget( `id(`selectionBox),
-		    `Table(`id(`profile), `header(_("Name"),_("Description")),Backup::BackupProfileDescriptions() ));
+		    `Table(`id(`profile), `header(tableheader1, tableheader2, tableheader3), Backup::BackupProfileDescriptions() ));
 
 		// select the first profile in the list
 		UI::ChangeWidget( `id(`profile), `CurrentItem, select( Backup::BackupProfileNames(), 0, nil ) );
@@ -2598,7 +2599,11 @@ global define symbol SelectProfileDialog() ``{
 		ret = nil;
 	    }
 	}
-    } while( ret != `finish && ret != `manual && ret != `start && ret != `edit && ret != `cron);
+	else if (ret == `cancel)
+	{
+	    ret = `abort;
+	}
+    } while( ret != `finish && ret != `manual && ret != `start && ret != `edit && ret != `cron && ret != `abort);
 
     if( ret == `finish )
     {
@@ -2607,7 +2612,6 @@ global define symbol SelectProfileDialog() ``{
     }
 
     Wizard::RestoreNextButton ();
-    Wizard::RestoreAbortButton ();
     Wizard::RestoreBackButton ();
 
     return ret;
@@ -2650,14 +2654,14 @@ Do you want to replace the existing profile?"), new_name["text"]:"")) ) {
 	else
 	{
 	    // yes, do replace
-	    return new_name[ "text" ]:""; 
+	    return new_name[ "text" ]:"";
 	}
     }
-    
+
     if( lookup( new_name, "clicked", nil ) == `ok ) {
 	return new_name["text"]:"";
     }
-    else 
+    else
     {
 	return "";
     }

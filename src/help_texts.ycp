@@ -205,13 +205,39 @@ global define string backup_help_summary() ``{
     + _("<P>Click <B>Details...</B> to see more information.</P>");
 }
 
+
+/**
+ * Return help text for the automatic backup (cron setting) dialog
+ * @return string Translated help text
+ */
+
+global define string backup_help_cron_dialog() ``{
+
+    return _("<P><B><BIG>Automatic backup</BIG></B><BR>Selected profile can be started automatically at the background without any user interaction.</P>")
+
+    + _("<P>To start backup automatically with the selected profile check option <B>Start backup automatically</B> and set how often and when will be backup started.</P>")
+
+    + _("<P>Backup archive from previous run will be renamed. If number of the old archives is greates that set value then the oldest archives will be deleted.</P>");
+
+}
+
+/**
+ * Help text displayed in profile management dialog
+ */
+
 global define string profile_help() ``{
 
+    // For translators: help text in profile management dialog - part 1/6
     return _("<P><B>Profiles</B><BR>This dialog shows the list of currently stored backup profiles.</P>")
+	// For translators: help text in profile management dialog - part 2/6
 	+ _("<P>A backup profile is used to name a group of different settings, such as name of an archive, how to search for files, etc.</P>")
+	// For translators: help text in profile management dialog - part 3/6
 	+ _("<P>You could have a number of profiles, each with a unique name.</P>")
+	// For translators: help text in profile management dialog - part 4/6
 	+ _("<P>Using the actions in the <B>Profile management</B>, you can <B>Add...</B> a new profile based on default values, <B>Duplicate...</B> an already existing profile, <B>Change...</B> the settings stored in a profile or <B>Remove</B> a profile.</P>")
+	// For translators: help text in profile management dialog - part 5/6
 	+ _("<P>Press <B>Start backup</B> to start the backup using settings stored in the currently selected profile.</P>")
+	// For translators: help text in profile management dialog - part 6/6
 	+ _("<P>Press <B>Backup manually...</B> to use default settings, which can be modified before starting the backup process.</P>");
 }
 

@@ -32,9 +32,54 @@ global string script_get_partition_table = "/sbin/fdisk -l";
 global string script_get_files = "/usr/lib/YaST2/bin/backup_search.pl";
 global string script_create_archive = "/usr/lib/YaST2/bin/backup_archive.pl";
 
-// global settings 
+// day names, key is integer used in crontab
+global map daynames = $[
+    1 : _("Monday"),
+    2 : _("Tuesday"),
+    3 : _("Wednesday"),
+    4 : _("Thursday"),
+    5 : _("Friday"),
+    6 : _("Saturday"),
+    7 : _("Sunday")
+];
 
-global map backup_profiles = $[] ;		// map of all available profiles
+global map ordinal_numbers = $[
+     1 :  _("1st"),
+     2 :  _("2nd"),
+     3 :  _("3rd"),
+     4 :  _("4th"),
+     5 :  _("5th"),
+     6 :  _("6th"),
+     7 :  _("7th"),
+     8 :  _("8th"),
+     9 :  _("9th"),
+    10 : _("10th"),
+    11 : _("11th"),
+    12 : _("12th"),
+    13 : _("13th"),
+    14 : _("14th"),
+    15 : _("15th"),
+    16 : _("16th"),
+    17 : _("17th"),
+    18 : _("18th"),
+    19 : _("19th"),
+    20 : _("20th"),
+    21 : _("21th"),
+    22 : _("22th"),
+    23 : _("23th"),
+    24 : _("24th"),
+    25 : _("25th"),
+    26 : _("26th"),
+    27 : _("27th"),
+    28 : _("28th"),
+    29 : _("29th"),
+    30 : _("30th"),
+    31 : _("31th")
+];
+
+// global settings
+
+global map backup_profiles = $[] ;			// map of all available profiles
 
 // global defaults
 global string default_archive_name = "";		// archive file name
@@ -48,13 +93,13 @@ global symbol default_user_volume_unit = nil;
 
 global boolean default_search = true;			// search files which do not belong to any package
 global boolean default_system = false;			// backup system areas
-global boolean default_display = false;		// display files before creating archive
+global boolean default_display = false;			// display files before creating archive
 global boolean default_do_md5_test = true;
 
 global list default_default_dir = [ "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache" ];		// default excluded directoried from search
 global list default_dir_list = nil;			// selected directoried to exclude
 
-global list default_fs_exclude = [ "iso9660" ];			// selected filesystems to exclude from search
+global list default_fs_exclude = [ "iso9660" ];		// selected filesystems to exclude from search
 global list default_detected_fs = nil;			// detected filesystems
 
 global list default_detected_ext2 = nil;		// detected mounted ext2 filesystems
@@ -487,24 +532,187 @@ global define map WriteProfile(list volumes) ``{
     return $[ "result" : Profile::Save(profilefile), "profile" : profilefile ];
 }
 
+
+/**
+ * Parse cron file
+ * @param filename File to parse
+ * @return map parsed values: $["auto":boolean, "day":integer, "hour":integer,
+ *         "minute":integer, "weekday":integer, "every":symbol] or empty map if
+ *         parse error occured
+ */
+
+global define map ReadCronSetting(string filename) ``{
+    map ret = $[];
+
+    if (filename == nil || filename == "")
+    {
+	return ret;
+    }
+
+    string filecontent = SCR::Read(.target.string, filename);
+    list lines = splitstring(filecontent, "\n");
+
+    string line = lines[0]:"";
+
+    if (line == nil || line == "")
+    {
+	return ret;
+    }
+
+    string regex = "^([0-9]*)[ \t]*([0-9]*)[ \t]([^ \t]*)[ \t]([^ \t]*)[ \t]([^ \t]*)[ \t]*[^ \t]*[ \t]*/sbin/yast2[ \t]*backup[ \t]*cron[ \t]*\"*([^\"]*)\"*";
+    symbol every = `none;
+    map cronsettings = $[];
+    string profilename = "";
+
+    if (regexpmatch(line, regex))
+    {
+	integer minute = tointeger(regexpsub(line, regex, "\\1"));
+	integer hour = tointeger(regexpsub(line, regex, "\\2"));
+
+	string day = regexpsub(line, regex, "\\3");
+	string month = regexpsub(line, regex, "\\4");
+	string weekday = regexpsub(line, regex, "\\5");
+
+	y2milestone("hour: %1", regexpsub(line, regex, "\\1"));
+	y2milestone("line: %1", line);
+	y2milestone("day: %1", day);
+
+	integer intday = 1;
+	integer intweekday = 0;
+
+	profilename = regexpsub(line, regex, "\\6");
+	y2milestone("profilename: %1", profilename);
+
+
+	if (month != "*")
+	{
+	    // error
+	}
+
+	if (day == "*" && weekday == "*")
+	{
+	    // start every day
+	    every = `day;
+	}
+	else if (day == "*")
+	{
+	    every = `week;
+	    intweekday = tointeger(weekday);
+	}
+	else if (weekday == "*")
+	{
+	    every = `month;
+	    intday = tointeger(day);
+	}
+
+	cronsettings = $["auto":true, "day":intday, "hour":hour, "minute":minute, "weekday":intweekday, "every":every];
+	y2milestone("cronsettings: %1", cronsettings);
+    }
+
+    return (every != `none) ? $["profilename":profilename, "cronsettings": cronsettings] : $[];
+}
+
+
+/**
+ * Parse all /etc/cron.d/yast2-backup-* files and update profiles
+ */
+
+global define void ReadCronSettings() ``{
+    string crondir = "/etc/cron.d";
+    list files = SCR::Read(.target.dir, crondir);
+
+    if (size(files) > 0)
+    {
+	// parse all /etc/cron.d/yast2-backup-* files
+	foreach(string file, files, ``{
+		if (regexpmatch(file, "yast2-backup-[0-9]*") == true)
+		{
+		    // parse cron file
+		    map cron = ReadCronSetting(crondir + "/" + file);
+
+		    if (cron != $[] && cron != nil)
+		    {
+			string profilename = cron["profilename"]:"";
+			map cronsettings = eval(cron["cronsettings"]:$[]);
+
+			// update profile
+			if (profilename != "" && cronsettings != $[])
+			{
+			    map profile = eval(backup_profiles[profilename]:$[]);
+
+			    // merge maps - include old backup settings from read profile
+			    cronsettings = union(eval(profile[`cron_settings]:$[]), cronsettings);
+
+			    profile[`cron_settings] = cronsettings;
+			    backup_profiles[profilename] = eval(profile);
+			}
+		    }
+		}
+	    }
+	);
+    }
+}
+
+
 /**
  * Read backup profiles from file, do not set any global settings, just
  * @see backup_profiles. The profiles are stored in hardcoded place (/var/adm/YaST/backup/profiles).
  * @return boolean true if there are some profiles available
  */
+
 global define boolean ReadBackupProfiles() ``{
     backup_profiles = SCR::Read( .target.ycp, "/var/adm/YaST/backup/profiles" );
-    
+
     // if the list is empty or the file does not exists, set empty map
     if( backup_profiles == nil ) backup_profiles = $[];
-    
+
+    foreach(string profname, map opts, backup_profiles, ``{
+	    y2debug("Read profile %1: %2", profname, opts);
+	    if (opts[`cron_settings, "auto"]:false == true)
+	    {
+		y2debug("Deactivating profile %1", profname);
+		opts[`cron_settings, "auto"] = false;
+		backup_profiles[profname] = eval(opts);
+	    }
+	}
+    );
+
+    ReadCronSettings();
+
     return ( backup_profiles != $[] ) ;
 }
+
+
+/**
+ * Write cron settings from profiles to /etc/cron.d/yast2-backup-* files
+ */
+
+global define void WriteCronSettings() ``{
+    // remove all old cron files
+    SCR::Execute(.target.bash, "/bin/rm -f /etc/cron.d/yast2-backup-*");
+
+    integer idx = 0;
+    // create new cron files
+    foreach(string name, map opts, backup_profiles, ``{
+	    // cron file content
+	    string setting = CreateCronSetting(name);
+
+	    if (setting != "" && setting != nil)
+	    {
+		SCR::Write(.target.string, sformat("/etc/cron.d/yast2-backup-%1", idx), setting);
+		y2milestone("Created file: /etc/cron.d/yast2-backup-%1", idx);
+		idx = idx + 1;
+	    }
+	}
+    );
+}
+
 
 /**
  * Write the backup profiles to a file - hardcoded /var/adm/YaST/backup/profiles.
  * @return boolean true if the write operation was successful.
  */
+
 global define boolean WriteBackupProfiles() ``{
     if( !SCR::Write (.target.ycp, "/var/adm/YaST/backup/profiles", backup_profiles ) )
     {
@@ -513,14 +721,20 @@ global define boolean WriteBackupProfiles() ``{
 The profile changes will be lost.") );
 	return false;
     }
+
+    // update cron setting
+    WriteCronSettings();
+
     return true;
 }
+
 
 /**
  * Take the current profile information and store it into a given profile.
  * If the profile already exists, it will be overwritten.
  * @param profile_name name of a profile to be stored into
  */
+
 global define void StoreSettingsToBackupProfile( string profile_name ) ``{
     
     map new_profile = $[
@@ -643,11 +857,29 @@ global define list BackupProfileNames() ``{
     else return sort( result );
 }
 
-// helper function to extract the list of currently available profiles
+/**
+ * Helper function to extract the list of currently available profiles
+ * @return list List of item used in the table widget
+ */
 global define list BackupProfileDescriptions() ``{
     list result = maplist( string key, map value, backup_profiles,
-        ``( `item( `id( key ), key, lookup(value, `description, default_description ) ) )
-        );
+        ``{
+	    // description can be multiline - merge lines
+	    string descr = mergestring(splitstring(value[`description]:default_description, "\n"), " ");
+	    map displayinfo = UI::GetDisplayInfo();
+	    // limit size of description shown in the table
+	    // maximum length half of width in ncurses UI
+	    integer maxsize = (displayinfo["TextMode"]:false) ? (displayinfo["Width"]:80 / 2) : 40;
+
+	    if (size(descr) > maxsize)
+	    {
+		// use only the beginning of the description, add dots
+		descr = substring(descr, 0, maxsize) + "...";
+	    }
+
+	    return `item( `id( key ), key, descr, CreateCronDescription(key) );
+	}
+    );
 
     if( result == nil ) return [];
     else return result;
@@ -663,8 +895,92 @@ global define boolean RemoveBackupProfile( string profile_name ) ``{
     if( !haskey( backup_profiles, profile_name ) ) return false;
 
     backup_profiles = remove( backup_profiles, profile_name );
-    
+
     return true;
+}
+
+
+/**
+ * Create cron file content for selected profile.
+ * @param profilename Name of the profile
+ * @return string Cron content or empty string if profile has
+ *         disabled automatic start
+ */
+
+global define string CreateCronSetting(string profilename) ``{
+    map input = backup_profiles[profilename, `cron_settings]:$[];
+    string ret = "";
+
+    if (input == nil || input == $[])
+    {
+	return ret;
+    }
+
+    if (input["auto"]:false == true)
+    {
+	integer hour = input["hour"]:0;
+	integer minute = input["minute"]:0;
+	integer day = input["day"]:1;
+	integer weekday = input["weekday"]:0;
+	symbol every = input["every"]:`unknown;
+
+	if (every == `day)
+	{
+	    ret = sformat("%1 %2 * * *  root  /sbin/yast2 backup cron \"%3\"", minute, hour, profilename);
+	}
+	else if (every == `week)
+	{
+	    ret = sformat("%1 %2 * * %3  root  /sbin/yast2 backup cron \"%4\"", minute, hour, weekday, profilename);
+	}
+	else if (every == `month)
+	{
+	    ret = sformat("%1 %2 %3 * *  root  /sbin/yast2 backup cron \"%4\"", minute, hour, day, profilename);
+	}
+    }
+
+    return ret;
+}
+
+
+/**
+ * Create description of automatic backup.
+ * @param profilename Name of the profile
+ * @return string description string or empty string if profile has
+ *         disabled automatic start
+ */
+
+global define string CreateCronDescription(string profilename) ``{
+    map input = backup_profiles[profilename, `cron_settings]:$[];
+    string ret = "";
+
+    if (input == nil || input == $[])
+    {
+	return ret;
+    }
+
+    if (input["auto"]:false == true)
+    {
+	integer hour = input["hour"]:0;
+	integer minute = input["minute"]:0;
+	integer day = input["day"]:1;
+	integer weekday = input["weekday"]:0;
+	symbol every = input["every"]:`unknown;
+
+	if (every == `day)
+	{
+	    ret = sformat(_("Backup daily (at %1:%2)"), hour, minute);
+	}
+	else if (every == `week)
+	{
+	    ret = sformat(_("Backup weekly (%1 at %2:%3)"), daynames[weekday]:"?", hour, minute);
+	}
+	else if (every == `month)
+	{
+	    ret = sformat(_("Backup monthly (%1 day at %2:%3)"), ordinal_numbers[day]:"?", hour, minute);
+	}
+    }
+
+    return ret;
 }
 
 }
