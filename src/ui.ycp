@@ -2114,11 +2114,14 @@ Backup will be aborted.
 
     symbol ret = nil;
 
-    // number of steps = number of selected files + nuber of selected packages
+    // number of steps = number of selected files + nuber of selected packages (selected files added below)
     //			+ 6 files (comment, hostname, date, files, installed_packages, packages_info)
     //			+ 3 steps (comment, hostname, installed PRMs)
     //			+ 3 stages (storing files, creating package archives, creating big archive)
-    integer num_stages = selected_files_num + selected_pkg_num + 12;
+    integer num_stages =  12;
+
+    // selected_files_num should be XX% of num_stages;
+    integer selected_files_per_cent = 85;
 
     if (Backup::system)
     {
@@ -2151,6 +2154,13 @@ Backup will be aborted.
     {
 	num_stages = num_stages + 1;	// add complete list step
     }
+
+    // adding more stages for files to selected_files_per_cent% of stages
+    integer stages_for_files = tointeger (num_stages * 100 / (100 - selected_files_per_cent));
+    num_stages = num_stages + stages_for_files;
+    // last file-stage is 0%
+    integer last_file_stage = 0;
+    integer this_file_stage = 0;
 
     // progress bar stage
     stages1 = add(stages1, _("Create package archives"));
@@ -2364,7 +2374,12 @@ Backup will be aborted.
 			    {
 				archived_num = archived_num + 1;
 				y2debug("File: %1 added to archive", line);
-				Progress::NextStep();
+
+				this_file_stage = tointeger(archived_num * stages_for_files / (selected_files_num + selected_pkg_num));
+				if (this_file_stage > last_file_stage) {
+				    Progress::NextStep();
+				    last_file_stage = this_file_stage;
+				}
 			    }
 			}
 		    }
