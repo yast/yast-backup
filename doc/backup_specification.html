@@ -18,7 +18,8 @@ Changes:
 
 <P>
 <UL>
-  <LI><B>2001-10-25:</B> Partition table storing update</LI>
+  <LI><B>2001-10-31:</B> Multi volume archive</LI>
+  <LI><B>2001-10-25:</B> Partition table storing updated</LI>
   <LI><B>2001-10-15:</B> New options in <I>Backup settings dialog</I></LI>
   <LI><B>2001-10-05:</B> Screenshots update</LI>
   <LI><B>2001-09-26:</B> Detailed batch mode description</LI>
@@ -132,7 +133,9 @@ file2
 </P>
 
 
-<P>Some problems:
+<H4>Problems and solutions</H4>
+
+<P>
 <UL>
 <LI>What if some package was updated after backup? For restoring must
 be present package of the same version!<BR>
@@ -170,17 +173,43 @@ turned on by "Enhanced check of file owner" option.
 </P>
 
 
+<H4>Multi volume archive</H4>
+
+<P>Size of created archive can be larger than size of backup media. In this
+case archive file can be manually splitted to more files, but for beginners
+is more acceptable automatic splitting.</P>
+
+<P><EM>Backup_archive.pl</EM> script can split archive to multiple parts with
+required size. Splitting archive file is done through named pipe (fifo)
+to avoid unnecessary storing whole archive to disk and splitting it later.
+Output from tar is sent to fifo which is read by compression utility, its output
+is read by <EM>backup_archive.pl</EM> script and splitted to individual volumes.
+</P>
+
+<P>(Note: It seems that tar has a bug - if output is sent to fifo and archive
+is filtered through compression utility (<EM>z</EM> or <EM>j</EM> command line
+parameters) then file read from fifo is corrupted. Solution is start tar without
+compression parameters and start compression utility connected to tar output.)</P>
+
+<P>Each volume is named according to pattern <EM>&lt;volume_number&gt;_&lt;archive_name&gt;</EM>.
+If user enters archive name <EM>/tmp/archive.tar.gz</EM> then volume names are:
+<EM>/tmp/01_archive.tar.gz</EM>, <EM>/tmp/02_archive.tar.gz</EM>, ...</P>
+
+
+<H4>Architecture</H4>
+
 <P>
 Backup module has two parts: <I>backup scripts</I> and <I>YaST2 frontend</I>.
 </P>
 
 <P>
-<I>Backup scripts</I> are written in Perl. First script collects files to backup,
-second script creates archive file. Two scripts are required so that user
-can exclude some files from backup. These scripts are independent on YaST2
-and they can be used in batch mode backup. In batch mode all parametres are
-entered on command line and backup is done without any interaction with user.
-This feature can be used in shell scripts to do backup automatically.
+<I>Backup scripts</I> are written in Perl. First script (<EM>backup_search.pl</EM>)
+collects files to backup, second script (<EM>backup_archive.pl</EM>)creates
+archive file. Two scripts are required so that user can exclude some files from
+backup after search. These scripts are independent on YaST2 and they can be used in
+batch mode backup. In batch mode all parametres are entered on command line and
+backup is done without any interaction with user. This feature can be used in
+shell scripts to do backup automatically.
 </P>
 
 <P>
@@ -223,6 +252,7 @@ Solution: Query file if it is in some package, if yes, restoring is allowed only
 
 <MAP NAME="map">
 <AREA SHAPE="RECT" COORDS="44,0,235,139" HREF="#archive_options">
+<AREA SHAPE="RECT" COORDS="302,1,487,140" HREF="#archive_file_options">
 <AREA SHAPE="RECT" COORDS="47,164,235,302" HREF="#backup_options">
 <AREA SHAPE="RECT" COORDS="299,269,488,410" HREF="#exclude_dir">
 <AREA SHAPE="RECT" COORDS="514,270,697,410" HREF="#exclude_fs">
@@ -244,6 +274,12 @@ Solution: Query file if it is in some package, if yes, restoring is allowed only
 achive type and optional archive description are entered in this dialog.
 (<A HREF="dialog1.ui">source</A>)<BR>
 <IMG SRC="dialog1.png">
+</P>
+
+<P><A NAME="archive_file_options"></A><B>Archive file options</B> - Multi volume archive
+options
+(<A HREF="dialog11.ui">source</A>)<BR>
+<IMG SRC="dialog11.png">
 </P>
 
 <P><A NAME="backup_options"></A><B>Backup options</B> - 

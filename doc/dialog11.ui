@@ -1,5 +1,5 @@
 <!DOCTYPE UI><UI>
-<class>Form1</class>
+<class>Form2</class>
 <widget>
     <class>QDialog</class>
     <property stdset="1">
@@ -11,7 +11,7 @@
         <rect>
             <x>0</x>
             <y>0</y>
-            <width>627</width>
+            <width>639</width>
             <height>468</height>
         </rect>
     </property>
@@ -24,8 +24,28 @@
     </property>
     <property stdset="1">
         <name>caption</name>
-        <string>Form1</string>
+        <string>Form2</string>
     </property>
+    <widget>
+        <class>QPushButton</class>
+        <property stdset="1">
+            <name>name</name>
+            <cstring>PushButton18</cstring>
+        </property>
+        <property stdset="1">
+            <name>geometry</name>
+            <rect>
+                <x>370</x>
+                <y>418</y>
+                <width>80</width>
+                <height>35</height>
+            </rect>
+        </property>
+        <property stdset="1">
+            <name>text</name>
+            <string>Abort</string>
+        </property>
+    </widget>
     <widget>
         <class>QLabel</class>
         <property stdset="1">
@@ -62,6 +82,26 @@
         </property>
     </widget>
     <widget>
+        <class>QPushButton</class>
+        <property stdset="1">
+            <name>name</name>
+            <cstring>PushButton17</cstring>
+        </property>
+        <property stdset="1">
+            <name>geometry</name>
+            <rect>
+                <x>200</x>
+                <y>420</y>
+                <width>80</width>
+                <height>35</height>
+            </rect>
+        </property>
+        <property stdset="1">
+            <name>text</name>
+            <string>Back</string>
+        </property>
+    </widget>
+    <widget>
         <class>QMultiLineEdit</class>
         <property stdset="1">
             <name>name</name>
@@ -93,12 +133,16 @@
         <class>QPushButton</class>
         <property stdset="1">
             <name>name</name>
-            <cstring>PushButton17</cstring>
+            <cstring>PushButton19</cstring>
+        </property>
+        <property stdset="1">
+            <name>enabled</name>
+            <bool>true</bool>
         </property>
         <property stdset="1">
             <name>geometry</name>
             <rect>
-                <x>200</x>
+                <x>540</x>
                 <y>420</y>
                 <width>80</width>
                 <height>35</height>
@@ -106,7 +150,11 @@
         </property>
         <property stdset="1">
             <name>text</name>
-            <string>Back</string>
+            <string>Ok</string>
+        </property>
+        <property stdset="1">
+            <name>default</name>
+            <bool>true</bool>
         </property>
     </widget>
     <widget>
@@ -119,197 +167,97 @@
             <name>geometry</name>
             <rect>
                 <x>190</x>
-                <y>80</y>
-                <width>150</width>
-                <height>20</height>
-            </rect>
-        </property>
-        <property stdset="1">
-            <name>text</name>
-            <string>&lt;B&gt;Archive settings&lt;/B&gt;</string>
-        </property>
-    </widget>
-    <widget>
-        <class>QLabel</class>
-        <property stdset="1">
-            <name>name</name>
-            <cstring>TextLabel1_2</cstring>
-        </property>
-        <property stdset="1">
-            <name>geometry</name>
-            <rect>
-                <x>210</x>
-                <y>120</y>
-                <width>113</width>
+                <y>85</y>
+                <width>145</width>
                 <height>16</height>
             </rect>
         </property>
         <property stdset="1">
             <name>text</name>
-            <string>Archive file name:</string>
+            <string>&lt;B&gt;Archive file options&lt;/B&gt;</string>
         </property>
     </widget>
     <widget>
-        <class>QLineEdit</class>
+        <class>QGroupBox</class>
         <property stdset="1">
             <name>name</name>
-            <cstring>LineEdit1</cstring>
+            <cstring>GroupBox5</cstring>
         </property>
         <property stdset="1">
             <name>geometry</name>
             <rect>
-                <x>210</x>
-                <y>140</y>
-                <width>380</width>
-                <height>22</height>
-            </rect>
-        </property>
-        <property stdset="1">
-            <name>echoMode</name>
-            <enum>Normal</enum>
-        </property>
-    </widget>
-    <widget>
-        <class>QLabel</class>
-        <property stdset="1">
-            <name>name</name>
-            <cstring>TextLabel2</cstring>
-        </property>
-        <property stdset="1">
-            <name>geometry</name>
-            <rect>
-                <x>210</x>
-                <y>180</y>
-                <width>127</width>
-                <height>16</height>
-            </rect>
-        </property>
-        <property stdset="1">
-            <name>text</name>
-            <string>Archive description:</string>
-        </property>
-    </widget>
-    <widget>
-        <class>QMultiLineEdit</class>
-        <property stdset="1">
-            <name>name</name>
-            <cstring>MultiLineEdit3</cstring>
-        </property>
-        <property stdset="1">
-            <name>geometry</name>
-            <rect>
-                <x>210</x>
-                <y>200</y>
-                <width>390</width>
-                <height>70</height>
-            </rect>
-        </property>
-    </widget>
-    <widget>
-        <class>QPushButton</class>
-        <property stdset="1">
-            <name>name</name>
-            <cstring>PushButton19</cstring>
-        </property>
-        <property stdset="1">
-            <name>enabled</name>
-            <bool>true</bool>
-        </property>
-        <property stdset="1">
-            <name>geometry</name>
-            <rect>
-                <x>530</x>
-                <y>420</y>
-                <width>80</width>
-                <height>35</height>
-            </rect>
-        </property>
-        <property stdset="1">
-            <name>text</name>
-            <string>Next</string>
-        </property>
-        <property stdset="1">
-            <name>default</name>
-            <bool>true</bool>
-        </property>
-    </widget>
-    <widget>
-        <class>QPushButton</class>
-        <property stdset="1">
-            <name>name</name>
-            <cstring>PushButton18</cstring>
-        </property>
-        <property stdset="1">
-            <name>geometry</name>
-            <rect>
-                <x>370</x>
-                <y>418</y>
-                <width>80</width>
-                <height>35</height>
-            </rect>
-        </property>
-        <property stdset="1">
-            <name>text</name>
-            <string>Abort</string>
-        </property>
-    </widget>
-    <widget>
-        <class>QButtonGroup</class>
-        <property stdset="1">
-            <name>name</name>
-            <cstring>ButtonGroup1</cstring>
-        </property>
-        <property stdset="1">
-            <name>geometry</name>
-            <rect>
-                <x>210</x>
-                <y>290</y>
-                <width>390</width>
-                <height>100</height>
+                <x>200</x>
+                <y>145</y>
+                <width>420</width>
+                <height>205</height>
             </rect>
         </property>
         <property stdset="1">
             <name>title</name>
-            <string>Archive type</string>
+            <string>Multi volume archive</string>
         </property>
         <widget>
-            <class>QPushButton</class>
+            <class>QLabel</class>
             <property stdset="1">
                 <name>name</name>
-                <cstring>PushButton18_2</cstring>
+                <cstring>TextLabel2</cstring>
             </property>
             <property stdset="1">
                 <name>geometry</name>
                 <rect>
-                    <x>240</x>
-                    <y>40</y>
-                    <width>80</width>
-                    <height>35</height>
+                    <x>20</x>
+                    <y>135</y>
+                    <width>115</width>
+                    <height>16</height>
                 </rect>
             </property>
             <property stdset="1">
                 <name>text</name>
-                <string>Options...</string>
+                <string>User defined size:</string>
             </property>
         </widget>
         <widget>
             <class>QLabel</class>
             <property stdset="1">
                 <name>name</name>
-                <cstring>TextLabel1_3</cstring>
+                <cstring>TextLabel1_2</cstring>
+            </property>
+            <property stdset="1">
+                <name>geometry</name>
+                <rect>
+                    <x>21</x>
+                    <y>66</y>
+                    <width>148</width>
+                    <height>20</height>
+                </rect>
+            </property>
+            <property stdset="1">
+                <name>text</name>
+                <string>Volume size:</string>
+            </property>
+        </widget>
+        <widget>
+            <class>QCheckBox</class>
+            <property stdset="1">
+                <name>name</name>
+                <cstring>CheckBox2</cstring>
             </property>
             <property stdset="1">
                 <name>geometry</name>
                 <rect>
                     <x>20</x>
                     <y>30</y>
-                    <width>127</width>
-                    <height>16</height>
+                    <width>211</width>
+                    <height>20</height>
                 </rect>
             </property>
             <property stdset="1">
                 <name>text</name>
-                <string>Select archive type:</string>
+                <string>Create multi volume archive</string>
+            </property>
+            <property stdset="1">
+                <name>checked</name>
+                <bool>true</bool>
             </property>
         </widget>
         <widget>
@@ -317,19 +265,111 @@
             <item>
                 <property>
                     <name>text</name>
-                    <string>gzip (*.tar.gz)</string>
+                    <string>bytes</string>
                 </property>
             </item>
             <item>
                 <property>
                     <name>text</name>
-                    <string>bzip2 (*.tar.bz2)</string>
+                    <string>kB</string>
                 </property>
             </item>
             <item>
                 <property>
                     <name>text</name>
-                    <string>tar (*.tar)</string>
+                    <string>kiB</string>
+                </property>
+            </item>
+            <item>
+                <property>
+                    <name>text</name>
+                    <string>MB</string>
+                </property>
+            </item>
+            <item>
+                <property>
+                    <name>text</name>
+                    <string>MiB</string>
+                </property>
+            </item>
+            <item>
+                <property>
+                    <name>text</name>
+                    <string>GB</string>
+                </property>
+            </item>
+            <item>
+                <property>
+                    <name>text</name>
+                    <string>GiB</string>
+                </property>
+            </item>
+            <property stdset="1">
+                <name>name</name>
+                <cstring>ComboBox2</cstring>
+            </property>
+            <property stdset="1">
+                <name>geometry</name>
+                <rect>
+                    <x>185</x>
+                    <y>160</y>
+                    <width>70</width>
+                    <height>25</height>
+                </rect>
+            </property>
+        </widget>
+        <widget>
+            <class>QLineEdit</class>
+            <property stdset="1">
+                <name>name</name>
+                <cstring>LineEdit1</cstring>
+            </property>
+            <property stdset="1">
+                <name>geometry</name>
+                <rect>
+                    <x>20</x>
+                    <y>160</y>
+                    <width>155</width>
+                    <height>22</height>
+                </rect>
+            </property>
+        </widget>
+        <widget>
+            <class>QComboBox</class>
+            <item>
+                <property>
+                    <name>text</name>
+                    <string>Floppy 1.44 MB</string>
+                </property>
+            </item>
+            <item>
+                <property>
+                    <name>text</name>
+                    <string>Floppy 1.2 MB</string>
+                </property>
+            </item>
+            <item>
+                <property>
+                    <name>text</name>
+                    <string>ZIP 100 MB</string>
+                </property>
+            </item>
+            <item>
+                <property>
+                    <name>text</name>
+                    <string>ZIP 250 MB</string>
+                </property>
+            </item>
+            <item>
+                <property>
+                    <name>text</name>
+                    <string>CD-R 650 MB</string>
+                </property>
+            </item>
+            <item>
+                <property>
+                    <name>text</name>
+                    <string>User defined</string>
                 </property>
             </item>
             <property stdset="1">
@@ -340,9 +380,9 @@
                 <name>geometry</name>
                 <rect>
                     <x>20</x>
-                    <y>50</y>
-                    <width>180</width>
-                    <height>30</height>
+                    <y>90</y>
+                    <width>150</width>
+                    <height>25</height>
                 </rect>
             </property>
         </widget>
