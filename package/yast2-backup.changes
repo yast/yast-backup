@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Mar 13 12:57:26 CET 2003 - lslezak@suse.de
+
+- autoyast profile: fixed network configuration clonning (#25201)
+- version 2.7.13
+
+-------------------------------------------------------------------
 Mon Mar 10 15:32:39 CET 2003 - lslezak@suse.de
 
 - always store network config to the autoyast profile (needed

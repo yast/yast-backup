@@ -374,9 +374,6 @@ global define map WriteProfile(list volumes) ``{
 
     y2debug("dir: %1, file: %2", dir, file);
 
-    // create profile with with currently available resources (partitioning, software etc.)
-    AutoinstClone::Process();
-
     string prefix = "file://";
 
     // change prefix according to volume size or archive destination
@@ -445,15 +442,13 @@ global define map WriteProfile(list volumes) ``{
 
     map restore = $[ "archives" : volumestrings ];
 
-    // store network configuration if archive will be read from NFS
-    Progress::off();
+    // store network configuration - required if archive will be read from NFS
+    AutoinstClone::additional = ["lan"];
 
-    Lan::Read();
-    map network_config = Lan::Export();
-
-    y2milestone("Storing network config to profile: %1", network_config);
-    Profile::Flat["networking"] = network_config;
-    Progress::on();
+    // create profile with with currently available resources (partitioning, software etc.)
+    y2milestone("Clonning system started...");
+    AutoinstClone::Process();
+    y2milestone("System clonned");
 
     // add default selection - select all packages to restore
     map packages_sel = $[];
