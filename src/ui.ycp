@@ -352,6 +352,28 @@ define boolean InstallNeededPackages (list<string> packages) {
 }
 
 /**
+ * Dialog asks for aborting the new profile creation,
+ * If aborted, profile is deleted and true returned.
+ *
+ * @param  string profile name
+ * @return boolean whether `abort` meaning is returned
+ */
+define boolean AbortNewProfileCreation(string profile_name) {
+    // TRANSLATORS: Popup question, [Yes] means `cancel the profile creation`
+    boolean cancel_it = Popup::YesNo(_("Are you sure you want to cancel the profile creation?"));
+
+    if (cancel_it) {
+	// remove the profile
+	Backup::RemoveBackupProfile(profile_name);
+	// abort the creation
+	return true;
+    } else {
+	// continue creation
+	return false;
+    }
+}
+
+/**
  * Dialog for setting archive options
  * @return symbol Symbol for wizard sequencer - pressed button
  */
@@ -721,6 +743,16 @@ Enter the file name to use.
 		    cont = true;
 		}
 	    }
+	    else if (ret == `back) {
+		// backup profile is a new profile, just created
+		if (Backup::profile_is_new_one) {
+		    ret = `back;
+		    cont = AbortNewProfileCreation(Backup::selected_profile);
+		} else {
+		    ret = `back;
+		    cont = true;
+		}
+	    }
 	    else if (ret == `abort || ret == `cancel)
 	    {
 		ret = `abort;
@@ -852,8 +884,6 @@ Enter the file name to use.
     // allow only digits in the text entry
     UI::ChangeWidget(`id(`user_size), `ValidChars, "0123456789" );
 
-    SetMultiWidgetsState();
-
     if (Backup::volume_size == nil)
     {
 	Backup::volume_size = `fd144;
@@ -872,6 +902,8 @@ Enter the file name to use.
 	Backup::user_volume_unit = `B;
     }
     UI::ChangeWidget(`id(`user_unit), `Value, Backup::user_volume_unit);
+
+    SetMultiWidgetsState();
 
     boolean cont = false;
     symbol ret = nil;
@@ -3078,6 +3110,8 @@ Replace the existing profile?
 		    // start config. workflow for the new profile
 		    ret = `edit;
 		    Backup::RestoreSettingsFromBackupProfile((string)UI::QueryWidget(`id(`profile), `CurrentItem ) );
+		    // adding new profile
+		    Backup::profile_is_new_one = true;
 		}
 	    }
 	}
