@@ -559,7 +559,7 @@ global define map ReadCronSetting(string filename) ``{
 	return ret;
     }
 
-    string regex = "^([0-9]*)[ \t]*([0-9]*)[ \t]([^ \t]*)[ \t]([^ \t]*)[ \t]([^ \t]*)[ \t]*[^ \t]*[ \t]*/sbin/yast2[ \t]*backup[ \t]*cron[ \t]*\"*([^\"]*)\"*";
+    string regex = "^([0-9]*)[ \t]*([0-9]*)[ \t]([^ \t]*)[ \t]([^ \t]*)[ \t]([^ \t]*)[ \t]*[^ \t]*[ \t]*/usr/lib/YaST2/bin/backup_cron[ \t]*\"*([^\"]*)\"*";
     symbol every = `none;
     map cronsettings = $[];
     string profilename = "";
@@ -926,15 +926,15 @@ global define string CreateCronSetting(string profilename) ``{
 
 	if (every == `day)
 	{
-	    ret = sformat("%1 %2 * * *  root  /sbin/yast2 backup cron \"%3\"", minute, hour, profilename);
+	    ret = sformat("%1 %2 * * *  root  /usr/lib/YaST2/bin/backup_cron \"%3\"\n", minute, hour, profilename);
 	}
 	else if (every == `week)
 	{
-	    ret = sformat("%1 %2 * * %3  root  /sbin/yast2 backup cron \"%4\"", minute, hour, weekday, profilename);
+	    ret = sformat("%1 %2 * * %3  root  /usr/lib/YaST2/bin/backup_cron \"%4\"\n", minute, hour, weekday, profilename);
 	}
 	else if (every == `month)
 	{
-	    ret = sformat("%1 %2 %3 * *  root  /sbin/yast2 backup cron \"%4\"", minute, hour, day, profilename);
+	    ret = sformat("%1 %2 %3 * *  root  /usr/lib/YaST2/bin/backup_cron \"%4\"\n", minute, hour, day, profilename);
 	}
     }
 

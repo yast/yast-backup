@@ -19,6 +19,7 @@
 import "Backup";
 import "Wizard";
 import "Progress";
+import "Report";
 
 include "ui/common_popups.ycp";
 include "ui/common_functions.ycp";
@@ -1185,7 +1186,10 @@ global define symbol SystemBackupDialog() ``{
 
 global define symbol SearchingModifiedDialog() ``{
 
-    Wizard::ClearContents();
+    if (cron_mode != true)
+    {
+	Wizard::ClearContents();
+    }
 
     // set buffer size
     SCR::Write(.background.buffer_size, 500);
@@ -1198,7 +1202,7 @@ global define symbol SearchingModifiedDialog() ``{
     if (!started)
     {
 	// error popup message
-	UI::ErrorPopup(_("Could not start search script.
+	Report::Error(_("Could not start search script.
 Backup will be aborted.
 "));
 	return `abort;
@@ -1266,9 +1270,11 @@ Backup will be aborted.
 		    actual_package = substring(line, size(id_package));
 		    package_num = package_num + 1;
 
-		    UI::ChangeWidget(`id(`package), `Value, actual_package);
-		    UI::ChangeWidget(`id(`progress), `Value, package_num);
-
+		    if (cron_mode != true)
+		    {
+			UI::ChangeWidget(`id(`package), `Value, actual_package);
+			UI::ChangeWidget(`id(`progress), `Value, package_num);
+		    }
 		}
 		else
 		{
@@ -1280,8 +1286,11 @@ Backup will be aborted.
 			modified_size = modified_size + tointeger(size_str);
 			modified_num = modified_num + 1;
 
-			UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", size_text(modified_size)));
-			UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", modified_num));
+			if (cron_mode != true)
+			{
+			    UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", size_text(modified_size)));
+			    UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", modified_num));
+			}
 
 			string found_file = substring(line, findfirstof(line, " ") + 1);
 
@@ -1330,59 +1339,70 @@ Backup will be aborted.
 			    {
 				if (line == id_reading_files)
 				{
-				    // label text
-				    Wizard::SetContents("", `Label(_("Reading packages files...")), backup_help_searching_modified(), false, false);
+				    if (cron_mode != true)
+				    {
+					// label text
+					Wizard::SetContents("", `Label(_("Reading packages files...")), backup_help_searching_modified(), false, false);
+				    }
 				}
 				else
 				{
 				    if (line == id_reading_packages)
 				    {
 					y2milestone("Reading installed packages");
-					// label text
-					Wizard::SetContents("", `Label(_("Reading list of installed packages...")), backup_help_searching_modified(), false, false);
+
+					if (cron_mode != true)
+					{
+					    // label text
+					    Wizard::SetContents("", `Label(_("Reading list of installed packages...")), backup_help_searching_modified(), false, false);
+					}
+
 					reading_installed_packages = true;
 				    }
 				    else
 				    {
 					if (line == id_files_read)
 					{
-					    // dialog header
-					    Wizard::SetContents( _("Searching for modified files"),
-						`Top(
-						    `VBox(
-							`VSpacing(0.5),
-							`Left(
-							    `HBox(
-								// label text
-								`Label(_("Modified files: ")),
-								`Label(`id(`numfiles), `opt(`hstretch), sformat("%1", modified_num))
+					    if (cron_mode != true)
+					    {
+						// dialog header
+						Wizard::SetContents( _("Searching for modified files"),
+						    `Top(
+							`VBox(
+							    `VSpacing(0.5),
+							    `Left(
+								`HBox(
+								    // label text
+								    `Label(_("Modified files: ")),
+								    `Label(`id(`numfiles), `opt(`hstretch), sformat("%1", modified_num))
+								)
+							    ),
+							    `VSpacing(0.5),
+							    `Left(
+								`HBox(
+								    // label text
+								    `Label(_("Total size: ")),
+								    `Label(`id(`totsize), `opt(`hstretch), size_text(modified_size))
+								)
+							    ),
+							    `VSpacing(0.5),
+							    `Left(
+								`HBox(
+								    // label text
+								    `Label(_("Searching in package: ")),
+								    `Label(`id(`package), `opt(`hstretch), "")
+								)
+							    ),
+							    `VSpacing(3.0),
+							    `Left(
+								// progress bar label
+								`ProgressBar(`id(`progress), _("Searching..."), total_packages)
 							    )
-							),
-							`VSpacing(0.5),
-							`Left(
-							    `HBox(
-								// label text
-								`Label(_("Total size: ")),
-								`Label(`id(`totsize), `opt(`hstretch), size_text(modified_size))
-							    )
-							),
-							`VSpacing(0.5),
-							`Left(
-							    `HBox(
-								// label text
-								`Label(_("Searching in package: ")),
-								`Label(`id(`package), `opt(`hstretch), "")
-							    )
-							),
-							`VSpacing(3.0),
-							`Left(
-							    // progress bar label
-							    `ProgressBar(`id(`progress), _("Searching..."), total_packages)
 							)
-						    )
-						),
-						backup_help_searching_modified(), false, false
-					    );
+						    ),
+						    backup_help_searching_modified(), false, false
+						);
+					    }
 
 					    y2milestone("Searching in packages started");
 					}
@@ -1404,7 +1424,20 @@ Backup will be aborted.
 	    break;
 	}
 
-	ret = waitForUserOrProcess(wait_time, `changed);
+	if (cron_mode == true)
+	{
+	    // in cron mode only wait for subprocess
+	    while (SCR::Read(.background.newlines) == 0 && SCR::Read(.background.output_open))
+	    {
+		sleep(wait_time);
+	    }
+
+	    ret = nil;
+	}
+	else
+	{
+	    ret = waitForUserOrProcess(wait_time, `changed);
+	}
 
 	if (ret != nil)
 	{
@@ -1433,38 +1466,41 @@ Backup will be aborted.
 	string id_readall = "Files read";
 	string id_dir = "Dir: ";
 
-	// dialog header
-	Wizard::SetContents(_("Searching files"),
-	    `Top(
-		`VBox(
-		    `VSpacing(0.5),
-		    `Left(
-			`HBox(
-			    // label text
-			    `Label(_("Number of files: ")),
-			    `Label(`id(`numfiles), `opt(`hstretch), sformat("%1", nopkg_num))
-			)
-		    ),
-		    `VSpacing(0.5),
-		    `Left(
-			`HBox(
-			    // label text
-			    `Label(_("Total size: ")),
-			    `Label(`id(`totsize), `opt(`hstretch), size_text(nopkg_size))
-			)
-		    ),
-		    `VSpacing(0.5),
-		    `Left(
-			`HBox(
-			    // label text
-			    `Label(_("Searching in directory: ")),
-			    `Label(`id(`directory), `opt(`hstretch), "")
+	if (cron_mode != true)
+	{
+	    // dialog header
+	    Wizard::SetContents(_("Searching files"),
+		`Top(
+		    `VBox(
+			`VSpacing(0.5),
+			`Left(
+			    `HBox(
+				// label text
+				`Label(_("Number of files: ")),
+				`Label(`id(`numfiles), `opt(`hstretch), sformat("%1", nopkg_num))
+			    )
+			),
+			`VSpacing(0.5),
+			`Left(
+			    `HBox(
+				// label text
+				`Label(_("Total size: ")),
+				`Label(`id(`totsize), `opt(`hstretch), size_text(nopkg_size))
+			    )
+			),
+			`VSpacing(0.5),
+			`Left(
+			    `HBox(
+				// label text
+				`Label(_("Searching in directory: ")),
+				`Label(`id(`directory), `opt(`hstretch), "")
+			    )
 			)
 		    )
-		)
-	    ),
-	    backup_help_searching_files(), false, false
-	);
+		),
+		backup_help_searching_files(), false, false
+	    );
+	}
 
 	integer dircount = 0;
 
@@ -1498,7 +1534,7 @@ Backup will be aborted.
 		    nopkg_num = nopkg_num + 1;
 
 		    // refresh status when 10 new files was found - it's faster...
-		    if (nopkg_num % 10 == 0)
+		    if (nopkg_num % 10 == 0 && cron_mode != true)
 		    {
 			UI::ChangeWidget(`id(`totsize), `Value, size_text(nopkg_size));
 			UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", nopkg_num));
@@ -1536,7 +1572,12 @@ Backup will be aborted.
 			if (dircount == 5)
 			{
 			    actual_dir = substring(line, size(id_dir));
-			    UI::ChangeWidget(`id(`directory), `Value, actual_dir);
+
+			    if (cron_mode != true)
+			    {
+				UI::ChangeWidget(`id(`directory), `Value, actual_dir);
+			    }
+
 			    dircount = 0;
 			}
 		    }
@@ -1545,7 +1586,20 @@ Backup will be aborted.
 
 	    script_out = [];
 
-	    ret = waitForUserOrProcess(wait_time, `changed);
+	    if (cron_mode == true)
+	    {
+		// in cron mode only wait for subprocess
+		while (SCR::Read(.background.newlines) == 0 && SCR::Read(.background.output_open))
+		{
+		    sleep(wait_time);
+		}
+
+		ret = nil;
+	    }
+	    else
+	    {
+		ret = waitForUserOrProcess(wait_time, `changed);
+	    }
 
 	    if (ret != nil)
 	    {
@@ -1869,11 +1923,17 @@ global define symbol ArchivingDialog() ``{
     // progress bar stage
     stages2 = add(stages1, _("Writing autoinstallation profile..."));
 
-    // progress bar label
-    Progress::New(_("Creating archive"), " ", num_stages, stages1, stages2, backup_help_creating_archive());
+    if (cron_mode == true)
+    {
+	Progress::off();
+    }
+    else
+    {
+	// progress bar label
+	Progress::New(_("Creating archive"), " ", num_stages, stages1, stages2, backup_help_creating_archive());
+    }
 
-    y2debug("Number of selected packages: %1, selected files: %2", selected_pkg_num, selected_files_num);
-
+    y2milestone("Number of selected packages: %1, selected files: %2", selected_pkg_num, selected_files_num);
     y2milestone("Storing file names list...");
 
     // store selected file names to file
@@ -1883,7 +1943,7 @@ global define symbol ArchivingDialog() ``{
 
     if (!file_list_stored)
     {
-	y2error("Error writing list of selected files to file %", tmpfile_list);
+	Report::Error(_("Cannot write list of selected files to file '%1'"), tmpfile_list);
     }
 
     y2milestone("File names stored");
@@ -1898,7 +1958,7 @@ global define symbol ArchivingDialog() ``{
 
     if (!comment_stored)
     {
-	y2warning("Error writing comment to file %", tmpfile_comment);
+	Report::Warning(_("Cannot write comment to file '%1'"), tmpfile_comment);
     }
 
     added_files = 0;
@@ -1908,10 +1968,9 @@ global define symbol ArchivingDialog() ``{
     if (!started)
     {
 	// error popup message
-	UI::ErrorPopup(_("Could not start archiving script.
+	Report::Error(_("Could not start archiving script.
 Backup will be aborted.
 "));
-	y2error("%1", "Error starting archiving script");
 	return `abort;
     }
 
@@ -2154,7 +2213,20 @@ Backup will be aborted.
 	    }
 
 
-	    ret = waitForUserOrProcess(wait_time, `changed);
+	    if (cron_mode == true)
+	    {
+		// in cron mode only wait for subprocess
+		while (SCR::Read(.background.newlines) == 0 && SCR::Read(.background.output_open))
+		{
+		    sleep(wait_time);
+		}
+
+		ret = nil;
+	    }
+	    else
+	    {
+		ret = waitForUserOrProcess(wait_time, `changed);
+	    }
 
 	    if (ret != nil)
 	    {
@@ -2419,6 +2491,13 @@ global define symbol SummaryDialog() ``{
 		`PushButton(`id(`details), `opt(`key_F2), _("&Details...")),
 		`PushButton(`id(`profile), _("&Save as profile..."))
 	    );
+    }
+
+    // cron mode
+    if (cron_mode == true)
+    {
+	// TODO: store summary
+	return `finish;
     }
 
     // dialog header

@@ -6,6 +6,7 @@
 
 ybin_SCRIPTS =		\
 	backup_search.pl\
-	backup_archive.pl
+	backup_archive.pl\
+	backup_cron
 
 EXTRA_DIST = $(ybin_SCRIPTS)
