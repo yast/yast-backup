@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Feb  3 17:12:14 CET 2003 - lslezak@suse.cz
+
+- merged proof-read texts
+- use new functions from AIClone::
+- version 2.7.2
+
+-------------------------------------------------------------------
 Thu Jan 30 15:16:47 CET 2003 - lslezak@suse.cz
 
 - star archiver related bugfixes
