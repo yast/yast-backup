@@ -1,6 +1,6 @@
 @HEADER-COMMENT@
-        
-# neededforbuild  autoconf automake dejagnu expect tcl yast2 yast2-core yast2-core-devel yast2-devtools yast2-testsuite yast2-xml autoyast2-installation autoyast2
+
+# neededforbuild  autoconf automake autoyast2 autoyast2-installation dejagnu expect tcl yast2 yast2-core yast2-core-devel yast2-devtools yast2-testsuite yast2-xml
 
 @HEADER@
 
@@ -14,12 +14,11 @@ Obsoletes:	yast2-module-backup
 %description
 -
 
-
 @PREP@
 
-@BUILD-YCP@
+@BUILD@
 
-@INSTALL-YCP@
+@INSTALL@
 
 @CLEAN@
 
