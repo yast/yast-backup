@@ -29,6 +29,8 @@ textdomain "backup";
 
 global symbol last_input = nil;
 
+global map deselected_ids = $[];
+
 /**
  * Dialog for setting archive options
  * @return symbol Symbol for wizard sequencer - pressed button
@@ -970,6 +972,9 @@ global define symbol SearchingModifiedDialog() ``{
 
     Wizard::ClearContents();
 
+    // set buffer size
+    SCR::Write(.background.buffer_size, 500);
+
     boolean started = SCR::Execute(.background.run_output, Backup::script_get_files + Backup::get_search_script_parameters());
     list script_out = [ ];
 
@@ -1246,6 +1251,10 @@ Backup will be aborted.
 	    backup_help_searching_files(), false, false
 	);
 
+	integer dircount = 0;
+
+	list package_files_part = [];
+	integer new_files = 0;
 
 	while(SCR::Read(.background.output_open) || (SCR::Read(.background.newlines) > 0) || (size(script_out) > 0))
 	// test of script_out size is needed, because previous while cycle was interrupted and script could exited with no new output...
@@ -1255,12 +1264,15 @@ Backup will be aborted.
 		script_out = SCR::Read(.background.newout);
 	    }
 
-	    while (size(script_out) > 0)
-	    {
-		line = select(script_out, 0, nil);	// read line
-		script_out = remove(script_out, 0);	// remove line
+	    // current line index
+	    integer lineidx = 0;
+	    // number of new lines
+	    integer script_out_size = size(script_out);
 
-		y2debug("Script output:", line);
+	    while (lineidx < script_out_size)
+	    {
+		line = select(script_out, lineidx, nil);	// read line
+		lineidx = lineidx + 1;
 
 		if  (substring(line, 0, size(id_file)) == id_file)
 		{
@@ -1270,8 +1282,12 @@ Backup will be aborted.
 		    nopkg_size = nopkg_size + tointeger(size_str);
 		    nopkg_num = nopkg_num + 1;
 
-		    UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", size_text(nopkg_size)));
-		    UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", nopkg_num));
+		    // refresh status when 10 new files was found - it's faster...
+		    if (nopkg_num % 10 == 0)
+		    {
+			UI::ChangeWidget(`id(`totsize), `Value, size_text(nopkg_size));
+			UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", nopkg_num));
+		    }
 
 		    string found_file = substring(line, findfirstof(line, " ") + 1);
 
@@ -1285,28 +1301,51 @@ Backup will be aborted.
 		    escaped = mergestring(parts, "\\n");
 
 		    // add file to list of found files
-		    package_files = add(package_files, escaped);
+		    package_files_part = add(package_files_part, escaped);
+		    new_files = new_files + 1;
+
+		    // merge more files in one step - it's faster
+		    if (new_files == 1000)
+		    {
+			package_files = merge(package_files, package_files_part);
+			package_files_part = [];
+			new_files = 0;
+		    }
 		}
 		else
 		{
 		    if  (substring(line, 0, size(id_dir)) == id_dir)
 		    {
-			actual_dir = substring(line, size(id_dir));
-			UI::ChangeWidget(`id(`directory), `Value, actual_dir);
+			dircount = dircount + 1;
+
+			if (dircount == 5)
+			{
+			    actual_dir = substring(line, size(id_dir));
+			    UI::ChangeWidget(`id(`directory), `Value, actual_dir);
+			    dircount = 0;
+			}
 		    }
 		}
 	    }
+
+	    script_out = [];
 
 	    ret = waitForUserOrProcess(wait_time, `changed);
 
 	    if (ret != nil)
 	    {
-		return ret;
+		if (ret == `abort)
+		{
+		    if (AbortConfirmation(`changed))
+		    {
+			return ret;
+		    }
+		}
 	    }
 	}
 
 	map package_info = $[
-	    "changed_files" : package_files,
+	    "changed_files" : merge(package_files, package_files_part),
 	    "install_prefixes" : actual_instprefixes
 	];
 
@@ -1320,7 +1359,7 @@ Backup will be aborted.
     {
 	if (Backup::selected_files == nil)
 	{
-	    Backup::selected_files = Backup::backup_files;
+	    Backup::selected_files = eval(Backup::backup_files);
 	}
 
 	return `next;
@@ -1328,8 +1367,8 @@ Backup will be aborted.
     else
     {
 	// no manual selection, backup all files
-	Backup::selected_files = Backup::backup_files;
-	
+	Backup::selected_files = eval(Backup::backup_files);
+
 	// skip the files listed in Backup::unselected_files
 	if (Backup::unselected_files != nil)
 	{
@@ -1343,7 +1382,7 @@ Backup will be aborted.
 		    if( contains( changed_files , file ) ) 
 		    {
 			changed_files = filter( string v, changed_files, ``(v != file) );
-			
+
 			// construct new package description
 			val = $[ "changed_files" : changed_files,
 			         "install_prefixes" : lookup(val, "install_prefixes", [ ] ) ];
@@ -1382,8 +1421,7 @@ global define symbol FilesDialog() ``{
     // dialog header
     Wizard::SetContents("", `Label(_("Adding files to table...")), "", false, false);
 
-    list table_items = MapToTableItems(nil);
-
+    integer t1 = time();
     // dialog header
     Wizard::SetContents( _("File selection"),
 	`VBox(
@@ -1394,7 +1432,7 @@ global define symbol FilesDialog() ``{
 		`opt(`notify),
 		// table header
 		`header(" ", _("File name"), _("Package")),
-		table_items
+		SCR::Read(.target.ycp, SCR::Read(.target.tmpdir) + "/items.ycp")
 	    ),
 	    `HBox(
 		// push button label
@@ -1409,6 +1447,18 @@ global define symbol FilesDialog() ``{
 	backup_help_file_selection(), true, true
     );
 
+    integer t2 = time();
+    y2milestone("UI finished after %1 seconds", t2 - t1);
+
+    if (size(deselected_ids) > 0)
+    {
+	y2milestone("Deselecting %1 files", size(deselected_ids));
+	// remove selection mark for deselected files
+	foreach(integer idx, integer dummy_value, deselected_ids, ``{
+		UI::ChangeWidget(`id(`table), `Item(idx, 0), " ");
+	    }
+	);
+    }
 
     symbol ret = nil;
 
@@ -1421,7 +1471,7 @@ global define symbol FilesDialog() ``{
 	    ret = `abort;
 	    if (!AbortConfirmation(`changed))
 	    {
-		ret = nil;	// not confirmed, uset ret
+		ret = nil;	// not confirmed
 	    }
 	    else
 	    {
@@ -1433,9 +1483,34 @@ global define symbol FilesDialog() ``{
 
 	if (ret == `sel_all || ret == `desel_all)
 	{
-	    table_items = (ret == `sel_all) ? MapToTableItems(true) : MapToTableItems(false);
+	    if (ret == `sel_all)
+	    {
+		Backup::unselected_files = [];
+		deselected_ids = $[];
+		Backup::selected_files = eval(Backup::backup_files);
+	    }
+	    else
+	    {
+		Backup::selected_files = $[];
+		Backup::unselected_files = [];
 
-	    UI::ChangeWidget(`id(`table), `Items, table_items);
+		foreach(string pack, map info, Backup::backup_files, ``{
+			Backup::unselected_files = merge(Backup::unselected_files, info["changed_files"]:[]);
+		    }
+		);
+
+		integer desel_num = size(Backup::unselected_files);
+		deselected_ids = $[];
+
+		while (desel_num > 0)
+		{
+		    deselected_ids[desel_num] = 1;
+		    desel_num = desel_num - 1;
+		}
+	    }
+
+	    UI::ChangeWidget(`id(`table), `Items, (ret == `sel_all) ? SCR::Read(.target.ycp, SCR::Read(.target.tmpdir) + "/items.ycp")
+	                    : SCR::Read(.target.ycp, SCR::Read(.target.tmpdir) + "/items.ycp2"));
 
 	    if (current_item != nil)
 	    {
@@ -1446,17 +1521,59 @@ global define symbol FilesDialog() ``{
 	{
 	    if (ret == `table || ret == `sel_file)
 	    {
-		string current_value = select(UI::QueryWidget(`id(`table), `Item(current_item)), 1, nocheckmark);
+		term table_item = UI::QueryWidget(`id(`table), `Item(current_item));
+
+		string current_value = select(table_item, 1, nocheckmark);
+		string file_name = select(table_item, 2, "unknown file");
+		string package_name = select(table_item, 3, "unknown package");
 
 		if (current_value == checkmark)
 		{
 		    current_value = nocheckmark;
+
+		    // add to unselected files
+		    if (!contains(Backup::unselected_files, file_name))
+		    {
+			Backup::unselected_files = add(Backup::unselected_files, file_name);
+			deselected_ids[current_item] = 1;
+		    }
+
+		    // remove from selected files
+		    map info = eval(Backup::selected_files[package_name]:$[]);
+		    if (size(info) > 0)
+		    {
+			list chfiles = info["changed_files"]:[];
+			chfiles = filter(string fn, chfiles, ``(fn != file_name));
+
+			info["changed_files"] = chfiles;
+			Backup::selected_files[package_name] = eval(info);
+		    }
+		    y2milestone("File %1 removed from %2", file_name, package_name);
 		}
 		else
 		{
 		    current_value = checkmark;
+
+		    // remove from unselected
+		    Backup::unselected_files = filter(string fn, Backup::unselected_files, ``(fn != file_name));
+		    deselected_ids = remove(deselected_ids, current_item);
+
+		    // add to selected
+		    map info = eval(Backup::selected_files[package_name]:$[]);
+		    list chfiles = info["changed_files"]:[];
+
+		    if (!contains(chfiles, file_name))
+		    {
+			chfiles = add(chfiles, file_name);
+			info["changed_files"] = chfiles;
+
+			Backup::selected_files[package_name] = eval(info);
+		    }
+
+		    y2milestone("File %1 added to %2", file_name, package_name);
 		}
 
+		// refresh table
 		UI::ChangeWidget(`id(`table), `Item(current_item, 0), current_value);
 	    }
 	}
@@ -1466,78 +1583,6 @@ global define symbol FilesDialog() ``{
     {
 	return ret;
     }
-
-    y2debug("Getting selected files...");
-
-
-// Note: it is required that Table contains files ordered by package!
-
-    Backup::selected_files = $[ ];
-    Backup::unselected_files = [ ];
-    
-    integer num = size(table_items);
-    integer idx = 1;
-
-    list actual_package_files = [ ];
-    string actual_package_name = nil;
-    selected_files_num = 0;
-    selected_pkg_num = 0;
-
-    while (idx <= num)
-    {
-	term table_item = UI::QueryWidget(`id(`table), `Item(idx));
-	
-    	string file_name = select(table_item, 2, "unknown file");
-
-	if (select(table_item, 1, nocheckmark) == checkmark)
-	{
-	    string package_name = select(table_item, 3, "unknown package");
-
-	    selected_files_num = selected_files_num + 1;
-
-	    if (actual_package_name == nil)
-	    {
-		actual_package_name = package_name;
-	    }
-
-	    if (package_name != actual_package_name)
-	    {
-		map package_info = $[
-		    "changed_files" : actual_package_files,
-		    "install_prefixes" : lookup(lookup(Backup::backup_files, actual_package_name, $[]), "install_prefixes", "(none)")
-		];
-		
-		Backup::selected_files = add(Backup::selected_files, actual_package_name,  package_info);
-
-		actual_package_name = package_name;
-		actual_package_files = add([], file_name);
-		selected_pkg_num = selected_pkg_num + 1;
-	    }
-	    else
-	    {
-		actual_package_files = add(actual_package_files, file_name);
-	    }
-	}
-	else
-	{
-	    Backup::unselected_files = add( Backup::unselected_files, file_name );
-	}
-
-	idx = idx + 1;
-    }
-
-    /* add last package info */
-    if (actual_package_name != nil)
-    {
-	map package_info = $[
-	    "changed_files" : actual_package_files,
-	    "install_prefixes" : lookup(lookup(Backup::backup_files, actual_package_name, $[]), "install_prefixes", "(none)")
-	];
-
-	Backup::selected_files = add(Backup::selected_files, actual_package_name, package_info);
-    }
-
-    y2debug("Selected files to backup: %1", Backup::selected_files);
 
     return ret;
 }
@@ -1556,6 +1601,10 @@ global define symbol ArchivingDialog() ``{
     list stages1 = [ _("Store host information") ];
     // progress bar stage
     list stages2 = [ _("Storing host information...") ];
+
+    map selected_info = MapFilesToString();
+    selected_files_num = selected_info["sel_files"]:0;
+    selected_pkg_num = selected_info["sel_packages"]:0;
 
     // number of steps = number of selected files + nuber of selected packages
     //			+ 6 files (comment, hostname, date, files, installed_packages, packages_info)
@@ -1615,7 +1664,7 @@ global define symbol ArchivingDialog() ``{
     // store selected file names to file
     string tmpfile_list = SCR::Read(.target.tmpdir) + "/filelist";
 
-    file_list_stored = SCR::Write(.target.string, tmpfile_list, MapFilesToString());
+    file_list_stored = SCR::Write(.target.string, tmpfile_list, selected_info["filelist"]:"");
 
     if (!file_list_stored)
     {

@@ -20,69 +20,6 @@ include "ui/common_messages.ycp";
 
 textdomain "backup";
 
-/**
- * This function returns list of items for Table widget. Each item contains id, selection mark, file name and package name.
- * Used global variables: nocheckmark, checkmark, backup_files, selected_files
- * @param check If true then add check mark to the first column. If check is nil, then check mark is added only if file is in selected_files.
- * @return list List of items
- */
-
-global define list MapToTableItems(boolean check) ``{
-    integer idx = 0;
-    list items = [];
-
-    list itemsx = [];
-
-    if (Backup::backup_files == nil)
-    {
-	return [];
-    }
-
-    foreach(`key, `val, Backup::backup_files,
-	``{
-	    list ch = lookup(val, "changed_files", []);
-
-	    if (ch != nil)
-	    {
-		foreach(`file, ch,
-		    ``{
-			idx = idx + 1;
-
-			string mark = "";
-
-			if (check == nil)
-			{
-			    if ( (contains(lookup(lookup(Backup::selected_files, key, $[]), "changed_files", []), file) == true)
-				&& (!contains(Backup::unselected_files, file) ) )
-			    {
-				mark =  checkmark;
-			    }
-			    else
-			    {
-				mark = nocheckmark;
-			    }
-			}
-			else
-			{
-			    mark = check ? checkmark : nocheckmark;
-			}
-
-			itemsx = add(itemsx, `item(`id(idx), mark, file, key));
-
-			if (idx % 300 == 1)
-			{
-			    items = merge(items, itemsx);
-			    itemsx = [];
-			}
-		    }
-		);
-	    }
-	}
-    );
-
-    return merge(items, itemsx);
-}
-
 
 /**
  * Display abort confirmation dialog
@@ -178,7 +115,23 @@ global define map ShowEditDialog(string label, string value) ``{
  */
 
 global define symbol waitForUserOrProcess(integer wait, symbol abort_question) ``{
-    symbol ret = nil;
+    symbol ret = UI::PollInput();
+
+    if (ret == `abort || ret == `cancel)
+    {
+	y2warning("Abort pressed");
+	ret = `abort;
+
+	if (AbortConfirmation(abort_question))
+	{
+	    SCR::Execute(.background.kill, nil);
+	    return ret;
+	}
+	else
+	{
+	    ret = nil;
+	}
+    }
 
     while (SCR::Read(.background.newlines) == 0 && SCR::Read(.background.output_open))
     {
@@ -189,6 +142,7 @@ global define symbol waitForUserOrProcess(integer wait, symbol abort_question) `
 	if (ret == `abort || ret == `cancel)
 	{
 	    ret = `abort;
+	    y2warning("Abort pressed");
 
 	    if (AbortConfirmation(abort_question))
 	    {
@@ -384,8 +338,10 @@ global define list AddIdExt2(list in) ``{
  * @see <a href="../backup_specification.html">Backup module specification</a>
  */
 
-global define string MapFilesToString() ``{
+global define map MapFilesToString() ``{
     string result = "";
+    integer num_files = 0;
+    integer num_pack = 0;
 
     if (Backup::selected_files == nil || Backup::backup_files == nil || list_of_installed_packages == nil)
     {
@@ -401,6 +357,9 @@ global define string MapFilesToString() ``{
 
 		list chfiles = info["changed_files"]:[];
 		result = result + tmp + mergestring(chfiles, "\n") + "\n";
+
+		num_files = num_files + size(chfiles);
+		num_pack = num_pack + 1;
             }
         }
     );
@@ -410,9 +369,12 @@ global define string MapFilesToString() ``{
     if (size(nopkg) > 0)
     {
 	result = result + "Nopackage:\n" + mergestring(nopkg, "\n") + "\n";
+
+	num_files = num_files + size(nopkg);
+	num_pack = num_pack + 1;
     }
 
-    return result;
+    return $[ "filelist" : result, "sel_files" : num_files, "sel_packages" : num_pack ];
 }
 
 

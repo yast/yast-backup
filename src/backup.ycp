@@ -50,8 +50,8 @@ boolean packages_list_stored = false;
 integer selected_files_num = 0;		// number of selected files to backup
 integer selected_pkg_num = 0;		// number of packages which files are selected
 
-string checkmark = UI::Glyph(`CheckMark);
-string nocheckmark = (checkmark == "[x]") ? "[ ]" : " ";
+string checkmark = "X";
+string nocheckmark = " ";
 
 boolean hostname_stored = false;
 boolean date_stored = false;
@@ -105,7 +105,7 @@ if (Mode::test == true)
     Backup::backup_files = $[ "aaa_base-2001.10.8-1" : $[ "changed_files" : ["/etc/inittab", "/etc/modules.conf"], "install_prefixes" : "none" ],
 	"" : $[ "changed_files" : ["/etc/X11/XF86Config"], "install_prefixes" : "none" ]
     ];
-    Backup::selected_files = Backup::backup_files;
+    Backup::selected_files = eval(Backup::backup_files);
 }
 
 // sequence of dialogs
