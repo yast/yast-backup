@@ -319,9 +319,22 @@ global define AddId(list in) ``{
 global define MapFilesToString() ``{
     string result = "";
 
-    if (selected_files == nil || backup_files == nil)
+    if (selected_files == nil || backup_files == nil || list_of_installed_packages == nil)
     {
 	return "";
+    }
+
+    if (size(list_of_installed_packages) > 0)
+    {
+	result = "<installed>\n";
+
+	foreach(`p, list_of_installed_packages,
+	    ``{
+		result = result + p + "\n";
+	    }
+	);
+
+	result = result + "</installed>\n";
     }
 
     foreach(`pkg, `info, selected_files,
