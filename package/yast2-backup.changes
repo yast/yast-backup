@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Mar 31 12:32:38 CEST 2004 - lslezak@suse.cz
+
+- testsuite update (UML probing)
+- reset size counter before start (#36239)
+- version 2.9.14
+
+-------------------------------------------------------------------
 Tue Mar 23 16:24:57 CET 2004 - uml10@suse.cz
 
 - enable close button

@@ -1390,6 +1390,12 @@ Backup will be aborted.
     string line = "";
     integer total_packages = 0;
 
+    // reset file counters
+    modified_size = 0;
+    modified_num = 0;
+    nopkg_size = 0;
+    nopkg_num = 0;
+
     // output strings from search script
     string id_package = "Package: ";
     string id_complete_package = "Complete package: ";
