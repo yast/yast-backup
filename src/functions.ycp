@@ -784,7 +784,7 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
  * @param extra_options options for extra_key
  * @return boolean true on success
  */
- define boolean CloneSystem(string filename, list additional, string extra_key, map extra_options) ``{
+ define boolean CloneSystem(string filename, list<string> additional, string extra_key, map extra_options) ``{
     boolean ret = false;
 
     if (size(filename) > 0)
