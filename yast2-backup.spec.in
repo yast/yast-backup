@@ -1,11 +1,11 @@
 @HEADER-COMMENT@
-# neededforbuild yast2-devel-packages autoyast2 autoyast2-installation yast2-transfer yast2-xml yast2-network yast2-bootloader yast2-installation yast2-country yast2-tune yast2-storage yast2-nfs-client
+# neededforbuild yast2-devel-packages autoyast2 autoyast2-installation yast2-transfer yast2-xml yast2-network yast2-bootloader yast2-installation yast2-country yast2-tune yast2-storage yast2-nfs-client yast2-update
 
 @HEADER@
 
 Summary:		Backup module for YaST2
 BuildArchitectures:	noarch
-Requires:		yast2 yast2-core autoyast2 autoyast2-installation perl util-linux fileutils e2fsprogs tar bzip2 gzip yast2-network coreutils yast2-tune yast2-storage yast2-nfs-client
+Requires:		yast2 yast2-core autoyast2 autoyast2-installation perl util-linux fileutils e2fsprogs tar bzip2 gzip yast2-network coreutils yast2-tune yast2-storage yast2-nfs-client yast2-update
 
 Provides:	yast2-module-backup
 Obsoletes:	yast2-module-backup
