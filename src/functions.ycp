@@ -21,29 +21,36 @@ global define MapToTableItems(boolean check)
     integer idx = 0;
     list items = [];
 
-    foreach(`key, `val, backup_files, 
-    	``{
+    if (backup_files == nil)
+    {
+	return [];
+    }
 
+    foreach(`key, `val, backup_files,
+	``{
 	    list ch = lookup(val, "changed_files", []);
-	    
-	    foreach(`file, ch,
-		``{
-		    idx = idx + 1;
 
-		    string mark = "";
+	    if (ch != nil)
+	    {
+		foreach(`file, ch,
+		    ``{
+			idx = idx + 1;
 
-		    if (check == nil)
-		    {
-			mark = (contains(lookup(lookup(selected_files, key, $[]), "changed_files", []), file) == true) ? checkmark : nocheckmark; 
+			string mark = "";
+
+			if (check == nil)
+			{
+			    mark = (contains(lookup(lookup(selected_files, key, $[]), "changed_files", []), file) == true) ? checkmark : nocheckmark;
+			}
+			else
+			{
+			    mark = check ? checkmark : nocheckmark;
+			}
+
+			items = add(items, `item(`id(idx), mark, file, key));
 		    }
-		    else
-		    {
-			mark = check ? checkmark : nocheckmark;
-		    }
-
-		    items = add(items, `item(`id(idx), mark, file, key));
-		}
-	    );
+		);
+	    }
 	}
     );
 
@@ -87,13 +94,13 @@ global define ShowEditDialog(string label, string value) ``{
 // return user input or nil if background data available
 global define waitForUserOrProcess() ``{
     symbol ret = nil;
-    
+
     while (SCR::Read(.background.newlines) == 0 && SCR::Read(.background.output_open))
     {
 	sleep(wait_time);
-	
-	ret = UI::PollInput(); 
-	
+
+	ret = UI::PollInput();
+
 	if (ret == `abort)
 	{
 	    SCR::Execute(.background.kill, nil);
@@ -109,10 +116,15 @@ global define GetMountedFilesystems() ``{
     list mounted = SCR::Read(.proc.mounts);
     list result = [ ];
 
-    foreach(`m, mounted, 
+    if (mounted == nil)
+    {
+	return [];
+    }
+
+    foreach(`m, mounted,
 	``{
 	    string fs = lookup(m, "vfstype", nil);
-	    
+
 	    if (fs != nil)
 	    {
 		result = add(result, fs);
@@ -127,11 +139,16 @@ global define GetMountedExt2Filesystems() ``{
     list mounted = SCR::Read(.proc.mounts);
     list result = [ ];
 
-    foreach(`m, mounted, 
+    if (mounted == nil)
+    {
+	return [];
+    }
+
+    foreach(`m, mounted,
 	``{
 	    string fs = lookup(m, "vfstype", nil);
 	    string dev = lookup(m, "spec", nil);
-	    
+
 	    if (fs == "ext2" && dev != nil)
 	    {
 		result = add(result, dev);
@@ -144,18 +161,37 @@ global define GetMountedExt2Filesystems() ``{
 
 // return list of items created from list
 global define GetListWithFlags(list in, list selected) ``{
+
+    if (in == nil)
+    {
+	return [];
+    }
+
     return maplist(`i, in, ``{
 	return `item(`id(i), i, (contains(selected, i) ? true : false));
     });
 }
 
 global define AddIdBool(list in, boolean val) ``{
+    if (val == nil)
+    {
+	val = false;
+    }
+
+    if (in == nil)
+    {
+	return [];
+    }
+
     return maplist(`i, in, ``{
-        return `item(select(i, 0), select(i, 1), val);
+        return (is(i, term)) ? `item(select(i, 0), select(i, 1), val) : nil;
     });
 }
 
 global define AddId(list in) ``{
+
+    if (in == nil) return [];
+
     return maplist(`i, in, ``{
         return `item(`id(i), i);
     });
@@ -163,6 +199,11 @@ global define AddId(list in) ``{
 
 global define MapFilesToString() ``{
     string result = "";
+
+    if (selected_files == nil || backup_files == nil)
+    {
+	return "";
+    }
 
     foreach(`pkg, `info, selected_files,
         ``{
@@ -177,9 +218,9 @@ global define MapFilesToString() ``{
             }
         }
     );
- 
+
     list nopkg = lookup(lookup(selected_files, "", $[ ]), "changed_files", []);
- 
+
     if (size(nopkg) > 0)
     {
 	string tmp = "Nopackage:\n";
@@ -187,7 +228,7 @@ global define MapFilesToString() ``{
 
 	result = result + tmp;
     }
- 
+
     return result;
 }
 
