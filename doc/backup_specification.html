@@ -18,6 +18,7 @@ Changes:
 
 <P>
 <UL>
+  <LI><B>2002-02-01:</B> Added default excluded directories and file systems</LI>
   <LI><B>2002-01-03:</B> Multi volume problems with tar utility</LI>
   <LI><B>2001-12-18:</B> Changed archive file internal structure</LI>
   <LI><B>2001-11-29:</B> Changed solutions of some problems</LI>
@@ -147,6 +148,20 @@ file2
 </UL>
 </P>
 
+<H4>Files not owned by any package</H4>
+
+<P>Files not owned by any package are stored in NOPACKAGE subcharive. It is
+posible to exclude directory or file system type from search. This allows to
+exclude from backup /tmp directory or directories with mounted NFS file
+system.</P>
+
+<P>Default excluded directories are: /tmp, /var/lock, /var/run, /var/tmp and
+/var/cache.  Default excluded file system is iso9660 and file systems with
+"nodev" flag in /proc/filesystems file (e.g. nfs, proc, tmpfs...).</P>
+
+
+<H4>System backup</H4>
+
 <P>System backup will be stored in <I>system</I> subdirectory in the archive. This subdirectory can contain files:
 <UL>
 	<LI><I>partition_table_&lt;device&gt;.txt</I> - partition table info obtained by <TT>sfdisk -d &lt;device&gt;</TT> (human readable, can be used as input file for sfdisk - see sfdisk man page)</LI>
@@ -159,6 +174,7 @@ file2
 
 <P>It is possible to store only list of changed files to file - script <I>backup_archive.pl</I> outputs file names from
 <I>packages_info</I> file. This list of files can be used to create another archive type.</P>
+
 
 <H4>Problems and solutions</H4>
 
@@ -214,8 +230,7 @@ is more acceptable automatic splitting.</P>
 
 <P>Tar archiver creates multiple volume archives if <I>-M</I> or <I>-L</I> is used.
 Each volume is standalone archive - files can be extracted without need of
-other volumes (except files which were splitted to more volumes). Volume size
-is in 1024 bytes blocks.
+other volumes (except files which were splitted to more volumes).
 </P>
 
 <!--

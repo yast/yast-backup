@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Feb  1 09:57:37 CET 2002 - lslezak@suse.cz
+
+- fixed edit dialog: default 'OK' button, TextEntry widget has focus
+- set default excluded iso9660 and "nodev" file systems (from /proc/filesystems)
+- texts from proofreading
+- version 2.5.12
+
+-------------------------------------------------------------------
 Mon Jan 28 17:47:32 CET 2002 - lslezak@suse.cz
 
 - Abort confirmation changes
