@@ -449,5 +449,15 @@ global define map WriteProfile(list volumes) ``{
     return $[ "result" : Profile::Save(profilefile), "profile" : profilefile ];
 }
 
+global define integer Backup::ReadProfiles() ``{
+    
+}
+
+
+global define integer Backup::ReadProfiles() ``{
+    
+}
+
+
 }
 
