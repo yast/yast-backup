@@ -16,12 +16,15 @@ lslezak@suse.cz</A>&gt;</I>
 Changes:
 </P>
 
+<P>
 <UL>
+  <LI><B>2001-10-25:</B> Partition table storing update</LI>
   <LI><B>2001-10-15:</B> New options in <I>Backup settings dialog</I></LI>
   <LI><B>2001-10-05:</B> Screenshots update</LI>
   <LI><B>2001-09-26:</B> Detailed batch mode description</LI>
   <LI><B>2001-09-06:</B> Initial version</LI>
 </UL>
+</P>
 
 <HR>
 
@@ -103,9 +106,9 @@ This directory should contain files:
 	<LI><I>hostname</I> - name of machine where archive was created</LI>
 	<LI><I>date</I> - date of backup</LI>
 	<LI><I>comment</I> - user comment, description of backup archive</LI>
-	<LI><I>partition_table</I> - partition table info obtained by <I>fdisk -l</I></LI>
-	<LI><I>e2image_&lt;device&gt;</I> - ext2 metadata obtained by <I>e2image</I> from
-	  <I>device</I></LI>
+	<LI><I>partition_table_&lt;device&gt;.txt</I> - partition table info obtained by <TT>fdisk -l &lt;device&gt;</TT> (human readable)</LI>
+	<LI><I>partition_table_&lt;device&gt;</I> - partition table stored by <TT>dd if=/dev/&lt;device&gt; of=&lt;file&gt; bs=512 count=1</TT> (raw data)</LI>
+	<LI><I>e2image_&lt;device&gt;</I> - ext2 metadata obtained by <TT>e2image &lt;device&gt;</TT></LI>
 	<LI><I>files_info</I> - list of files (with absolute path) and packages to which they belong
 <P>
 Format of file:<BR>

@@ -91,6 +91,7 @@ integer archived_num = 0;
 
 integer tar_result = 1;		// exit status of tar
 integer total_files = 0;	// total number of files in archive
+integer added_files = 0;
 
 boolean confirm_abort = false;	// confirm abort
 
