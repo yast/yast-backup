@@ -1,3 +1,21 @@
+Read	.target.size "/etc/install.inf" -1
+Execute	.target.bash "/usr/lib/YaST2/bin/version" 0
+Read	.probe.architecture nil
+Read	.probe.has_apm nil
+Read	.probe.has_pcmcia nil
+Read	.probe.has_smp false
+Read	.probe.system nil
+Read	.target.tmpdir nil
+Read	.probe.floppy.manual nil
+Read	.probe.cdrom.manual []
+Read	.sysconfig.console.CONSOLE_FONT nil
+Read	.sysconfig.console.CONSOLE_SCREENMAP nil
+Read	.sysconfig.console.CONSOLE_UNICODEMAP nil
+Read	.sysconfig.console.CONSOLE_MAGIC nil
+Read	.sysconfig.console.CONSOLE_ENCODING nil
+Read	.target.string "/proc/cmdline" ""
+Read	.target.tmpdir nil
+Read	.target.size nil -1
 Dump	[]
 Dump	[]
 Dump	[`item (`id (1), "[ ]", "/etc/fstab", ""), `item (`id (2), "[ ]", "/etc/passwd", ""), `item (`id (3), "[ ]", "/etc/inittab", "aaa_base-2001.5.22-0"), `item (`id (4), "[ ]", "/etc/modules.conf", "aaa_base-2001.5.22-0")]

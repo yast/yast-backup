@@ -1,6 +1,6 @@
 @HEADER-COMMENT@
 
-# neededforbuild  yast2-devel-packages autoyast2-installation yast2-xml yast2-network hwinfo
+# neededforbuild  yast2-devel-packages autoyast2-installation yast2-xml yast2-network hwinfo yast2-bootloader yast2-installation yast2-country yast2-storage
 
 @HEADER@
 

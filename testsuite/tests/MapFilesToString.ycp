@@ -10,6 +10,15 @@
 include "backup/functions.ycp";
 include "testsuite.ycp";
 
+// proc.cpuinfo.value.0.flags, target.string - used in Kernel::
+// probe.has_smp - Arch::
+// probe.cdrom.manual - StorageDevices::
+// target.size - AutoInstall::
+
+TESTSUITE_INIT([ $[ "target" : $["string" : "", "size" : -1 ],
+    "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
+    "probe" : $["has_smp" : false, "cdrom" : $["manual" : []]]  ], [], [] ] ,nil);
+import "Pkg";	// override packamanager
 import "Backup";
 
 // initialize variables from Backup module

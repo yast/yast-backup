@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Feb  5 10:50:47 CET 2003 - lslezak@suse.cz
+
+- fixed neededforbuild
+- fixed testsuite (override paths used by module constructors)
+- version 2.7.3
+
+-------------------------------------------------------------------
 Mon Feb  3 17:12:14 CET 2003 - lslezak@suse.cz
 
 - merged proof-read texts
