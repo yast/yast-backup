@@ -70,7 +70,7 @@ global define list MapToTableItems(boolean check) ``{
 
 /**
  * Display abort confirmation dialog
- * @param type Select dialog message, possible values: `not_created, `broken, `no_change or `none for none dialog
+ * @param type Select dialog type, possible values: `changed, `not_changed or `none for none dialog
  * @return boolean False if user select to not abort, true otherwise.
  */
 
@@ -83,32 +83,25 @@ global define boolean AbortConfirmation(symbol type) ``{
     string yes = YesButtonLabel();	// from common_messages.ycp
     string no = NoButtonLabel();
 
-    if (type == `not_created)
+    if (type == `changed)
     {
-	ret = UI::AnyQuestionPopup(heading, question + "\n" + _("Backup archive will not be created!"), yes, no, `focus_no);
+	ret = UI::AnyQuestionPopup(heading, question, yes, no, `focus_no);
     }
     else
     {
-	if (type == `broken)
+	if (type == `not_changed)
 	{
-	    ret = UI::AnyQuestionPopup(heading, question + "\n" + _("Backup archive will be broken!"), yes, no, `focus_no);
+	    ret = UI::AnyQuestionPopup(heading, question, yes, no, `focus_yes);
 	}
 	else
 	{
-	    if (type == `no_change)
+	    if (type == `none)
 	    {
-		ret = UI::AnyQuestionPopup(heading, question, yes, no, `focus_yes);
+		ret = true;
 	    }
 	    else
 	    {
-		if (type == `none)
-		{
-		    ret = true;
-		}
-		else
-		{
-		    y2warning("Unknown type of abort confirmation dialog: %1", type);
-		}
+		y2warning("Unknown type of abort confirmation dialog: %1", type);
 	    }
 	}
     }
@@ -160,7 +153,7 @@ global define map ShowEditDialog(string label, string value) ``{
 /**
  * Wait for output from subprocess or user action. If user press `abort button, then subprocess is terminated.
  * @param wait Delay in miliseconds between user action checks (if no output from subprocess is available)
- * @param abort_question Symbol for AbortConfirmation function - determine which messgae will be displayed if Abort button was pressed
+ * @param abort_question Symbol for AbortConfirmation function - which dialog will be displayed if Abort button is pressed
  * @return symbol Pressed button id or nil if some data is ready from subprocess.
  */
 

@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Jan 28 17:47:32 CET 2002 - lslezak@suse.cz
+
+- Abort confirmation changes
+- version 2.5.11
+
+-------------------------------------------------------------------
 Fri Jan 25 16:29:25 CET 2002 - lslezak@suse.cz
 
 - better check of user defined volume size
