@@ -103,7 +103,7 @@ global boolean default_do_md5_test = true;
 global boolean default_perms = true;			// store RPM file if owner/permissions were changed
 
 global list default_default_dir = [ "/media", "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache", "/windows" ];		// default excluded directoried from search
-global list default_dir_list = nil;			// selected directoried to exclude
+global list default_dir_list = default_default_dir;			// selected directoried to exclude
 global list default_regexp_list = [];
 
 // iso9660 is used on CDROM, ntfs read-only
@@ -342,18 +342,11 @@ global define string get_search_script_parameters() ``{
 
 	if (size(dir_list) > 0)
 	{
-	    foreach(`i, dir_list,
+	    foreach(string d, dir_list,
 		``{
-		    term tmp_id = select(i, 0, nil);
-
-		    if (tmp_id != nil)
+		    if (d != nil)
 		    {
-			string tmp_d = select(tmp_id, 0, nil);
-
-			if (tmp_d != nil)
-			{
-			    script_options = script_options + " --exclude-dir " + tmp_d;
-			}
+			script_options = script_options + " --exclude-dir " + d;
 		    }
 		}
 	    );
@@ -363,19 +356,12 @@ global define string get_search_script_parameters() ``{
 
 	if (size(regexp_list) > 0)
 	{
-	    foreach(term t, regexp_list,
+	    foreach(string r, regexp_list,
 		``{
-		    term tmp_id = select(t, 0, nil);
-
-		    if (tmp_id != nil)
+		    if (r != nil)
 		    {
-			string tmp_d = select(tmp_id, 0, nil);
-
-			if (tmp_d != nil)
-			{
-			    // TODO: single quotes in tmp_d need to handled properly
-			    script_options = script_options + " --exclude-files '" + tmp_d + "'";
-			}
+			// TODO: single quotes in tmp_d need to handled properly
+			script_options = script_options + " --exclude-files '" + r + "'";
 		    }
 		}
 	    );
@@ -1109,6 +1095,35 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
     do_md5_test =	profile[ `do_md5_test ]:	default_do_md5_test;
     default_dir =	profile[ `default_dir ]:	default_default_dir;
     dir_list =		profile[ `dir_list ]:		default_dir_list;
+
+    // convert list of items to list of strings
+    if (size(dir_list) > 0)
+    {
+	if (is(dir_list[0]:"", term))
+	{
+	    // convert dir list from the old format
+	    list new_dir_list = [];
+
+	    foreach(term i, dir_list,
+		``{
+		    term tmp_id = select(i, 0, nil);
+
+		    if (tmp_id != nil)
+		    {
+			string tmp_d = select(tmp_id, 0, nil);
+
+			if (tmp_d != nil)
+			{
+			    new_dir_list = add(new_dir_list, tmp_d);
+			}
+		    }
+		}
+	    );
+
+	    dir_list = new_dir_list;
+	}
+    }
+
     fs_exclude =	profile[ `fs_exclude ]:		default_fs_exclude;
     detected_fs =	profile[ `detected_fs ]:	default_detected_fs;
     detected_ext2 =	profile[ `detected_ext2 ]:	default_detected_ext2;
