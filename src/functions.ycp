@@ -19,11 +19,10 @@
 import "Label";
 import "Report";
 
-import "AutoinstClone";
-import "Profile";
 import "Nfs";
 import "Popup";
 import "FileUtils";
+import "Mode";
 
 textdomain "backup";
 
@@ -682,6 +681,12 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
  define list<string> GetInstallPackages() ``{
     y2milestone("Reading packages available on the installation sources...");
 
+    // fake return for testsuites
+    if (Mode::test()) {
+	y2milestone("SKIPPING");
+	return [];
+    }
+
     Pkg::TargetInit("/", false);
 
     // list of available enabled installation sources
@@ -787,6 +792,9 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
  * @return boolean true on success
  */
  define boolean CloneSystem(string filename, list<string> additional, string extra_key, map extra_options) ``{
+    import "AutoinstClone";
+    import "Profile";
+
     boolean ret = false;
 
     if (size(filename) > 0)
@@ -799,7 +807,10 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
 
 	// create profile with with currently available resources (partitioning, software etc.)
 	y2milestone("Clonning system started...");
-	AutoinstClone::Process();
+	if (Mode::test()) {
+	    AutoinstClone::Process();
+	    y2milestone("SKIPPING");
+	}
 	y2milestone("System clonned");
 
 	if (size(extra_options) > 0 && size(extra_key) > 0)
@@ -818,8 +829,13 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
  * @return map map of mount points
  */
  define map DetectMountpoints() ``{
-    import "Storage";
+    if (Mode::test()) {
+	y2milestone("SKIPPING");
+	return $[];
+    }
 
+    import "Storage";
+    
     map<string,map<string,any> > targetmap = (map<string,map<string,any> >)Storage::GetTargetMap();
     y2debug("targetmap: %1", targetmap);
 
