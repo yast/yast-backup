@@ -202,7 +202,7 @@ global define string backup_help_file_selection() ``{
     + _("Here is list of found files. You can select which files will be stored in the archive.</P>")
 
     // For translators: help text in file dialog - part 3/3
-    + _("<P>Check mark at first column indicates that file will be backuped.</P>")
+    + _("<P>Check mark at first column indicates that file will be backuped.</P>");
 }
 
 
