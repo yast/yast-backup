@@ -248,6 +248,30 @@ if ($store_pt)
     }
 }
 
+if ($verbose)
+{
+    print "Storing list of installed packages\n";
+}
+
+system("rpm -qa > $tmp_dir/installed_packages 2> /dev/null");
+
+if ($verbose)
+{
+    if ($? == 0)
+    {
+	print "Packages stored: Success\n";
+
+	print OUT "tmp/YaST2-backup/installed_packages\n";
+	$files_num = $files_num + 1;
+    }
+    else
+    {
+	print "Packages stored: Failed\n";
+    }
+}
+
+			    
+
 
 # filter files_info file, output only file names
 
@@ -342,6 +366,15 @@ close(OUT);
 if ($verbose)
 {
     print "Files: $files_num\n";
+}
+
+# create required subdirs
+my $idx = rindex($archive_name, '/');
+
+if ($idx > 0)
+{
+    my $dirs = substr($archive_name, 0, $idx);
+    system("/bin/mkdir -p $dirs");
 }
 
 

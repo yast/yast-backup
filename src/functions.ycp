@@ -328,19 +328,6 @@ global define string MapFilesToString() ``{
 	return "";
     }
 
-    if (size(list_of_installed_packages) > 0)
-    {
-	result = "<installed>\n";
-
-	foreach(`p, list_of_installed_packages,
-	    ``{
-		result = result + p + "\n";
-	    }
-	);
-
-	result = result + "</installed>\n";
-    }
-
     foreach(`pkg, `info, Backup::selected_files,
         ``{
             if (pkg != "")
