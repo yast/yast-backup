@@ -61,7 +61,7 @@ sub create_dirs($)
     if ($ix > 0)
     {
 	my $dirs = substr($f, 0, $ix);
-	system("/bin/mkdir -p $dirs");		# create directory with parents
+	system("/bin/mkdir -p $dirs 2> /dev/null");		# create directory with parents
     }
 }
 
@@ -74,7 +74,7 @@ my @ext2_parts = ();
 my $verbose = '0';
 my $files_info = '';
 my $comment_file = '';
-my $multi_volume = '0';
+my $multi_volume = undef;
 
 # parse command line options
 GetOptions('archive-name=s' => \$archive_name, 
@@ -97,7 +97,7 @@ if ($help or $files_info eq '' or $archive_name eq '')
     print "  --help                Display this help\n\n";
     print "  --archive-name <file> Target archive file name\n";
     print "  --archive-type <type> Type of compression used by tar, type can be 'tgz' - compressed by gzip, 'tbz2' - compressed by bzip2, 'tar' - no compression or 'txt' - only list of files is generated instead crating archive. Default is 'tgz'\n";
-    print "  --multi-volume <size> Create multiple volume archive, size is volume size in bytes\n";
+    print "  --multi-volume <size> Create multiple volume archive, size is in kiB (1kiB = 1024B)\n";
     print "  --verbose             Print progress information\n";
     print "  --store-ptable        Add partition tables information to archive\n";
     print "  --store-ext2 <device> Store Ext2 system area from device\n";
@@ -152,7 +152,7 @@ if ($archive_type eq 'txt')
 }
 
 
-
+#FIXME CLEANUP => 1
 my $tmp_dir_root = tempdir(CLEANUP => 1);	# remove directory content at exit
 
 my $tmp_dir = $tmp_dir_root."/tmp";
@@ -161,19 +161,28 @@ if (!mkdir($tmp_dir))
     die "Can not create directory $tmp_dir\n";
 }
 
-$tmp_dir .= "/YaST2-backup";
+$tmp_dir .= "/info";
 if (!mkdir($tmp_dir))
 {
     die "Can not create directory $tmp_dir\n";
 }
 
+my $tmp_dir_sys = $tmp_dir_root."/tmp/system";
+if (!mkdir($tmp_dir_sys))
+{
+    die "Can not create directory $tmp_dir_sys\n";
+}
+
 my $files_num = 0;
 
-open(OUT, '>', $tmp_dir_root."/files")
-    or die "Can not open file $tmp_dir_root/files\n";
+open(OUT, '>', $tmp_dir."/files")
+    or die "Can not open file $tmp_dir/files\n";
 
 
-print OUT "tmp/YaST2-backup/files_info\n";
+print OUT "info/files\n";
+$files_num++;
+
+print OUT "info/packages_info\n";
 $files_num++;
 
 
@@ -197,7 +206,7 @@ if (-s $tmp_dir.'/hostname')
 	print "Success\n";
     }
     
-    print OUT "tmp/YaST2-backup/hostname\n";
+    print OUT "info/hostname\n";
     $files_num++;
 }
 else
@@ -215,7 +224,7 @@ if ($verbose)
     print "Storing date: ";
 }
 
-my $date = strftime('%x %X', localtime());
+my $date = strftime('%d.%m.%Y  %H:%M', localtime());
 
 open(DATE, '>', $tmp_dir.'/date');
 print DATE $date;
@@ -229,7 +238,7 @@ if (-s $tmp_dir.'/date')
 	print "Success\n";
     }
     
-    print OUT "tmp/YaST2-backup/date\n";
+    print OUT "info/date\n";
     $files_num++;
 }
 else
@@ -258,12 +267,12 @@ if ($store_pt)
     {
 	my $stored = 0;
 
-	if (system("/sbin/sfdisk -d /dev/$disk > $tmp_dir/partition_table_$disk.txt 2> /dev/null") >> 8 == 0)
+	if (system("/sbin/sfdisk -d /dev/$disk > $tmp_dir_sys/partition_table_$disk.txt 2> /dev/null") >> 8 == 0)
 	{
-	    if (system("dd if=/dev/$disk of=$tmp_dir/partition_table_$disk bs=512 count=1 2> /dev/null") >> 8 == 0)
+	    if (system("dd if=/dev/$disk of=$tmp_dir_sys/partition_table_$disk bs=512 count=1 2> /dev/null") >> 8 == 0)
 	    {
-		print OUT "tmp/YaST2-backup/partition_table_$disk.txt\n";
-		print OUT "tmp/YaST2-backup/partition_table_$disk\n";
+		print OUT "system/partition_table_$disk.txt\n";
+		print OUT "system/partition_table_$disk\n";
 		$files_num = $files_num + 2;
 
 		$stored = 1;
@@ -275,7 +284,7 @@ if ($store_pt)
 	    }
 	    else
 	    {
-		unlink("$tmp_dir/partition_table_$disk.txt");
+		unlink("$tmp_dir_sys/partition_table_$disk.txt");
 
 		if ($verbose)
 		{
@@ -295,6 +304,19 @@ if ($store_pt)
     }
 }
 
+# copy comment
+if (length($comment_file) > 0)
+{
+    system("cp $comment_file $tmp_dir/comment");
+
+    if ($? == 0)
+    {
+	print OUT "info/comment\n";
+	$files_num++;
+    }
+}
+
+
 if ($verbose)
 {
     print "Storing list of installed packages\n";
@@ -308,7 +330,7 @@ if ($verbose)
     {
 	print "Packages stored: Success\n";
 
-	print OUT "tmp/YaST2-backup/installed_packages\n";
+	print OUT "info/installed_packages\n";
 	$files_num = $files_num + 1;
     }
     else
@@ -317,84 +339,45 @@ if ($verbose)
     }
 }
 
-			    
 
-
-# filter files_info file, output only file names
-
-open(FILES_INFO, "> $tmp_dir/files_info")
-    or die "Can not create file $tmp_dir/files_info\n";
-
-if (defined open(FILES, $files_info))
-{
-    while (my $line = <FILES>)
-    {
-	chomp($line);
-	
-	if ($line =~ /^\/.+/)
-	{
-	    if (-r $line)		# output only readable files from files-info
-	    {
-		print OUT $line."\n";
-		$files_num++;
-		print FILES_INFO $line."\n";
-	    }
-	    else
-	    {
-		if ($verbose)
-		{
-		    print "/File not readable: $line\n";
-		}
-	    }
-	}
-	else
-	{
-	    print FILES_INFO $line."\n";
-	}
-    }
-    
-    close(FILES);
-}
-
-close(FILES_INFO);
-
-
-if (length($comment_file) > 0)
-{
-    system("cp $comment_file $tmp_dir/comment");
-
-    if ($? == 0)
-    {
-	print OUT "tmp/YaST2-backup/comment\n";
-	$files_num++;
-    }
-}
-
-
-#store ext2 system area
+# store ext2 system area
 
 foreach my $part (@ext2_parts)
 {
     if ($verbose)
     {
-	print 'Storing ext2 area: '.$part."\n";
+	print "Storing ext2 area: $part\n";
     }
 
     # transliterate all '/' characters to '_' in device name
     my $tr_dev_name = $part;
     $tr_dev_name =~ tr/\//_/;
 
-    my $output_name = $tmp_dir."/e2image".$tr_dev_name;
+    my $output_name = $tmp_dir_sys."/e2image".$tr_dev_name;
 
     system("/sbin/e2image $part $output_name 2> /dev/null");
 
     if (-s $output_name)
     {
+	# compress e2image, tar is used because e2image is sparse file
+	system("tar -j -C $tmp_dir_sys -S -c -f $tmp_dir_sys/e2image$tr_dev_name.tar.bz2 e2image$tr_dev_name");
+	
+	if ($? == 0)
+	{
+	    print OUT "system/e2image$tr_dev_name.tar.bz2\n";
+	    $files_num++;
+	}
+	
 	if ($verbose)
 	{
-	    print "Success\n";
-	    print OUT "tmp/YaST2-backup/e2image".$tr_dev_name;
-	    $files_num++;
+	    if ($? == 0)
+	    {
+		print "Success\n";
+	    }
+	    else
+	    {
+		print "Failed\n";
+	    }
 	}
     }
     else
@@ -407,12 +390,150 @@ foreach my $part (@ext2_parts)
 }
 
 
+# filter files_info file, output only file names
+
+open(FILES_INFO, "> $tmp_dir/packages_info")
+    or die "Can not create file $tmp_dir/packages_info\n";
+
+my $package_name;
+my $install_prefix;
+
+my $opened;
+
+
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+$year += 1900;
+$mon++;
+
+if ($verbose)
+{
+    print "Creating archive:\n";
+}
+
+if (defined open(FILES, $files_info))
+{
+    while (my $line = <FILES>)
+    {
+	chomp($line);
+	
+	if ($line =~ /^\/.+/)
+	{
+	    if (-r $line)		# output only readable files from files-info
+	    {
+    		print FILES_INFO $line."\n";
+
+		if (defined $opened)
+		{
+		    print PKGLIST $line."\n";
+		}
+	    }
+	    else
+	    {
+    		print "/File not readable: $line\n";
+	    }
+	}
+	else
+	{
+	    if ($line =~ /Package: (.*)/)
+	    {
+
+		if (defined $opened)
+		{
+		    close(PKGLIST);
+
+		    my $command = "/bin/tar -c -v --files-from $tmp_dir_root/$package_name --ignore-failed-read -S -f $tmp_dir_root/tmp/$package_name-$year$mon$mday-0.tar";
+
+		    print OUT "$package_name-$year$mon$mday-0.tar";
+		    $files_num++;
+
+		    if ($archive_type eq 'tgz')
+		    {
+			$command .= '.gz -z';
+			print OUT ".gz\n";
+		    }
+		    else
+		    {
+			if ($archive_type eq 'tbz2')
+			{
+			    $command .= '.bz2 -j';
+			    print OUT ".bz2\n";
+			}
+			else
+			{
+			    print OUT "\n";
+			}
+		    }
+
+		    $command .= " 2> /dev/null";
+
+		    system($command);
+
+		}
+		
+		$package_name = $1;
+
+		$opened = open(PKGLIST, ">$tmp_dir_root/$package_name");
+		print FILES_INFO $line."\n";
+	    }
+	    else
+	    {	if ($line =~ /Installed: (.*)/)
+		{
+		    $install_prefix = $1;
+		    print FILES_INFO $line."\n";
+		}
+		else	
+		{
+		    print STDERR "Unknown text in input file: $line\n";
+		}
+	    }
+	}
+    }
+    
+    close(FILES);
+}
+
+
+if (defined $opened)
+{
+    close(PKGLIST);
+
+    my $command = "/bin/tar -c -v --files-from $tmp_dir_root/$package_name --ignore-failed-read -S -f $tmp_dir_root/tmp/$package_name-$year$mon$mday-0.tar";
+
+    print OUT "$package_name-$year$mon$mday-0.tar";
+    $files_num++;
+
+    if ($archive_type eq 'tgz')
+    {
+	$command .= '.gz -z';
+	print OUT ".gz\n";
+    }
+    else
+    {
+	if ($archive_type eq 'tbz2')
+	{
+	    $command .= '.bz2 -j';
+	    print OUT ".bz2\n";
+	}
+	else
+	{
+	    print OUT "\n";
+	}
+    }
+
+    $command .= " 2> /dev/null";
+
+    system($command);
+
+}
+
+close(FILES_INFO);
+
 close(OUT);
 
 
 if ($verbose)
 {
-    print "Files: $files_num\n";
+    print "Creating target archive file...\n";
 }
 
 # create required subdirs
@@ -429,8 +550,11 @@ create_dirs($archive_name);
 #  --ignore-failed-read	continue after read error
 #  -C <dir>		change to dir befor archiving
 #  -S			store sparse files efficiently (for e2images)
+#  -M			multi volume archive
+#  -L <size>		volume size in kiB
+#  -V <str>		volume prefix label
 
-my $tar_command = "tar -c --files-from $tmp_dir_root/files --ignore-failed-read -C $tmp_dir_root -S";
+my $tar_command = "(export LC_ALL=C; tar -c --files-from $tmp_dir/files --ignore-failed-read -C $tmp_dir_root/tmp -S";
 
 if ($verbose)
 {
@@ -438,125 +562,100 @@ if ($verbose)
 }
 
 
-if ($multi_volume > 0)
+if (defined $multi_volume && $multi_volume >= 0)
 {
-    # split archive to multi volume
-    # fifo is used to avoid storing whole file
-    
-    my $fifo_out = "$tmp_dir_root/fifo";
-
-    if (system("mkfifo -m 0600 $fifo_out 2> /dev/null") != 0)
-    {
-	die "Can not create FIFO $fifo_out\n";
-    }
-
-    
-    $tar_command .= " -f $fifo_out &";
-
-    my $packer_command = "cat $fifo_out";
-    if ($archive_type eq 'tgz')
-    {
-	$packer_command .= ' | gzip -c |';
-    }
-    else
-    {
-	if ($archive_type eq 'tbz2')
-	{
-	    $packer_command .= ' | bzip2 -c |';
-	}
-	else
-	{
-	    $packer_command .= ' |';
-	}
-    }
-
-    # start tar
-    system($tar_command);
-    
-    my $volume = 1;
-
-    # start packing utility
-    open(PACKER, $packer_command)
-	or die "Can not start program: $packer_command\n";
-
-    my $buffer;
-    my $written;
-    my $block_size = 32768;
-    my $len = 0;
-
     my $output_directory;
     my $output_filename;
 
+    my $volume_num = 1;
+    
     use File::Spec::Functions "splitpath";
+    
     (my $dummy, $output_directory, $output_filename) = File::Spec->splitpath($archive_name);
+    
+    use Cwd;
 
-    # if directory part is empty set it to current path
+    # if directory part is empty set it to current dir
     if ($output_directory eq "")
     {
-	$output_directory = '.';
-    }
-
-    while(!eof(PACKER))
+	$output_directory = cwd();
+    }                                                                       
+ 
+    if (substr($output_directory, 0, 1) eq ".")
     {
-	my $volume_string = sprintf("%02d", $volume);
+	my $d = substr($output_directory, 1);
+
+	$output_directory = cwd().$d;
+    }
+    
+    # delete ending '/' if present
+    if (substr($output_directory, -1, 1) eq "/")
+    {
+	chop($output_directory);
+    }
+    
+    $tar_command .= " -M -V 'YaST2 backup:' -f $output_directory/${volume_num}_$output_filename";
+
+    if ($multi_volume > 0)
+    {
+	# round size down: subtract 5kiB from size (default block size)
+	if ($multi_volume > 5)
+	{
+	    $multi_volume -= 5;
+	}
 	
-	open(OUTPUT, '>'.$output_directory.'/'.$volume_string.'_'.$output_filename)
-	    or die "Can not open target file: ";
-
-	if ($verbose)
-	{
-	    print '/Volume created: '.$volume_string.'_'.$output_filename."\n";
-	}
-
-	$written = 0;
-	    
-	while ($written + $block_size < $multi_volume && !eof(PACKER))
-	{
-	    $len = read(PACKER, $buffer, $block_size);
-
-	    if ($len > 0)
-	    {
-		$written += $len;
-		print OUTPUT $buffer;
-	    }
-	}
-
-	if (!eof(PACKER))
-	{
-	    $len = read(PACKER, $buffer, $multi_volume - $written);
-
-	    if ($len > 0)
-	    {
-		print OUTPUT $buffer;
-	    }
-	}
-
-	close(OUTPUT);
-
-	$volume++;
+	$tar_command .= " -L $multi_volume";
     }
 
-    close(PACKER);
+    # redirect STDERR to STDOUT
+    $tar_command .= " 2>&1)";
 
-    unlink($fifo_out);
+
+    use FileHandle;
+    use IPC::Open2;
+
+    # start subprocess
+    my $pid = open2(*Reader, *Writer, $tar_command );
+
+    my $buffer = ""; 
+    my $char;
+
+    # output from tar contains strings: name of file added to archive or prompt for next volume
+
+    while(read(Reader, $char, 1) != 0)
+    {
+	if ($char eq "\n")
+	{
+	    print "$buffer\n";
+	    $buffer = "";
+	}
+	else
+	{
+	    $buffer .= $char;		# add character to buffer
+
+	    if ($buffer =~ /Prepare volume #(\d) for `.*' and hit return: /)
+	    {
+		if ($1 == $volume_num)
+		{
+		    print Writer "y\n";
+		}
+		else
+		{
+		    $volume_num++;
+		    print Writer "n $output_directory/${volume_num}_$output_filename\n";
+		}
+
+		$buffer = "";	# clear buffer for next file name or tar prompt
+	    }
+	}
+    }
 }
 else
 {
-    $tar_command .= " -f $archive_name";
+    # create standard (no multi volume) archive 
+    $tar_command .= " -f $archive_name 2> /dev/null)";
 
-    if ($archive_type eq 'tgz')
-    {
-	$tar_command .= ' -z';
-    }
-    else
-    {
-	if ($archive_type eq 'tbz2')
-	{
-	    $tar_command .= ' -j';
-	}
-    }
-    
-    system($tar_command.' 2> /dev/null');
+    system($tar_command);
 }
 
 

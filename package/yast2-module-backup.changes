@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Tue Dec 18 20:19:10 CET 2001 - lslezak@suse.cz
+
+- format of backup archive was changed to package oriented archive
+- target archive is tar
+- changed creation of multi volume archives
+- Progress module used
+- version 2.5.6
+
+-------------------------------------------------------------------
 Tue Dec  4 09:20:43 CET 2001 - lslezak@suse.cz
 
 - added 3rd parameter in select() call

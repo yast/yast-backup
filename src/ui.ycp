@@ -18,6 +18,7 @@
 
 import "Backup";
 import "Wizard";
+import "Progress";
 
 include "ui/common_popups.ycp";
 include "ui/common_functions.ycp";
@@ -50,10 +51,10 @@ global define symbol ArchDialog() ``{
 			    `HSpacing(2.0),
 			    `ComboBox(`id(`type), `opt(`notify),
 				_("Select archive &type:"),
-				[ `item(`id(`tgz), "gzip (*.tar.gz)"),
-				  `item(`id(`tbz), "bzip2 (*.tar.bz2)"),
-				  `item(`id(`tar), "tar (*.tar)"),
-				  `item(`id(`txt), "only list of files (*.txt)")
+				[ `item(`id(`tgz), "tar with gzip subarchives"),
+				  `item(`id(`tbz), "tar with bzip2 subarchives"),
+				  `item(`id(`tar), "tar with tar subarchives"),
+				  `item(`id(`txt), _("only list of file names"))
 				]
 			    ),
 			    `HSpacing(3.0),
@@ -85,8 +86,7 @@ global define symbol ArchDialog() ``{
 
     if (SCR::Read(.runtime.username) != "root" && root_warning_displayed == false)
     {
-	UI::WarningPopup(_("You are not logged as root!") + "\n\n"
-	+ _("Some files can be read only by user root,\ntherefore not all files may be backuped\nand then after accident restored.\n\nAlso system areas on harddisks can be\nbackuped only by user root."));
+	UI::WarningPopup(_("You are not logged as root!\n\nSome files can be read only by user root,\ntherefore not all files may be backuped\nand then after accident restored.\n\nAlso system areas on harddisks can be\nbackuped only by user root."));
 	root_warning_displayed = true;
     }
 
@@ -109,7 +109,7 @@ global define symbol ArchDialog() ``{
 	    {
 		if (size(Backup::archive_name) == 0)
 		{
-		    UI::WarningPopup(_("Archive file name can not be empty\nPlease enter archive file name"));
+		    UI::WarningPopup(_("Archive file name can not be empty!\nPlease enter archive file name."));
 		}
 		else
 		{
@@ -558,7 +558,7 @@ global define symbol SystemBackupDialog() ``{
 	    ),
 	    `VSpacing(0.5),
 
-	    `Frame(_("Ext2 critical area backup"),
+	    `Frame(_("Ext2 file system critical area backup"),
 	        `RadioButtonGroup(`id(`rbg),
 	            `VBox(
 		        `VSpacing(0.3),
@@ -570,7 +570,7 @@ global define symbol SystemBackupDialog() ``{
 			`Left(`RadioButton(`id(`selected), `opt(`notify), _("&Selected:"), Backup::backup_selected_ext2)),
 			`HBox(
 			    `HSpacing(3.0),
-			    `Table(`id(`par), `header(_("Ext2 partition")), Backup::ext2_backup),
+			    `Table(`id(`par), `header(_("Ext2 partitions")), Backup::ext2_backup),
 			    `HSpacing(2.0)
 			),
 
@@ -725,6 +725,8 @@ global define symbol SearchingModifiedDialog() ``{
     boolean search_no_package = false;
     boolean reading_installed_packages = false;
 
+    selected_pkg_num = 0;
+
     while(SCR::Read(.background.output_open) || (SCR::Read(.background.newlines) > 0))
     {
 	script_out = SCR::Read(.background.newout);
@@ -758,6 +760,7 @@ global define symbol SearchingModifiedDialog() ``{
 
 			Backup::backup_files = add(Backup::backup_files, actual_package, package_info);
 			package_files = [ ];
+			selected_pkg_num = selected_pkg_num + 1;
 		    }
 
 		    actual_package = substring(line, size(id_package));
@@ -793,8 +796,9 @@ global define symbol SearchingModifiedDialog() ``{
 				    "install_prefixes" : actual_instprefixes
 				];
 
-				backup_files = add(backup_files, actual_package, package_info);
+				Backup::backup_files = add(Backup::backup_files, actual_package, package_info);
 				package_files = [ ];
+				selected_pkg_num = selected_pkg_num + 1;
 			    }
 
 			    actual_package = "";		// empty package name
@@ -887,6 +891,19 @@ global define symbol SearchingModifiedDialog() ``{
 	    return ret;
 	}
 
+    }
+
+    if (size (package_files) > 0)
+    {
+	map package_info = $[
+	    "changed_files" : package_files,
+	    "install_prefixes" : actual_instprefixes
+	];
+
+//	backup_files = add(backup_files, actual_package, package_info);
+
+	Backup::backup_files = add(Backup::backup_files, actual_package, package_info);
+	selected_pkg_num = selected_pkg_num + 1;
     }
 
     y2milestone("All packages verified.");
@@ -1113,6 +1130,7 @@ global define symbol FilesDialog() ``{
     list actual_package_files = [ ];
     string actual_package_name = nil;
     selected_files_num = 0;
+    selected_pkg_num = 0;
 
     while (idx <= num)
     {
@@ -1141,6 +1159,7 @@ global define symbol FilesDialog() ``{
 
 		actual_package_name = package_name;
 		actual_package_files = add([], file_name);
+		selected_pkg_num = selected_pkg_num + 1;
 	    }
 	    else
 	    {
@@ -1175,11 +1194,57 @@ global define symbol FilesDialog() ``{
 
 global define symbol ArchivingDialog() ``{
 
+    // create Progress bar
+    list stages1 = [ _("Store host information") ];
+    list stages2 = [ _("Storing host information...") ];
+
+    // number of steps = number of selected files + nuber of selected packages
+    //			+ 6 files (comment, hostname, date, files, installed_packages, packages_info)
+    //			+ 3 steps (comment, hostname, installed PRMs)
+    //			+ 3 stages (storing files, creating package archives, creating big archive)
+    integer num_stages = selected_files_num + selected_pkg_num + 12;
+
+    if (Backup::system)
+    {
+	stages1 = add(stages1, _("Create system area backup"));
+	stages2 = add(stages2, _("Creating system area backup ..."));
+
+	if (Backup::backup_pt)
+	{
+	    num_stages = num_stages + 1;
+	}
+
+	num_stages = num_stages + size(Backup::ext2_backup);
+
+	num_stages = num_stages + 1;	// System backup stage
+    }
+
+    if (Backup::multi_volume)
+    {
+	num_stages = num_stages + 1;    // tar prints Volume label if multi volume selected
+    }
+
+    stages1 = add(stages1, _("Create packages archives"));
+    stages1 = add(stages1, _("Create target archive"));
+
+    stages2 = add(stages2, _("Creating packages archives..."));
+    stages2 = add(stages2, _("Creating target archive..."));
+
+//    stages1 = mergelist(stages1, [_("Create packages archives"), _("Create target archive")]);
+//    stages2 = mergelist(stages2, [_("Creating packages archives..."), _("Creating target archive...")]);
+
+    Progress::New(_("Creating archive"), " ", num_stages, stages1, stages2, backup_help_creating_archive());
+
+    y2debug("Number of selected packages: %1, selected files: %2", selected_pkg_num, selected_files_num);
+
     y2milestone("Storing file names list...");
 
     // store selected file names to file
     string tmpfile_list = SCR::Read(.run.mktemp);
     file_list_stored = SCR::Write(.target.string, tmpfile_list, MapFilesToString());
+
+//    y2warning("Progress: NextStage: Store files");
+//    Progress::NextStage();
 
     if (!file_list_stored)
     {
@@ -1192,6 +1257,10 @@ global define symbol ArchivingDialog() ``{
     string tmpfile_comment = SCR::Read(.run.mktemp);
     comment_stored = SCR::Write(.target.string, tmpfile_comment, Backup::description);
 
+
+//    y2warning("Progress: Store comment");
+    Progress::NextStep();
+
     if (!comment_stored)
     {
 	y2warning("Error writing comment to file %", tmpfile_comment);
@@ -1199,7 +1268,7 @@ global define symbol ArchivingDialog() ``{
 
     added_files = 0;
 
-    Wizard::ClearContents();
+///    Wizard::ClearContents();
     boolean started = SCR::Execute(.background.run_output, sformat("%1 %2", Backup::script_create_archive, Backup::get_archive_script_parameters(tmpfile_list, tmpfile_comment)));
 
     if (!started)
@@ -1207,7 +1276,6 @@ global define symbol ArchivingDialog() ``{
 	UI::ErrorPopup(_("Could not start archiving script!\nBackup will be aborted."));
 	return `abort;
     }
-
 
     list script_out = [ ];
 
@@ -1220,12 +1288,13 @@ global define symbol ArchivingDialog() ``{
     string id_storing_installed_pkgs = "Storing list of installed packages";
     string id_storedpkg = "Packages stored: ";
     string id_ext2 = "Storing ext2 area: ";
-    string id_files = "Files: ";
+    string id_archive = "Creating archive:";
     string id_tar_exit = "/Tar result:";
     string id_new_volume = "/Volume created: ";
     string id_not_readable = "/File not readable: ";
     string id_not_stored = "Error storing partition: ";
     string id_pt_read = "Partition tables info read";
+    string id_creating_target = "Creating target archive file...";
 
     archived_num = 0;
     boolean tar_running = false;
@@ -1235,6 +1304,10 @@ global define symbol ArchivingDialog() ``{
     string id_list_stored = "File list stored";
 
     e2image_results = [];
+    stored_ptables = [];
+
+    string last_out = nil;
+    boolean system_stage_changed = false;
 
     y2milestone("Creating archive...");
 
@@ -1253,13 +1326,16 @@ global define symbol ArchivingDialog() ``{
 	    {
 		if (line == id_storing_list)
 		{
-		    Wizard::SetContents(title, `Label(_("Storing list of files...")), "", false, false);
+//		    Wizard::SetContents(title, `Label(_("Storing list of files...")), "", false, false);
 		}
 		else
 		{
 		    if (line == id_list_stored)
 		    {
 			stored_list = true;
+
+//			y2warning("Progress: list stored");
+			Progress::NextStep();
 		    }
 		    else
 		    {
@@ -1280,13 +1356,38 @@ global define symbol ArchivingDialog() ``{
 			if (substring(line, 0, size(id_new_volume)) == id_new_volume)
 			{
 			    string vol_name = substring(line, size(id_new_volume));
-			    UI::ChangeWidget(`id(`pbar), `Label, _("Creating volume: ") + vol_name + " ...");
+//			    UI::ChangeWidget(`id(`pbar), `Label, _("Creating volume: ") + vol_name + " ...");
 			    created_archive_files = add(created_archive_files, vol_name);
+			}
+			else if (line == id_creating_target)
+			{
+//			    y2warning("Progress: NextStage: create big archive");
+			    Progress::NextStage();
+			}
+			else if (substring(line, 0, size(id_not_readable)) == id_not_readable)
+			{
+			    not_readable_files = add(not_readable_files, substring(line, size(id_not_readable)));
+			    y2warning("File %1 can not be read.", substring(line, size(id_not_readable)));
+			    Progress::NextStep();
 			}
 			else
 			{
-			    archived_num = archived_num + 1;
-			    UI::ChangeWidget(`id(`pbar), `Value, archived_num);
+			    if (Backup::multi_volume)
+			    {
+				if (last_out != line)
+				{
+				    archived_num = archived_num + 1;
+				    Progress::NextStep();
+				    last_out = line;
+				}
+			    }
+			    else
+			    {
+				archived_num = archived_num + 1;
+//				UI::ChangeWidget(`id(`pbar), `Value, archived_num);
+//				y2warning("Progress: added file: %1", line);
+				Progress::NextStep();
+			    }
 			}
 		    }
 		}
@@ -1294,25 +1395,41 @@ global define symbol ArchivingDialog() ``{
 		{
 		    if (substring(line, 0, size(id_hostname)) == id_hostname)
 		    {
-			Wizard::SetContents(title, `Label(_("Storing host name...")), "", false, false);
+//			Wizard::SetContents(title, `Label(_("Storing host name...")), "", false, false);
 
 			string tmp = substring(line, size(id_hostname));
 			hostname_stored = (tmp == id_ok);
+
+//			y2warning("Progress: NextStage: hostname");
+			Progress::NextStage();
 		    }
 		    else
 		    {
 			if (substring(line, 0, size(id_date)) == id_date)
 			{
-			    Wizard::SetContents(title, `Label(_("Storing date...")), "", false, false);
+//			    Wizard::SetContents(title, `Label(_("Storing date...")), "", false, false);
 
 			    string tmp = substring(line, size(id_date));
 			    date_stored = (tmp == id_ok);
+
+//			    y2warning("storing date");
+			    Progress::NextStep();
 			}
 			else
 			{
 			    if (substring(line, 0, size(id_partab)) == id_partab)
 			    {
-				Wizard::SetContents(title, `Label(_("Storing partition table...")), "", false, false);
+//				Wizard::SetContents(title, `Label(_("Storing partition table...")), "", false, false);
+
+				if (!system_stage_changed)
+				{
+				    Progress::NextStage();
+				    system_stage_changed = true;
+				}
+				else
+				{
+				    Progress::NextStep();
+				}
 			    }
 			    else
 			    {
@@ -1320,7 +1437,7 @@ global define symbol ArchivingDialog() ``{
 				{
 				    string part_name = substring(line, size(id_ptstored));
 
-				    Wizard::SetContents(title, `Label(_("Storing partition table: ") + part_name), "", false, false);
+//				    Wizard::SetContents(title, `Label(_("Storing partition table: ") + part_name), "", false, false);
 				    added_files = added_files + 2;
 				    stored_ptables = add(stored_ptables, part_name);
 				}
@@ -1334,16 +1451,31 @@ global define symbol ArchivingDialog() ``{
 				    {
 					if (substring(line, 0, size(id_ext2)) == id_ext2)
 					{
-					    Wizard::SetContents(title, `Label(_("Storing Ext2 area: ") + substring(line, size(id_ext2)) + " ..."), "", false, false);
+//					    Wizard::SetContents(title, `Label(_("Storing Ext2 area: ") + substring(line, size(id_ext2)) + " ..."), "", false, false);
+					    if (!system_stage_changed)
+					    {
+						Progress::NextStage();
+						system_stage_changed = true;
+					    }
 					}
 					else
 					{
-					    if (substring(line, 0, size(id_files)) == id_files)
+					    if (line == id_archive)
 					    {
-						total_files = tointeger(substring(line, size(id_files)));
+//						total_files = tointeger(substring(line, size(id_files)));
 
-						Wizard::SetContents(title, `ProgressBar(`id(`pbar), _("Creating archive: ") + Backup::archive_name + " ...", total_files), backup_help_creating_archive(), false, false);
+//						Wizard::SetContents(title, `ProgressBar(`id(`pbar), _("Creating archive: ") + Backup::archive_name + " ...", total_files), backup_help_creating_archive(), false, false);
 						tar_running = true;
+//						y2warning("Progress: NextStage: creating archive");
+
+						// set next stage if system backup was selected, but no partition table or ext2 image was selected
+						if (Backup::system && !system_stage_changed)
+						{
+						    Progress::NextStage();
+						    system_stage_changed = true;
+						}
+
+						Progress::NextStage();
 					    }
 					    else
 					    {
@@ -1356,6 +1488,8 @@ global define symbol ArchivingDialog() ``{
 						    if (substring(line, 0, size(id_not_readable)) == id_not_readable)
 						    {
 							not_readable_files = add(not_readable_files, substring(line, size(id_not_readable)));
+							y2warning("File %1 can not be read.", substring(line, size(id_not_readable)));
+							Progress::NextStep();
 						    }
 						    else
 						    {
@@ -1367,13 +1501,15 @@ global define symbol ArchivingDialog() ``{
 							{
 							    if (line == id_storing_installed_pkgs)
 							    {
-								Wizard::SetContents(title, `Label(_("Storing list of installed packages...")), "", false, false);
+//								Wizard::SetContents(title, `Label(_("Storing list of installed packages...")), "", false, false);
 							    }
 							    else
 							    {
 								if (substring(line, 0, size(id_storedpkg)) == id_storedpkg)
 								{
 								    packages_list_stored = (substring(line, size(id_storedpkg)) == id_ok);
+//								    y2warning("Progress: Stored list of installed packages");
+								    Progress::NextStep();
 								}
 								else
 								{
@@ -1437,7 +1573,9 @@ global define symbol SummaryDialog() ``{
 
     if (Backup::archive_type == `txt)
     {
-	backup_result = p + (stored_list ? sformat(_("List of files stored to file %1"), Backup::archive_name) : em + _("Error storing list of files") + _em) + _p;
+	// For translators: %1 is entered archive file name
+	backup_result = p + (stored_list ? sformat(_("List of files stored to file %1"), Backup::archive_name)
+	    : em + _("Error storing list of files") + _em) + _p;
     }
     else
     {
@@ -1566,6 +1704,7 @@ global define symbol SummaryDialog() ``{
 
 	if (!Backup::multi_volume)
 	{
+	    // For translators: %1 is entered archive file name
 	    archive_created = sformat(_("Archive %1 created successfully"), Backup::archive_name);
 	}
 	else
@@ -1574,8 +1713,14 @@ global define symbol SummaryDialog() ``{
 	}
 
 	backup_result = backup_result
-	    + ((tar_result == 0) ? archive_created + br +_("Total archived files: ") + archived_num :
-	      em + _("Archive creation failed") + _em) + _p;
+	    + ((tar_result == 0) ? archive_created : em + _("Archive creation failed") + _em)
+	    + _p;
+
+//	    + ((tar_result == 0) ? archive_created + br +_("Total archived files: ") + archived_num :
+//	      em + _("Archive creation failed") + _em) + _p;
+
+	backup_details = backup_details + p + _("Total archived files: ") + archived_num + _p;
+
 
 	if (Backup::multi_volume)
 	{

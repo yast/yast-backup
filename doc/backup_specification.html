@@ -18,6 +18,7 @@ Changes:
 
 <P>
 <UL>
+  <LI><B>2001-12-18:</B> Changed archive file internal structure</LI>
   <LI><B>2001-11-29:</B> Changed solutions of some problems</LI>
   <LI><B>2001-10-31:</B> Multi volume archive</LI>
   <LI><B>2001-10-25:</B> Partition table storing updated</LI>
@@ -99,22 +100,30 @@ Partition rescue mini HOWTO</A>,
 <H3>Backup</H3>
 
 <P>Backup archive contains files which differ from files in RPM packages and files which
-do not belong to any RPM package.
-Archive file (tar, tar.gz or tar.bz2) contains all backuped files in their
-original directory, so manual restoring is possible.
-Some additional information will be stored in subdirectory <I>tmp/yast2-backup</I>
+do not belong to any RPM package.</P>
+
+<P>Changed files which belong to one package are stored to one subarchive with name
+
+<UL>
+<I>&lt;package_name&gt;-&lt;package_version&gt;-&lt;date_of_backup&gt;-&lt;num&gt;.&lt;ext&gt;</I>
+</UL>
+
+Currently <I>num</I> is 0 - this value is for future enhacement, file extension
+<I>ext</I> is one of '.tar.gz', '.tar.bz2' or '.tar'.</P>
+
+<P>Some additional information will be stored in subdirectory <I>info</I> in the archive.
 This directory should contain files:
 <UL>
-	<LI><I>hostname</I> - name of machine where archive was created</LI>
-	<LI><I>date</I> - date of backup</LI>
 	<LI><I>comment</I> - user comment, description of backup archive</LI>
-	<LI><I>partition_table_&lt;device&gt;.txt</I> - partition table info obtained by <TT>fdisk -l &lt;device&gt;</TT> (human readable)</LI>
-	<LI><I>partition_table_&lt;device&gt;</I> - partition table stored by <TT>dd if=/dev/&lt;device&gt; of=&lt;file&gt; bs=512 count=1</TT> (raw data)</LI>
-	<LI><I>e2image_&lt;device&gt;</I> - ext2 metadata obtained by <TT>e2image &lt;device&gt;</TT></LI>
+	<LI><I>date</I> - date of backup</LI>
+	<LI><I>hostname</I> - name of machine where archive was created</LI>
+
 	<LI><I>installed_packages</I> list of installed packages - output from <TT>rpm -qa</TT> command</LI>
-	<LI><I>files_info</I> - list of files (with absolute path) and packages to which they belong
+	<LI><I>files</I> list of all files present in the backup archive (useful for multiple volume archive)</LI>
+	<LI><I>packages_info</I> - list of files (with absolute path) and packages to which they belong
+
 <P>
-Format of file:<BR>
+Format of <I>packages_info</I> file:<BR>
 <PRE>Package: <I>package_name_with_version</I>
 Installed: <I>installation_prefix</I>
 <I>file1
@@ -134,6 +143,18 @@ file2
 </UL>
 </P>
 
+<P>System backup will be stored in <I>system</I> subdirectory in the archive. This subdirectory can contain files:
+<UL>
+	<LI><I>partition_table_&lt;device&gt;.txt</I> - partition table info obtained by <TT>sfdisk -d &lt;device&gt;</TT> (human readable, can be used as input file for sfdisk - see sfdisk man page)</LI>
+	<LI><I>partition_table_&lt;device&gt;</I> - partition table stored by <TT>dd if=/dev/&lt;device&gt; of=&lt;file&gt; bs=512 count=1</TT> (raw data)</LI>
+	<LI><I>e2image_&lt;device&gt;.tar.bz2</I> - compressed ext2 metadata obtained by <TT>e2image &lt;device&gt;</TT></LI>
+</UL>
+</P>
+
+<P>All package archives, files in <I>info</I> and <I>system</I> subdirectories are archived to one big archive by tar utility.</P>
+
+<P>It is possible to store only list of changed files to file - script <I>backup_archive.pl</I> outputs file names from
+<I>packages_info</I> file. This list of files can be used to create another archive type.</P>
 
 <H4>Problems and solutions</H4>
 
@@ -187,6 +208,12 @@ and inode is in the list.
 case archive file can be manually splitted to more files, but for beginners
 is more acceptable automatic splitting.</P>
 
+<P>Tar archiver creates multiple volume archives if <I>-M</I> or <I>-L</I> is used.
+Each volume is standalone archive - files can be extracted without need of
+other volumes (except files which were splitted to more volumes) 
+</P>
+
+<!--
 <P><EM>Backup_archive.pl</EM> script can split archive to multiple parts with
 required size. Splitting archive file is done through named pipe (fifo)
 to avoid unnecessary storing whole archive to disk and splitting it later.
@@ -198,10 +225,11 @@ is read by <EM>backup_archive.pl</EM> script and splitted to individual volumes.
 is filtered through compression utility (<EM>z</EM> or <EM>j</EM> command line
 parameters) then file read from fifo is corrupted. Solution is start tar without
 compression parameters and start compression utility connected to tar output.)</P>
+-->
 
 <P>Each volume is named according to pattern <EM>&lt;volume_number&gt;_&lt;archive_name&gt;</EM>.
-If user enters archive name <EM>/tmp/archive.tar.gz</EM> then volume names are:
-<EM>/tmp/01_archive.tar.gz</EM>, <EM>/tmp/02_archive.tar.gz</EM>, ...</P>
+If user enters archive name <EM>/tmp/archive.tar</EM> then volume names are:
+<EM>/tmp/01_archive.tar</EM>, <EM>/tmp/02_archive.tar</EM>, ...</P>
 
 
 <H4>Architecture</H4>
@@ -260,83 +288,72 @@ from the archive.
 
 <H3>Overview</H3>
 
-<P>This is backup workflow overview. (<A HREF="workflow.dia">source</A>)
-</P>
+<P>This is backup workflow overview. (<A HREF="workflow.dia">source</A>)</P>
 
-<MAP NAME="map">
-<AREA SHAPE="RECT" COORDS="44,0,235,139" HREF="#archive_options">
-<AREA SHAPE="RECT" COORDS="302,1,487,140" HREF="#archive_file_options">
-<AREA SHAPE="RECT" COORDS="47,164,235,302" HREF="#backup_options">
-<AREA SHAPE="RECT" COORDS="299,269,488,410" HREF="#exclude_dir">
-<AREA SHAPE="RECT" COORDS="514,270,697,410" HREF="#exclude_fs">
-<AREA SHAPE="RECT" COORDS="302,434,490,574" HREF="#system">
-<AREA SHAPE="RECT" COORDS="50,568,234,705" HREF="#searching_modif">
-<AREA SHAPE="RECT" COORDS="315,721,499,860" HREF="#searching_files">
-<AREA SHAPE="RECT" COORDS="315,871,496,1004" HREF="#file_selection">
-<AREA SHAPE="RECT" COORDS="56,991,237,1126" HREF="#creating_archive">
-<AREA SHAPE="RECT" COORDS="54,1147,236,1282" HREF="#summary">
-</MAP>
 
 <P>
-<IMG SRC="workflow.png" USEMAP="#map">
+<IMG SRC="workflow.png">
 </P>
 
 <H3>Dialog details</H3>
 
-<P>Qt designer workflow dialogs are available <A HREF="ui.tar.bz2">here</A>.</P>
+<P>(Outdated Qt designer workflow dialogs are available <A HREF="ui.tar.bz2">here</A>.)</P>
 
 <P><A NAME="archive_options"></A><B>Archive options</B> - Archive file name, 
 achive type and optional archive description are entered in this dialog.
-<BR><IMG SRC="dialog1.png">
+<BR><IMG SRC="dialog01.png">
 </P>
 
 <P><A NAME="archive_file_options"></A><B>Archive file options</B> - Multi volume archive
 options
-<BR><IMG SRC="dialog11.png">
+<BR><IMG SRC="dialog02.png">
 </P>
 
 <P><A NAME="backup_options"></A><B>Backup options</B> - 
 Number of selected parts to backup affects number of dialogs in workflow.
-<BR><IMG SRC="dialog2.png">
+<BR><IMG SRC="dialog03.png">
 </P>
 
 <P><A NAME="exclude_dir"></A><B>Exclude directory</B> - Directories can be excluded from search.
-<BR><IMG SRC="dialog3.png">
+<BR><IMG SRC="dialog04.png">
 </P>
 
-<P><A NAME="exclude_fs"></A><B>Exclude file system</B> - Filesystems can be selected to exclude from search.
-<BR><IMG SRC="dialog10.png">
+<P><A NAME="exclude_fs"></A><B>Exclude file system</B> - Filesystems can be excluded from search.
+<BR><IMG SRC="dialog05.png">
 </P>
-
 
 <P><A NAME="system"></A><B>System backup</B> - Partition table and
 ext2 partitions can be selected here.
-<BR><IMG SRC="dialog4.png">
+<BR><IMG SRC="dialog06.png">
 </P>
 
 <P><A NAME="searching_modif"></A><B>Searching modified files</B> - Progress bar is displayed
 while searching modified files.
-<BR><IMG SRC="dialog5.png">
+<BR><IMG SRC="dialog07.png">
 </P>
 
 <P><A NAME="searching_files"></A><B>Searching files</B> - Progress of searching files
 is displayed here.
-<BR><IMG SRC="dialog6.png">
+<BR><IMG SRC="dialog08.png">
 </P>
 
 <P><A NAME="file_selection"></A><B>File selection</B> - All found files are
 displayed here.
-<BR><IMG SRC="dialog7.png">
+<BR><IMG SRC="dialog09.png">
 </P>
 
 <P><A NAME="creating_archive"></A><B>Creating archive</B> - 
 Progess is displayed while creating archive.
-<BR><IMG SRC="dialog8.png">
+<BR><IMG SRC="dialog10.png">
 </P>
 
 <P><A NAME="summary"></A><B>Backup summary</B> - Results
 of backup procedure are displayed here.
-<BR><IMG SRC="dialog9.png">
+<BR><IMG SRC="dialog11.png">
+</P>
+
+<P><A NAME="summary_details"></A><B>Summary details</B> - Detailed results are displayed here.
+<BR><IMG SRC="dialog12.png">
 </P>
 
 
