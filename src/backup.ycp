@@ -116,8 +116,13 @@ map sequence = $[
 	`edit	: "archive",
 	`start  : "do_searching",
 	`manual : "archive",
+	`cron	: "cron",
 	`abort	: `abort,
 	`finish : `ws_finish
+    ],
+    "cron" :$[
+	`next	: "readprof",
+	`abort	: `abort
     ],
     "archive" : $[
         `next	: "backup",
@@ -174,6 +179,7 @@ map sequence = $[
 // aliases for dialogs
 map aliases = $[
     "readprof"	: ``(SelectProfileDialog()),
+    "cron"	: [ ``(CronDialog()), true ],
     "files"	: ``(FilesDialog()),
     "tar_opt"	: ``(TarOptionsDialog()),
     "archive"	: ``(ArchDialog()),

@@ -31,6 +31,181 @@ global symbol last_input = nil;
 
 global map deselected_ids = $[];
 
+/**
+ * Update widget status in the dialog. Enable/disable widget according to
+ * checkbox/combobox value.
+ */
+global define void update_cron_dialog() ``{
+    if (UI::QueryWidget(`id(`enabled), `Value) == true)
+    {
+	UI::ChangeWidget(`id(`time), `Enabled, true);
+
+	UI::ChangeWidget(`id(`weekday), `Enabled, (UI::QueryWidget(`id(`time), `Value) == `week));
+	UI::ChangeWidget(`id(`day), `Enabled, (UI::QueryWidget(`id(`time), `Value) == `month));
+
+	UI::ChangeWidget(`id(`hour), `Enabled, true);
+	UI::ChangeWidget(`id(`minute), `Enabled, true);
+
+	UI::ChangeWidget(`id(`old), `Enabled, true);
+    }
+    else
+    {
+	// disable all widgets
+	UI::ChangeWidget(`id(`time), `Enabled, false);
+	UI::ChangeWidget(`id(`weekday), `Enabled, false);
+	UI::ChangeWidget(`id(`day), `Enabled, false);
+	UI::ChangeWidget(`id(`hour), `Enabled, false);
+	UI::ChangeWidget(`id(`minute), `Enabled, false);
+	UI::ChangeWidget(`id(`old), `Enabled, false);
+    }
+}
+
+/**
+ * Display dialog for automatic backup - set time when backup module will
+ * be started at background with current selected profile.
+ * @return symbol User input value
+ */
+
+global define symbol CronDialog() ``{
+
+    // read current settings from profile
+    map current_profile = eval(Backup::backup_profiles[Backup::selected_profile]:$[]);
+    map current_settings = eval(current_profile[`cron_settings]:$[]);
+
+    // current day settings
+    symbol cday = current_settings["every"]:`none;
+    integer cweekday = current_settings["weekday"]:0;
+
+    // dialog header - %1 is profile name
+    Wizard::SetContents(sformat(_("Automatic backup options - Profile '%1'"), Backup::selected_profile),
+	`VBox(
+	    `VSpacing(0.5),
+	    // check box label
+	    `Left(`CheckBox(`id(`enabled), `opt(`notify), _("&Start backup automatically"), current_settings["auto"]:false)),
+	    `VSpacing(0.45),
+
+	    `HBox(
+		`HSpacing(4),
+		`VBox(
+		    // frame label
+		    `Frame(_("How often start backup"),
+			`VBox(
+			    `VSpacing(0.45),
+			    `HBox(
+				`HSpacing(1),
+				`ComboBox(`id(`time), `opt(`notify), _("S&tart backup"), [
+					`item(`id(`day), _("Daily"), cday == `day),
+					`item(`id(`week), _("Weekly"), cday == `week),
+					`item(`id(`month), _("Monthly"), cday == `month),
+				    ]
+				),
+				`HStretch()
+			    ),
+			    `VSpacing(0.45)
+			)
+		    ),
+		    `VSpacing(0.45),
+
+		    // frame label
+		    `Frame(_("When start backup"),
+			`VBox(
+			    `VSpacing(0.45),
+			    `HBox(
+				`HSpacing(1),
+				// combo box label
+				`ComboBox(`id(`weekday), _("&Weekday"), [
+					`item(`id(0), _("Monday"), cweekday == 0),
+					`item(`id(1), _("Tuesday"), cweekday == 1),
+					`item(`id(2), _("Wednesday"), cweekday == 2),
+					`item(`id(3), _("Thursday"), cweekday == 3),
+					`item(`id(4), _("Friday"), cweekday == 4),
+					`item(`id(5), _("Saturday"), cweekday == 5),
+					`item(`id(6), _("Sunday"), cweekday == 6),
+				    ]
+				),
+				`HSpacing(2),
+				// integer field widget label
+				`IntField(`id(`day), _("&Day of Month"), 1, 31, current_settings["day"]:0),
+				`HStretch()
+			    ),
+			    `VSpacing(0.45),
+			    `HBox(
+				`HSpacing(1),
+				// integer field widget label
+				`IntField(`id(`hour), _("&Hour"), 0, 23, current_settings["hour"]:0),
+				`HSpacing(2),
+				// integer field widget label
+				`IntField(`id(`minute), _("&Minute"), 0, 59, current_settings["minute"]:0),
+				`HStretch()
+			    ),
+			    `VSpacing(0.45)
+			)
+		    ),
+		    `VSpacing(0.45),
+		    `Frame(_("Other settings"),
+			`VBox(
+			    `VSpacing(0.45),
+			    `HBox(
+				`HSpacing(1),
+				// integer field widget label
+				`IntField(`id(`old), _("Ma&x. number of old backups"), 0, 100, current_settings["old"]:3),
+				`HStretch()
+			    ),
+			    `VSpacing(0.45)
+			)
+		    )
+		),
+		`HSpacing(2)
+	    )
+	),
+	"help", true, true
+    );
+
+    // replace 'Next' buton with 'Ok'
+    Wizard::ReplaceNextButton(`PushButton(`id(`next), `opt(`default, `key_F10), OKButtonLabel()));
+    UI::SetFocus(`id(`next));
+
+    // set initial widget states
+    update_cron_dialog();
+
+    symbol ret = UI::UserInput();
+
+    while (!contains([`abort, `cancel, `back, `next], ret))
+    {
+	update_cron_dialog();
+	ret = UI::UserInput();
+    }
+
+    if (ret == `cancel)
+    {
+	ret = `abort;
+    }
+    else if (ret == `next)
+    {
+	// store setting to the selected profile
+	if (Backup::selected_profile != nil)
+	{
+	    current_settings["auto"] = UI::QueryWidget(`id(`enabled), `Value);
+	    current_settings["every"] = UI::QueryWidget(`id(`time), `Value);
+
+	    current_settings["weekday"] = UI::QueryWidget(`id(`weekday), `Value);
+	    current_settings["day"] = UI::QueryWidget(`id(`day), `Value);
+	    current_settings["hour"] = UI::QueryWidget(`id(`hour), `Value);
+	    current_settings["minute"] = UI::QueryWidget(`id(`minute), `Value);
+
+	    current_settings["old"] = UI::QueryWidget(`id(`old), `Value);
+
+	    current_profile[`cron_settings] = current_settings;
+	    Backup::backup_profiles[Backup::selected_profile] = current_profile;
+
+	    y2milestone("Profile: %1, New settings: %2", Backup::selected_profile, current_settings);
+	}
+    }
+
+    Wizard::RestoreNextButton();
+
+    return ret;
+}
 
 /**
  * Refresh widget status (enable/disable) in the displayed dialog.
@@ -2331,7 +2506,8 @@ global define symbol SelectProfileDialog() ``{
                         `item(`id(`add), AddButtonLabel()+"..."),
                         `item(`id(`clone), _("&Duplicate...")),
                         `item(`id(`edit), EditButtonLabel()+"..."),
-                        `item(`id(`delete), DeleteButtonLabel())
+                        `item(`id(`delete), DeleteButtonLabel()),
+			`item(`id(`cron), _("Automatic backup..."))
                     ])
             ),
             `PushButton(`id(`manual),_("Backup &manually...")),
@@ -2408,7 +2584,21 @@ global define symbol SelectProfileDialog() ``{
 	    Backup::RestoreDefaultSettings();
 	    Backup::selected_profile = nil;
 	}
-    } while( ret != `finish && ret != `manual && ret != `start && ret != `edit );
+	else if (ret == `cron)
+	{
+	    string selprofile = UI::QueryWidget(`id(`profile), `CurrentItem);
+
+	    if (selprofile != nil)
+	    {
+		Backup::selected_profile = selprofile;
+	    }
+	    else
+	    {
+		// no selected profile, wait for next UserInput
+		ret = nil;
+	    }
+	}
+    } while( ret != `finish && ret != `manual && ret != `start && ret != `edit && ret != `cron);
 
     if( ret == `finish )
     {
