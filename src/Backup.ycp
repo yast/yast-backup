@@ -90,7 +90,7 @@ global string default_description = "";			// user comment
 global symbol default_archive_type = `tgz;		// archive type
 
 global boolean default_multi_volume = false;
-global symbol default_volume_size = `fd144;
+global symbol default_volume_size = `default_size;
 global string default_user_volume_size = "";
 global symbol default_user_volume_unit = nil;
 
@@ -159,6 +159,9 @@ global list unselected_files = eval( default_unselected_files );	// files, which
 global boolean no_interactive = false; 	// whether the user should setup configuration manually
 global string selected_profile = nil;   // name of the selected profile, nil for no selected profile (default settings)
 
+// default volume size if it wasn't detected
+global integer undetected_volume_size = 1024*1024*1024;
+
 global list installable_packages = [];
 // end of global settings
 
@@ -204,7 +207,15 @@ global list zip_media_descriptions = [
     ],*/
 ];
 
-global list media_descriptions = merge(merge(cd_media_descriptions, floppy_media_descriptions), zip_media_descriptions);
+global list misc_descriptions = [
+    $[
+	"label" : _("Default volume size"),
+	"symbol" : `default_size,
+	"capacity" : 1024*1024*1024
+    ]
+];
+
+global list media_descriptions = merge(merge(merge(cd_media_descriptions, floppy_media_descriptions), zip_media_descriptions), misc_descriptions);
 
 global list units_description = [
     $[
@@ -312,7 +323,11 @@ global define string get_search_script_parameters() ``{
 	script_options = script_options + " --no-md5";
     }
 
+    // add widget file option
     script_options = script_options + " --widget-file " + SCR::Read(.target.tmpdir) + "/items.ycp";
+
+    // add package verification option
+    script_options = script_options + " --pkg-verification";
 
     y2debug("Search script options: %1", script_options);
 
@@ -1283,11 +1298,11 @@ global define map RemovableDevices(boolean only_writable) ``{
 			}
 		    }
 
-		    // volume size was'nt detected, use default value 512MiB
+		    // volume size was'nt detected, use default value
 		    if (preselected == nil)
 		    {
 			preselected = `user;
-			user_size = 512*1024*1024;
+			user_size = undetected_volume_size;
 		    }
 
 		    if (size(dev_name) > 0)
