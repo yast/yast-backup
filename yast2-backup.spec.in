@@ -34,7 +34,6 @@ Obsoletes:	yast2-trans-backup
 @ybindir@/backup_*
 @moduledir@/Backup.ycp
 @moduledir@/Backup.ybc
-@configdir@/backup.y2cc
 @desktopdir@/backup.desktop
 %doc @docdir@
 

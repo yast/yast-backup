@@ -18,8 +18,6 @@ ynclude_DATA =		\
 	ui.ycp		\
 	help_texts.ycp
 
-config_DATA = backup.y2cc
-
 desktop_DATA = backup.desktop
 
 module_DATA = Backup.ycp
@@ -34,4 +32,4 @@ ycpchook = backup
 YCPCFLAGS=-I.
 
 
-EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(config_DATA) $(module_DATA) $(desktop_DATA)
+EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(module_DATA) $(desktop_DATA)
