@@ -104,8 +104,8 @@ global list units_description = [
 global boolean search = true;			// search files which do not belong to any package
 global boolean system = false;			// backup system areas
 global boolean display = false;		// display files before creating archive
-global boolean enhanced_check_owner = false;	// enhanced check if file is owned by package
-global boolean check_multiple_packages = true;	// check if it is necessary to backup file, which owned by multiple packages
+//global boolean enhanced_check_owner = false;	// enhanced check if file is owned by package
+//global boolean check_multiple_packages = true;	// check if it is necessary to backup file, which owned by multiple packages
 global boolean do_md5_test = true;
 
 global list default_dir = [ "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache" ];		// default excluded directoried from search
@@ -169,16 +169,16 @@ global define string get_search_script_parameters() ``{
 	foreach(`i, dir_list, ``{script_options = script_options + " --exclude-dir " + select(select(i, 0), 0);});
 	foreach(`i, fs_exclude, ``{script_options = script_options + " --exclude-fs " + i;});
 
-	if (enhanced_check_owner)
+/*	if (enhanced_check_owner)
 	{
 	    script_options = script_options + " --enhanced-check";
-	}
+	}*/
     }
 
-    if (!check_multiple_packages)
+/*    if (!check_multiple_packages)
     {
 	script_options = script_options + " --disable-check-multiple";
-    }
+    }*/
 
     if (!do_md5_test)
     {
@@ -219,7 +219,7 @@ global define string get_archive_script_parameters(string file_list, string file
 
 	list partitions = (backup_all_ext2) ? detected_ext2 : (backup_none_ext2 ? [] : tmp_selected_pt);
 
-	y2milestone("partitions: %1", partitions);
+	y2milestone("Backup Ext2 partitions: %1", partitions);
 
 	foreach(`spt, partitions, ``{archive_options = archive_options + " --store-ext2 " + spt;});
     }
@@ -269,30 +269,6 @@ global define string get_archive_script_parameters(string file_list, string file
 
     return archive_options;
 }
-
-/*integer selected_files_num = 0;		// number of selected files to backup
-
-string checkmark = UI::Glyph(`CheckMark);
-string nocheckmark = (checkmark == "[x]") ? "[ ]" : " ";
-
-boolean hostname_stored = false;
-boolean date_stored = false;
-boolean file_list_stored = false;
-boolean comment_stored = false;
-list e2image_results = [];		// results of storing ext2 images
-integer archived_num = 0;
-list not_readable_files = [];
-list created_archive_files = [];
-list failed_ptables = [];
-list stored_ptables = [];
-boolean read_ptables_info = false;
-
-integer tar_result = 1;		// exit status of tar
-integer total_files = 0;	// total number of files in archive
-integer added_files = 0;
-
-boolean confirm_abort = false;	// confirm abort
-*/
 
 
 }
