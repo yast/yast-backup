@@ -469,7 +469,8 @@ if (defined open(FILES, $files_info))
 	
 	if ($line =~ /^\/.+/)
 	{
-	    if (-r remove_escape($line))	# output only readable files from files-info
+	    if (-r remove_escape($line) or -l remove_escape($line))	# output only readable files from files-info
+						# symlinked files need not to be readable
 	    {
     		print FILES_INFO $line."\n";
 

@@ -1,3 +1,4 @@
+- backup even special files
 - backup files with new line character in file name (bug #15259)
 
 -------------------------------------------------------------------
