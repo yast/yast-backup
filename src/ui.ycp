@@ -33,57 +33,57 @@ include "backup/functions.ycp";
 
 textdomain "backup";
 
-global symbol last_input = nil;
+ symbol last_input = nil;
 
-global map deselected_ids = $[];
+ map deselected_ids = $[];
 
 // type of item (displayed in the table)
-global string filesystem_text = _("File System");
+ string filesystem_text = _("File System");
 // type of item (displayed in the table)
-global string directory_text = _("Directory");
+ string directory_text = _("Directory");
 // type of item (displayed in the table)
-global string regexp_text = _("Reg. expression");
+ string regexp_text = _("Reg. expression");
 
-global integer selected_pkg_num = 0;		// number of packages which files are selected
-global integer modified_size = 0;		// size
-global integer modified_num = 0;		// number of modified files
+ integer selected_pkg_num = 0;		// number of packages which files are selected
+ integer modified_size = 0;		// size
+ integer modified_num = 0;		// number of modified files
 
-global integer wait_time = 300;    // loop delay (in miliseconds)
-global integer nopkg_num = 0;			// number of found files which do not belong to any package
-global integer nopkg_size = 0;			// size
-global integer selected_files_num = 0;		// number of selected files to backup
+ integer wait_time = 300;    // loop delay (in miliseconds)
+ integer nopkg_num = 0;			// number of found files which do not belong to any package
+ integer nopkg_size = 0;			// size
+ integer selected_files_num = 0;		// number of selected files to backup
 
-global string checkmark = "X";
-global string nocheckmark = " ";
+ string checkmark = "X";
+ string nocheckmark = " ";
 
-global boolean root_warning_displayed = false;
+ boolean root_warning_displayed = false;
 
-global boolean file_list_stored = false;
+ boolean file_list_stored = false;
 
-global boolean hostname_stored = false;
-global boolean date_stored = false;
-global boolean comment_stored = false;
-global list e2image_results = [];		// results of storing ext2 images
-global integer archived_num = 0;
-global list not_readable_files = [];
-global list created_archive_files = [];
-global list failed_ptables = [];
-global list stored_ptables = [];
-global boolean read_ptables_info = false;
-global boolean stored_list = false;
+ boolean hostname_stored = false;
+ boolean date_stored = false;
+ boolean comment_stored = false;
+ list e2image_results = [];		// results of storing ext2 images
+ integer archived_num = 0;
+ list not_readable_files = [];
+ list created_archive_files = [];
+ list failed_ptables = [];
+ list stored_ptables = [];
+ boolean read_ptables_info = false;
+ boolean stored_list = false;
 
-global integer tar_result = 1;		// exit status of tar
-global integer total_files = 0;	// total number of files in archive
-global integer added_files = 0;
+ integer tar_result = 1;		// exit status of tar
+ integer total_files = 0;	// total number of files in archive
+ integer added_files = 0;
 
-global boolean packages_list_stored = false;
-global map profilewritten = $[];	// result of writing profile
+ boolean packages_list_stored = false;
+ map profilewritten = $[];	// result of writing profile
 
 /**
  * Update widget status in the dialog. Enable/disable widget according to
  * checkbox/combobox value.
  */
-global define void update_cron_dialog() ``{
+ define void update_cron_dialog() ``{
     if (UI::QueryWidget(`id(`enabled), `Value) == true)
     {
 	UI::ChangeWidget(`id(`time), `Enabled, true);
@@ -113,7 +113,7 @@ global define void update_cron_dialog() ``{
 /**
  * Refresh widget states in the location dialog
  */
-global define void update_location_dialog() ``{
+ define void update_location_dialog() ``{
     boolean nfs = (UI::QueryWidget(`id(`nfs), `Value) == true);
 
     UI::ChangeWidget(`id(`nfsserver), `Enabled, nfs);
@@ -126,7 +126,7 @@ global define void update_location_dialog() ``{
  * Ask whether archive can be overwritten if it already exists
  * @return boolean true when archive can be overwritten, nil when an error occured (e.g. NFS mount failed)
  */
-global define boolean WriteArchive() ``{
+ define boolean WriteArchive() ``{
     boolean ret = true;
 
     y2milestone("target_type: %1", Backup::target_type);
@@ -155,7 +155,7 @@ global define boolean WriteArchive() ``{
  * be started at background with current selected profile.
  * @return symbol User input value
  */
-global define symbol CronDialog() ``{
+ define symbol CronDialog() ``{
 
     // read current settings from profile
     map current_profile = (map)eval(Backup::backup_profiles[Backup::selected_profile]:$[]);
@@ -317,7 +317,7 @@ global define symbol CronDialog() ``{
  *	"only list" radio button.
  */
 
-global define void refresh_widget_status(boolean enable_archive_type) ``{
+ define void refresh_widget_status(boolean enable_archive_type) ``{
     if (enable_archive_type == false)
     {
 	UI::ChangeWidget(`id(`type), `Enabled, false);
@@ -339,7 +339,7 @@ global define void refresh_widget_status(boolean enable_archive_type) ``{
  * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define symbol ArchDialog() ``{
+ define symbol ArchDialog() ``{
 
     // do not allow manual changes of configuration
     if (Backup::no_interactive)
@@ -789,7 +789,7 @@ Enter the file name to use.
  * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define symbol TarOptionsDialog() ``{
+ define symbol TarOptionsDialog() ``{
 
     list description_combo = MediaList2UIList(Backup::media_descriptions);
     // combo box item - user defined volume size of archive
@@ -925,7 +925,7 @@ global define symbol TarOptionsDialog() ``{
  * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define symbol BackupDialog() ``{
+ define symbol BackupDialog() ``{
 
     // do not allow manual changes of configuration
     if( Backup::no_interactive ) return `next2;
@@ -1001,7 +1001,7 @@ global define symbol BackupDialog() ``{
  * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define symbol SystemBackupDialog() ``{
+ define symbol SystemBackupDialog() ``{
 
     if (Backup::detected_ext2 == nil)
     {
@@ -1209,7 +1209,7 @@ global define symbol SystemBackupDialog() ``{
  *   nil = may be not enough space (compression is used, impossible to tell exactly)
  */
 
-global define boolean is_space(integer required, integer available, symbol target_type) ``{
+ define boolean is_space(integer required, integer available, symbol target_type) ``{
 
     if (available < 0)
     {
@@ -1248,7 +1248,7 @@ global define boolean is_space(integer required, integer available, symbol targe
  * @return boolean false = abort backup
  */
 
-global define boolean display_free_space_warning(boolean fits, string dir) ``{
+ define boolean display_free_space_warning(boolean fits, string dir) ``{
     boolean cont = true;
 
     // don't ask in cron mode - there is no UI
@@ -1285,7 +1285,7 @@ global define boolean display_free_space_warning(boolean fits, string dir) ``{
  *    be enough high
  */
 
-global define boolean check_space(integer found_size, string tmp_dir, string target_dir, symbol target_type) ``{
+ define boolean check_space(integer found_size, string tmp_dir, string target_dir, symbol target_type) ``{
 
     // required size in 1024-blocks
     found_size = found_size / 1024;
@@ -1339,7 +1339,7 @@ global define boolean check_space(integer found_size, string tmp_dir, string tar
  * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define symbol SearchingModifiedDialog() ``{
+ define symbol SearchingModifiedDialog() ``{
 
     if (Backup::cron_mode != true)
     {
@@ -1873,7 +1873,7 @@ Backup will be aborted.
  * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define symbol FilesDialog() ``{
+ define symbol FilesDialog() ``{
 
     // dialog header
     Wizard::SetContents("", `Label(_("Adding files to table...")), "", false, false);
@@ -2089,7 +2089,7 @@ global define symbol FilesDialog() ``{
  * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define symbol ArchivingDialog() ``{
+ define symbol ArchivingDialog() ``{
 
     // create Progress bar
 
@@ -2521,7 +2521,7 @@ Backup will be aborted.
  * to replace it.
  * @return string the name for the new profile, "" for cancel
  */
-global define string AskNewProfileName() ``{
+ define string AskNewProfileName() ``{
     // Translators: text of a popup dialog
     map new_name = ShowEditDialog(_("Enter a name for the new profile."), "", nil);
 
@@ -2555,7 +2555,7 @@ Replace the existing profile?
  * @return symbol Symbol for wizard sequencer - pressed button
  */
 
-global define symbol SummaryDialog() ``{
+ define symbol SummaryDialog() ``{
     string br = "<BR>";
     string p  = "<P>";
     string _p = "</P>";
@@ -2867,7 +2867,7 @@ global define symbol SummaryDialog() ``{
  * @return symbol user input - widget ID
  */
 
-global define symbol ExpertOptionsDialog() ``{
+ define symbol ExpertOptionsDialog() ``{
     // dialog header
     Wizard::SetContents( _("Expert Backup Options"),
 	`VBox(
@@ -2928,7 +2928,7 @@ global define symbol ExpertOptionsDialog() ``{
  * Dialog for selection of a profile before backup
  * @return symbol Symbol for wizard sequencer - pressed button
  */
-global define symbol SelectProfileDialog() ``{
+ define symbol SelectProfileDialog() ``{
 
     Wizard::ReplaceNextButton (`PushButton(`id(`finish), Label::CloseButton()));
     Wizard::ReplaceBackButton( `Empty() );
@@ -3081,7 +3081,7 @@ global define symbol SelectProfileDialog() ``{
  * Choose the next step - start searching or return to the profile dialog.
  * @return symbol Symbol for wizard sequencer - `next for searching, `next2 for return to profile dialog
  */
-global define symbol PrepareSearching() ``{
+ define symbol PrepareSearching() ``{
 
     // if the user does not use profile, start searching
     if( Backup::selected_profile == nil || Backup::no_interactive)
@@ -3102,7 +3102,7 @@ global define symbol PrepareSearching() ``{
  * @param dir start directory
  * @return map result $[ "input" : symbol (user input, `ok or `cancel), "dir" : string (selected directory) ];
  */
-global define map DirPopup(string label, string dir) ``{
+ define map DirPopup(string label, string dir) ``{
 
     UI::OpenDialog(
 	`VBox(
@@ -3158,7 +3158,7 @@ global define map DirPopup(string label, string dir) ``{
  * @param sz size in bytes
  * @return map map $[ "string" : string (textual representation), "size" : integer (value), "unit" : symbol (unit of the value) ]
  */
-global define map size2map(integer sz) ``{
+ define map size2map(integer sz) ``{
     string ret = "";
     symbol ret_unit = `B;
     map<symbol,string> unit_descr = $[];
@@ -3237,7 +3237,7 @@ global define map size2map(integer sz) ``{
  * @param user_size user defined size
  * @return string result
  */
-global define string symbol2string(symbol s, integer user_size) ``{
+ define string symbol2string(symbol s, integer user_size) ``{
 
     y2milestone("s: %1, user_size: %2", s, user_size);
 
@@ -3285,7 +3285,7 @@ global define string symbol2string(symbol s, integer user_size) ``{
  * @param input input
  * @return list<term> result
  */
-global define list<term> list2items(integer start_id, string type, list<string> input) ``{
+ define list<term> list2items(integer start_id, string type, list<string> input) ``{
     list<term> ret = [];
     integer i = start_id;
 
@@ -3306,7 +3306,7 @@ global define list<term> list2items(integer start_id, string type, list<string> 
  * file systems to exclude
  * @return list list of items
  */
-global define list createConstraintsTable() ``{
+ define list createConstraintsTable() ``{
     list items = [];
 
     items = merge(items, list2items(size(items), directory_text, Backup::dir_list));
@@ -3321,7 +3321,7 @@ global define list createConstraintsTable() ``{
  * Dialog for setting excluded directories, file systems and reg. expressions
  * @return symbol Symbol for wizard sequencer - pressed button
  */
-global define symbol ConstraintDialog() ``{
+ define symbol ConstraintDialog() ``{
 
     // initialize excluded directories
     if (Backup::dir_list == nil)

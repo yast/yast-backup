@@ -33,7 +33,7 @@ textdomain "backup";
  * @return boolean False if user select to not abort, true otherwise.
  */
 
-global define boolean AbortConfirmation(symbol type) ``{
+define boolean AbortConfirmation(symbol type) ``{
 
     boolean ret = nil;
 
@@ -78,7 +78,7 @@ global define boolean AbortConfirmation(symbol type) ``{
  * @return map Returned map: $[ "text" : string, "clicked" : symbol ]. Value with key text is string entered by user, symbol is `ok or `cancel depending which button was pressed.
  */
 
-global define map ShowEditDialog(string label, string value, list<string> values) ``{
+ define map ShowEditDialog(string label, string value, list<string> values) ``{
 
     if (label == nil)
     {
@@ -127,7 +127,7 @@ global define map ShowEditDialog(string label, string value, list<string> values
  * @return symbol Pressed button id or nil if some data is ready from subprocess.
  */
 
-global define symbol waitForUserOrProcess(integer wait, symbol abort_question) ``{
+ define symbol waitForUserOrProcess(integer wait, symbol abort_question) ``{
     symbol ret = (symbol) UI::PollInput();
 
     if (ret == `abort || ret == `cancel)
@@ -179,7 +179,7 @@ global define symbol waitForUserOrProcess(integer wait, symbol abort_question) `
  * @example GetMountedFilesystems() -> [ "devpts", "ext2", "nfs", "proc", "reiserfs" ]
  */
 
-global define list<string> GetMountedFilesystems() ``{
+ define list<string> GetMountedFilesystems() ``{
     list<map<string, any> > mounted = (list<map<string, any> >) SCR::Read(.proc.mounts);
     list<string> result = [ ];
 
@@ -209,7 +209,7 @@ global define list<string> GetMountedFilesystems() ``{
  * @example Ext2Filesystems() -> [ "/dev/hda1", "/dev/hda4" ]
  */
 
-global define list<map<string, any> > Ext2Filesystems() ``{
+ define list<map<string, any> > Ext2Filesystems() ``{
     list<map<string, any> > mounted = (list<map<string, any> >) SCR::Read(.proc.mounts);
     list<map<string, any> > ext2mountpoints = [ ];
     list tmp_parts = [];
@@ -262,7 +262,7 @@ global define list<map<string, any> > Ext2Filesystems() ``{
  * @example GetListWithFlags(["/dev", "/etc"], ["/etc"]) -> [`item (`id ("/dev"), "/dev", false), `item (`id ("/etc"), "/etc", true)]
  */
 
-global define list<term> GetListWithFlags(list<string> in, list<string> selected) ``{
+ define list<term> GetListWithFlags(list<string> in, list<string> selected) ``{
 
     if (in == nil)
     {
@@ -282,7 +282,7 @@ global define list<term> GetListWithFlags(list<string> in, list<string> selected
  * @example AddIdBool( [ `item(`id("ext2"), "ext2", true) ], false) ) -> [ `item (`id ("ext2"), "ext2", false) ]
  */
 
-global define list<term> AddIdBool(list in, boolean val) ``{
+ define list<term> AddIdBool(list in, boolean val) ``{
     if (val == nil)
     {
 	val = false;
@@ -317,7 +317,7 @@ global define list<term> AddIdBool(list in, boolean val) ``{
  * @example AddId("abc", "123") -> [`item(`id("abc"), "abc"), `item(`id("123"), "123")]
  */
 
-global define list<term> AddId(list<string> in) ``{
+ define list<term> AddId(list<string> in) ``{
     if (in == nil) return [];
 
     return maplist(string i, in, ``{
@@ -333,7 +333,7 @@ global define list<term> AddId(list<string> in) ``{
  * @example AddId([ $["partition" : "/dev/hda3", "mountpoint" : "/usr"] ]) -> [`item(`id("/dev/hda3"), "/dev/hda3", "/usr")]
  */
 
-global define list<term> AddIdExt2(list<map<string, any> > in) ``{
+ define list<term> AddIdExt2(list<map<string, any> > in) ``{
 
     if (in == nil) return [];
 
@@ -351,7 +351,7 @@ global define list<term> AddIdExt2(list<map<string, any> > in) ``{
  * @return list Items list for UI widgets
  */
 
-global define list<term> MediaList2UIList(list<map<string, any> > media) ``{
+ define list<term> MediaList2UIList(list<map<string, any> > media) ``{
     list<term> result = [];
 
     if (media == nil)
@@ -380,7 +380,7 @@ global define list<term> MediaList2UIList(list<map<string, any> > media) ``{
  * @return void
  */
 
-global define void SetMultiWidgetsState() ``{
+ define void SetMultiWidgetsState() ``{
     boolean tmp_multi = (boolean)UI::QueryWidget(`id(`multi_volume), `Value);
     UI::ChangeWidget(`id(`vol), `Enabled, tmp_multi);
 
@@ -396,7 +396,7 @@ global define void SetMultiWidgetsState() ``{
  * @example Ext2MountPoint("/dev/hda1") -> "/boot"
  */
 
-global define string Ext2MountPoint(string device_name) ``{
+ define string Ext2MountPoint(string device_name) ``{
     // chack if partition is now mounted
     list<map<string, any> > mp = (list<map<string, any> >)SCR::Read(.proc.mounts);
     string result = nil;
@@ -452,7 +452,7 @@ global define string Ext2MountPoint(string device_name) ``{
  * @example AddMissingExtension("filename.tar", ".gz") -> "filename.tar.gz"
  * @example AddMissingExtension("filename.tar", ".tar") -> "filename.tar"
  */
-global define string AddMissingExtension(string file, string extension)
+ define string AddMissingExtension(string file, string extension)
 ``{
     // input check
     if (file == nil)
@@ -500,7 +500,7 @@ global define string AddMissingExtension(string file, string extension)
  * @example GetBaseName("file") -> "file"
  * @example GetBaseName("dir/file.ext") -> "file"
  */
-global define string GetBaseName(string file)
+ define string GetBaseName(string file)
 ``{
     string result = "";
 
@@ -533,7 +533,7 @@ global define string GetBaseName(string file)
  * @param message Message body
  * @return boolean True on success
  */
-global define boolean SendMail(string user, string subject, string message) ``{
+ define boolean SendMail(string user, string subject, string message) ``{
     // check user
     if (user == "" || user == nil)
     {
@@ -566,7 +566,7 @@ global define boolean SendMail(string user, string subject, string message) ``{
  * @param ch String used in output
  * @return string String containg size(input) character
  */
-global define string CreateUnderLine(string input, string ch) ``{
+ define string CreateUnderLine(string input, string ch) ``{
     integer len = size(input);
     string ret = "";
 
@@ -584,7 +584,7 @@ global define string CreateUnderLine(string input, string ch) ``{
  * @param remove_result Result of removing/renaming of the old archives
  * @return boolean True on success
  */
-global define boolean SendSummary(map remove_result, string cron_profile, string backup_result, string backup_details) ``{
+ define boolean SendSummary(map remove_result, string cron_profile, string backup_result, string backup_details) ``{
     string br = "\n";
 
     // e-mail subject - %1 is profile name
@@ -657,7 +657,7 @@ global define boolean SendSummary(map remove_result, string cron_profile, string
  * @param sec Number of seconds
  * @return string String representation of the time, returns input value (sec) if an error occured
  */
-global define string SecondsToDateString(integer sec) ``{
+ define string SecondsToDateString(integer sec) ``{
     // convert seconds to time string - use localtime function in perl
     map result = (map)SCR::Execute(.target.bash_output, "/usr/bin/perl -e '($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(" + sformat("%1", sec) + ");
 $mon++;
@@ -677,7 +677,7 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
  * (Requires at least one installation source, otherwise return empty list)
  * @return list<string> available packages
  */
-global define list<string> GetInstallPackages() ``{
+ define list<string> GetInstallPackages() ``{
     y2milestone("Reading packages available on the installation sources...");
 
     Pkg::TargetInit("/", false);
@@ -784,7 +784,7 @@ global define list<string> GetInstallPackages() ``{
  * @param extra_options options for extra_key
  * @return boolean true on success
  */
-global define boolean CloneSystem(string filename, list additional, string extra_key, map extra_options) ``{
+ define boolean CloneSystem(string filename, list additional, string extra_key, map extra_options) ``{
     boolean ret = false;
 
     if (size(filename) > 0)
@@ -815,7 +815,7 @@ global define boolean CloneSystem(string filename, list additional, string extra
  * Detect mount points
  * @return map map of mount points
  */
-global define map DetectMountpoints() ``{
+ define map DetectMountpoints() ``{
     import "Storage";
 
     map targetmap = Storage::GetTargetMap();
@@ -860,7 +860,7 @@ global define map DetectMountpoints() ``{
  * @param description detected mount points
  * @return list table content
  */
-global define list MpointTableContents(list selected, list all, map description) ``{
+ define list MpointTableContents(list selected, list all, map description) ``{
     y2milestone("selected: %1, description: %2", selected, description);
 
     import "FileSystems";
@@ -907,7 +907,7 @@ global define list MpointTableContents(list selected, list all, map description)
  * @return boolean true - file exists, false - file doesn't exist, nil - error (mount failed)
  */
 
-global define boolean NFSFileExists(string server, string share, string filename) ``{
+ define boolean NFSFileExists(string server, string share, string filename) ``{
     if (size(server) == 0 || size(share) == 0 || size(filename) == 0)
     {
 	return nil;
@@ -934,7 +934,7 @@ global define boolean NFSFileExists(string server, string share, string filename
  * @param filename remote file name
  * @return string result (nil if any of the parameter is nil)
  */
-global define string NFSfile(string server, string share, string filename) ``{
+ define string NFSfile(string server, string share, string filename) ``{
     if (size(server) == 0 || size(share) == 0 || size(filename) == 0)
     {
 	return nil;
@@ -954,7 +954,7 @@ global define string NFSfile(string server, string share, string filename) ``{
  * $["device" : string(device), "total" : integer(total), "used" : integer(used), "free" : integer(free) ]
  */
 
-global define map get_free_space(string directory) ``{
+ define map get_free_space(string directory) ``{
 
     if (size(directory) == 0)
     {

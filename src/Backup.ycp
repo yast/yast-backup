@@ -886,7 +886,7 @@ global define void ReadCronSettings() ``{
 	}
     );
 
-    if (size(files) > 0)
+    if (files != nil && size(files) > 0)
     {
 	// parse all /etc/cron.d/yast2-backup-* files
 	foreach(string file, files, ``{
