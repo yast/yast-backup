@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Sun Sep 14 21:08:41 CEST 2003 - adrian@suse.de
+
+- make it working in kcontrol
+
+-------------------------------------------------------------------
 Mon Sep  8 16:34:13 CEST 2003 - lslezak@suse.de
 
 - start configuration workflow for the new profile
