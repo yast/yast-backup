@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Aug 18 15:57:42 CEST 2003 - lslezak@suse.cz
+
+- fixed rpm verification options in the search script
+  (removed --noscripts option)
+- version 2.8.5
+
+-------------------------------------------------------------------
 Tue Aug 12 08:26:38 CEST 2003 - lslezak@suse.cz
 
 - fixed testuite (some constructor was again changed...)
