@@ -1,0 +1,1280 @@
+/**
+ *  File:
+ *    ui.ycp
+ *
+ *  Module:
+ *    Backup module
+ *
+ *  Authors:
+ *    Ladislav Slezak <lslezak@suse.cz>
+ *
+ *  $Id$
+ *
+ *  Yast2 user interface functions - dialogs
+ */
+
+
+{
+
+include "ui/common_popups.ycp";
+include "ui/common_functions.ycp";
+
+global define ArchDialog() ``{
+    UI::SetWizardContents( _("Archive settings"),
+	`VBox(
+	    `VSpacing(0.5),
+	    `TextEntry(`id(`filename), _("Archive file name:")),
+
+	    `VSpacing(0.5),
+	    `MultiLineEdit(`id(`description), _("Archive description:")),
+
+	    `VSpacing(0.5),
+	    `Frame(_("Archive type"),
+		`RadioButtonGroup(`id(`rb),
+		    `VBox(
+			`Left(`RadioButton(`id(`tgz), "tar.gz")),
+			`Left(`RadioButton(`id(`tbz), "tar.bz2")),
+			`Left(`RadioButton(`id(`tar), "tar"))
+		    )
+	    	)
+	    ),
+	    `VSpacing(1.0)
+	),
+        _("Some help text..."), true, true
+    );
+
+    if (archive_type == nil)
+	archive_type = tgz;
+
+    // set values
+    UI::ChangeWidget(`id(`filename), `Value, archive_name);
+    UI::ChangeWidget(`id(`description), `Value, description);
+    UI::ChangeWidget(`id(`rb), `CurrentButton, archive_type);
+
+    boolean cont = false;
+    symbol ret = nil;
+    
+    if (SCR::Read(.runtime.username) != "root")
+    {
+	UI::WarningPopup(_("Only user root can backup all files"));
+    }
+    
+
+    while (!cont)
+    {
+        ret = UI::UserInput();
+        archive_name = UI::QueryWidget(`id(`filename), `Value);
+
+	if (ret == `next)
+	{
+	    
+	    if (size(archive_name) == 0)
+	    {
+    		UI::WarningPopup(_("Archive file name can not be empty\nPlease enter archive file name"));
+	    }
+	    else
+	    {
+		if (find(archive_name, "/") != 0)
+		{
+		    UI::WarningPopup(_("Archive file name must be entered\nwith absolute path,\nfor example /tmp/archive.tar.gz"));
+		}
+		else
+		{
+		    cont = true;
+		}
+	    }
+	}
+	else
+	{
+	    cont = true;
+	}
+    }
+
+    // get values
+    description = UI::QueryWidget(`id(`description), `Value);
+    archive_type = UI::QueryWidget(`id(`rb), `CurrentButton);
+
+    return ret;
+}
+
+global define BackupDialog() ``{
+    
+    UI::SetWizardContents( _("Backup settings" ),
+        `VBox(`VSpacing(0.5),
+	    `Frame( _("Backup options"),
+	        `VBox(
+		    `VSpacing(0.5),
+                    `Left(`CheckBox(`id(`search), `opt(`notify), _("Backup files which do not belong to any package"))),
+		    `VSpacing(0.5),
+                    `Left(`CheckBox(`id(`system), _("Backup system areas"))),
+		    `VSpacing(0.5),
+                    `Left(`CheckBox(`id(`display), _("Display list of files before creating archive"))),
+		    `VSpacing(0.5)
+		)
+	    ),
+
+	    `VSpacing(1.0),
+
+	    `Frame( _("Search options"),
+		`VBox(
+		    `VSpacing(0.5),
+                    `Left(`CheckBox(`id(`multi_check), _("Extra check files in multiple packages"))),
+		    `VSpacing(0.5),
+                    `Left(`CheckBox(`id(`enh_check), _("Enhanced check of file owner"))),
+		    `VSpacing(0.5)
+		)
+	    ),
+
+	    `VSpacing(1.0)
+	),
+        _("Some help text..."), true, true
+    );
+
+    // set values
+    UI::ChangeWidget(`id(`search), `Value, search);
+    UI::ChangeWidget(`id(`system), `Value, system);
+    UI::ChangeWidget(`id(`display), `Value, display);
+    UI::ChangeWidget(`id(`enh_check), `Value, enhanced_check_owner);
+    UI::ChangeWidget(`id(`multi_check), `Value, check_multiple_packages);
+
+    symbol ret = nil;
+
+    while (ret != `next && ret != `abort && ret != `back)
+    {
+
+	ret = UI::UserInput();
+	
+	if (ret == `search)
+	{
+	    UI::ChangeWidget(`id(`enh_check), `Enabled, UI::QueryWidget(`id(`search), `Value));
+	}
+    }
+
+    // get values
+    search = UI::QueryWidget(`id(`search), `Value);
+    system = UI::QueryWidget(`id(`system), `Value);
+    display = UI::QueryWidget(`id(`display), `Value);
+    enhanced_check_owner = UI::QueryWidget(`id(`enh_check), `Value);
+    check_multiple_packages = UI::QueryWidget(`id(`multi_check), `Value);
+
+
+    // set next dialog
+    if (!search && ret == `next)
+    {
+	ret = (system) ? `next3 : `next2;
+    }
+
+    return ret;
+}
+
+
+global define ExcludeDialog() ``{
+
+    if (dir_list == nil)
+    {
+	dir_list = AddId(default_dir);
+	if (dir_list == nil)
+	{
+	    dir_list = [];
+	}
+    }
+
+    UI::SetWizardContents( _("Exclude from search" ),
+	`VBox(
+	    `VSpacing(1.0),
+	    `Left(`Label(_("Directories excluded from search:"))),
+	    `Table(`id(`dirs), `header(_("Directory")), dir_list),
+
+	    `HBox(
+                `PushButton(`id(`addnew), _("Add...") ) ,
+		`PushButton(`id(`edit), _("Edit...") ) ,
+		`PushButton(`id(`delete), _("Delete") ) 
+	    ),
+
+	    `VSpacing(1.0),
+            `PushButton(`id(`expert), _("Expert...") ),
+	    `VSpacing(1.0)
+	),
+        _("Some help text..."), true, true
+    );
+
+
+    symbol ret = UI::UserInput();
+
+    while (ret != `next && ret != `back && ret != `abort && ret != `expert)
+    {
+	string curr = UI::QueryWidget(`id(`dirs), `CurrentItem);
+	if (curr != nil)
+	{
+
+            if (ret == `edit)
+	    {
+	        map edited = ShowEditDialog(_("Edit"), curr);
+
+		if (lookup(edited, "clicked", nil) == `ok)
+		{
+		    string txt = lookup(edited, "text", "");
+
+                    if (txt != curr && !contains(dir_list, `item(`id(txt), txt)))
+                    {
+                        UI::ChangeWidget(`id(`dirs), `Item(curr, 0), txt);
+ 
+                        // refresh dir_list content
+                        dir_list = maplist(`i, dir_list, ``{
+                            if (select(select(i, 0), 0) == curr)
+                            {
+                                return `item(`id(txt), txt);
+                            }
+                            else
+                            {
+                                return i;
+                            }
+                        });
+                    }
+		}
+	    }
+
+	    if (ret == `delete)
+	    {
+		dir_list = filter(`i, dir_list, ``{return (select(select(i, 0), 0) != curr);});
+                UI::ChangeWidget(`id(`dirs), `Items, dir_list);
+	    }
+	}
+
+	if (ret == `addnew)
+	{
+	    map result = ShowEditDialog(_("Add new directory"), "");
+
+            if (lookup(result, "clicked", nil) == `ok)
+            {
+                string new_dir = lookup(result, "text", nil);
+ 
+                // add new partition only if it's not empty a it isn't already in list
+                if (new_dir != "" && new_dir != nil && !contains(dir_list, `item(`id(new_dir), new_dir)))
+                {
+                    dir_list = add(dir_list, `item(`id(new_dir), new_dir));
+ 
+                    UI::ChangeWidget(`id(`dirs), `Items, dir_list);
+                }
+            }
+	}
+
+    ret = UI::UserInput();
+    }
+
+    if (!system && ret == `next)
+	ret = `next2;
+
+    return ret;
+}
+
+
+global define ExcludeFilesystemDialog() ``{
+
+    if (detected_fs == nil)
+    {
+	UI::SetWizardContents("", `Label("Detecting filesystems types..."), "", false, false);
+	detected_fs = GetMountedFilesystems();
+    }
+
+    list fs = GetListWithFlags(detected_fs, fs_exclude);
+
+    UI::SetWizardContents( _("Exclude filesystem from search"),
+	`VBox(
+	    `VSpacing(1.0),
+	    `ReplacePoint(`id(`repl), `MultiSelectionBox(`id(`fss), _("Exclude mounted filesystems:"), fs)),
+	    `HBox(
+		`HStretch(),
+		`HWeight(2, `PushButton(`id(`sel_all), _("Select all") )),
+		`HWeight(2, `PushButton(`id(`desel_all), _("Deselect all") )),
+		`HStretch()
+	    ),
+	    `VSpacing(1.0)
+	),
+        "Some help text...", true, true
+    );
+
+    // replace 'Next' buton with 'Ok'
+    UI::ReplaceWizardNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
+
+    symbol ret = UI::UserInput();
+
+    while (ret != `ok && ret != `back && ret != `abort)
+    {
+	if (ret == `sel_all)
+	{
+	    fs = AddIdBool(fs, true);
+	    UI::ReplaceWidget(`id(`repl), `MultiSelectionBox(`id(`fss), "Exclude mounted filesystems:", fs));
+	}
+	else
+	{
+	    if (ret == `desel_all)
+	    {
+		fs = AddIdBool(fs, false);
+		UI::ReplaceWidget(`id(`repl), `MultiSelectionBox(`id(`fss), "Exclude mounted filesystems:", fs));
+	    }
+	}
+
+	ret = UI::UserInput();
+    }
+
+
+    /* TODO: 'Back' doesn't save dialog content, is it right?? */
+    if (ret == `ok)
+    {
+	fs_exclude = UI::QueryWidget(`id(`fss), `SelectedItems);
+    }
+
+    // Restore 'next' button
+    UI::RestoreWizardNextButton();
+
+    return ret;
+}
+
+global define SystemBackupDialog() ``{
+
+    if (detected_ext2 == nil)
+    {
+	UI::SetWizardContents("", `Label(_("Detecting mounted ext2 filesystems...")), "", false, false);
+	detected_ext2 = GetMountedExt2Filesystems();
+	ext2_backup = AddId(detected_ext2);
+    }
+
+    UI::SetWizardContents( _("System area backup"),
+	`VBox(
+	    `VSpacing(0.5),
+	    `Frame( _("Partition table"),
+		`VBox(
+		    `VSpacing(0.4),
+		    `CheckBox(`id(`pt), `opt(`hstretch), _("Backup partition tables"), backup_pt),
+		    `VSpacing(0.4)
+		)
+	    ),
+	    `VSpacing(0.5),
+ 
+	    `Frame(_("Ext2 critical area backup"), 
+	        `RadioButtonGroup(`id(`rbg),
+	            `VBox(
+		        `VSpacing(0.3),
+			`Left(`RadioButton(`id(`allmounted), `opt(`notify), _("All mounted"), backup_all_ext2)),
+			`VSpacing(0.3),
+			`Left(`RadioButton(`id(`none), `opt(`notify), _("None"), backup_none_ext2)),
+			`VSpacing(0.3),
+
+			`Left(`RadioButton(`id(`selected), `opt(`notify), _("Selected:"), backup_selected_ext2)),
+			`HBox(
+			    `HSpacing(3.0),
+			    `Table(`id(`par), `header(_("Ext2 partition")), ext2_backup),
+			    `HSpacing(2.0)
+		    	),
+
+			`HBox(
+			    `PushButton(`id(`addnew), _("Add...") ) ,
+			    `PushButton(`id(`edit), _("Edit...") ) ,
+			    `PushButton(`id(`delete), _("Delete") ) 
+		        ),
+		        `VSpacing(0.4)
+		    )
+	        )
+	    ),
+	    `VSpacing(1.0)
+	),
+	_("Some help text..."), true, true
+    );
+
+    UI::ChangeWidget(`id(`par), `Enabled, backup_selected_ext2);
+    UI::ChangeWidget(`id(`addnew), `Enabled, backup_selected_ext2);
+    UI::ChangeWidget(`id(`edit), `Enabled, backup_selected_ext2);
+    UI::ChangeWidget(`id(`delete), `Enabled, backup_selected_ext2);
+
+
+    symbol ret = UI::UserInput();
+
+    while (ret != `next && ret != `back && ret != `abort && ret != `expert)
+    {
+
+	string curr = UI::QueryWidget(`id(`par), `CurrentItem);
+	if (curr != nil)
+	{
+
+            if (ret == `edit)
+	    {
+	        map edited = ShowEditDialog("Edit", curr);
+
+		if (lookup(edited, "clicked", nil) == `ok)
+		{
+		    string txt = lookup(edited, "text", "");
+
+		    if (txt != curr && !contains(ext2_backup, `item(`id(txt), txt)))
+		    {
+			UI::ChangeWidget(`id(`par), `Item(curr, 0), txt);
+
+			// refresh ext2_backup content
+			ext2_backup = maplist(`i, ext2_backup, ``{
+			    if (select(select(i, 0), 0) == curr)
+			    {
+				return `item(`id(txt), txt);
+			    }
+			    else
+			    {
+				return i;
+			    }
+			});
+		    }
+		}
+	    }
+
+	    if (ret == `delete)
+	    {
+		ext2_backup = filter(`i, ext2_backup, ``{return (select(select(i, 0), 0) != curr);});
+		UI::ChangeWidget(`id(`par), `Items, ext2_backup);
+	    }
+	}
+
+	if (ret == `addnew)
+	{
+	    map result = ShowEditDialog(_("Add Ext2 partition"), "");
+
+	    if (lookup(result, "clicked", nil) == `ok)
+	    {
+		integer sz = size(ext2_backup);
+		string new_par = lookup(result, "text", nil);
+
+		// add new partition only if it's not empty a it isn't already in list
+		if (new_par != "" && new_par != nil && !contains(ext2_backup, `item(`id(new_par), new_par)))
+		{
+		    ext2_backup = add(ext2_backup, `item(`id(new_par), new_par));
+
+		    UI::ChangeWidget(`id(`par), `Items, ext2_backup);
+		}
+	    }
+	}
+
+
+	if (ret == `allmounted || ret == `selected || ret == `none)
+	{
+	    backup_all_ext2 = UI::QueryWidget(`id(`allmounted), `Value);
+	    backup_none_ext2 = UI::QueryWidget(`id(`none), `Value);
+	    backup_selected_ext2 = UI::QueryWidget(`id(`selected), `Value);
+
+	    UI::ChangeWidget(`id(`par), `Enabled, backup_selected_ext2);
+	    UI::ChangeWidget(`id(`addnew), `Enabled, backup_selected_ext2);
+	    UI::ChangeWidget(`id(`edit), `Enabled, backup_selected_ext2);
+	    UI::ChangeWidget(`id(`delete), `Enabled, backup_selected_ext2);
+	}
+
+    ret = UI::UserInput();
+    }
+
+    backup_pt = UI::QueryWidget(`id(`pt), `Value);
+
+    return ret;
+}
+
+
+global define SearchingModifiedDialog() ``{
+
+    UI::ClearWizardContents();
+
+    string script_options = " --output-progress";	// required parameter for YaST2 frontend
+
+    if (search)
+    {
+	script_options = script_options + " --search";
+
+	foreach(`i, dir_list, ``{script_options = script_options + " --exclude-dir " + select(select(i, 0), 0);});
+	foreach(`i, fs_exclude, ``{script_options = script_options + " --exclude-fs " + i;});
+
+	if (enhanced_check_owner)
+	{
+	    script_options = script_options + " --enhanced-check";
+	}
+    }
+
+    if (!check_multiple_packages)
+    {
+	script_options = script_options + " --disable-check-multiple";
+    }
+
+    y2debug("Search script options: %1", script_options);
+
+    boolean started = SCR::Execute(.background.run_output, script_get_files + script_options);
+    list script_out = [ ];
+
+    symbol ret = nil;
+
+/* TODO test result of script starting
+   if (!started)
+    {
+	UI::OpenDialog...
+    }*/
+
+
+    integer package_num = 0;
+    string actual_package = "";
+    list package_files = [ ];
+    string actual_instprefixes = "";
+    string line = "";
+    integer total_packages = 0;
+
+    string id_package = "Package: ";
+    string id_file = "Size: ";
+    string id_nopackage = "Nopackage:";
+    string id_instprefixes = "Installed: ";
+    string id_reading_packages = "Reading installed packages";
+    string id_packages_read = "packages installed";
+    string id_reading_files = "Reading all files";
+    string id_files_read = "Files read";
+
+    boolean search_no_package = false;
+
+    while(SCR::Read(.background.output_open) || (SCR::Read(.background.newlines) > 0) /*|| (size(script_out) > 0)*/)
+    {
+    	script_out = SCR::Read(.background.newout);
+	
+	while (size(script_out) > 0)
+	{
+	    line = select(script_out, 0); 		// read line
+	    script_out = remove(script_out, 0);		// remove line
+
+	    if (substring(line, 0, size(id_package)) == id_package)
+	    {
+		// store package's changed files
+		if (size(package_files) > 0)
+		{
+		    map package_info = $[
+			"changed_files" : package_files,
+			"install_prefixes" : actual_instprefixes
+		    ];
+
+		    backup_files = add(backup_files, actual_package, package_info /*package_files*/);
+		    package_files = [ ];
+		}
+		
+		actual_package = substring(line, size(id_package));
+		package_num = package_num + 1;
+
+		UI::ChangeWidget(`id(`package), `Value, actual_package);
+		UI::ChangeWidget(`id(`progress), `Value, package_num);
+
+	    }
+	    else
+	    {
+		if  (substring(line, 0, size(id_file)) == id_file)
+		{
+		    line = substring(line, size(id_file));
+
+		    string size_str = substring(line, 0, findfirstof(line, " "));
+		    modified_size = modified_size + tointeger(size_str);
+		    modified_num = modified_num + 1;
+		    
+		    UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", size_text(modified_size)));
+		    UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", modified_num));
+
+		    package_files = add(package_files, substring(line, findfirstof(line, " ") + 1));
+		}
+		else
+		{
+		    if (line == id_nopackage)
+		    {
+	 		if (size(package_files) > 0)
+			{
+			    map package_info = $[
+				"changed_files" : package_files,
+				"install_prefixes" : actual_instprefixes
+			    ];
+
+			    backup_files = add(backup_files, actual_package, package_info);
+			    package_files = [ ];
+			}
+			
+			actual_package = "";		// empty package name
+			search_no_package = true;	// no package part of output
+
+			y2milestone("Searching files which are not in any package started");
+			
+			break;
+		    }
+		    else
+		    {
+			if (substring(line, 0, size(id_instprefixes)) == id_instprefixes)
+			{
+			    actual_instprefixes = substring(line, size(id_instprefixes));
+			}
+			else
+			{
+			    if (line == id_reading_files)
+			    {
+				UI::SetWizardContents("", `Label(_("Reading packages files...")), "", false, false);
+			    }
+			    else
+			    {
+				if (line == id_reading_packages)
+				{
+				    y2milestone("Reading installed packages");
+				    UI::SetWizardContents("", `Label(_("Reading list of installed packages...")), "", false, false);
+				}
+				else
+				{
+				    if (line == id_files_read)
+				    {
+					UI::SetWizardContents( _("Searching modified files"),
+					    `Top(
+						`VBox(
+						    `VSpacing(0.5),
+						    `Left(
+							`HBox(
+							    `Label(_("Modified files: ")),
+							    `Label(`id(`numfiles), `opt(`hstretch), sformat("%1", modified_num))
+							)
+						    ),
+						    `VSpacing(0.5),
+						    `Left(
+							`HBox(
+							    `Label(_("Total size: ")),
+							    `Label(`id(`totsize), `opt(`hstretch), size_text(modified_size))
+							)
+						    ),
+						    `VSpacing(0.5),
+						    `Left(
+							`HBox(
+							    `Label(_("Searching in package: ")),
+							    `Label(`id(`package), `opt(`hstretch), "")
+							)
+						    ),
+						    `VSpacing(3.0),
+						    `Left(
+							`ProgressBar(`id(`progress), _("Searching..."), total_packages)
+						    )
+						)
+					    ),
+					    _("Some help text..."), false, false
+					);
+
+					y2milestone("Searching in packages started");
+				    }
+				    else
+				    {
+					if (issubstring(line, id_packages_read))
+					{
+					    string installed_str = substring(line, 0, findfirstof(line, " "));
+					    total_packages = tointeger(installed_str);
+
+					    y2debug("Number of installed packages: %1", total_packages);
+					}
+					else
+					{
+					    y2warning("Unknown output from search script: %1", line);
+					}
+				    }
+				}
+			    }
+			}
+		    }
+		}
+	    }
+	}
+
+	if (search_no_package)
+	{
+	    break;
+	}
+
+	ret = waitForUserOrProcess();
+	if (ret != nil)
+	{
+	    return ret;
+	}
+	
+    }
+
+    y2milestone("All packages verified.");
+
+    if (search_no_package)
+    {
+	string actual_dir = "/";
+	string id_readingall = "Reading all files";
+	string id_readall = "Files read";
+	string id_dir = "Dir: ";
+
+	UI::SetWizardContents(_("Searching files"),
+	    `Top(
+		`VBox(
+		    `VSpacing(0.5),
+		    `Left(
+			`HBox(
+			    `Label(_("Number of files: ")),
+			    `Label(`id(`numfiles), `opt(`hstretch), sformat("%1", nopkg_num))
+			)
+		    ),
+		    `VSpacing(0.5),
+		    `Left(
+			`HBox(
+			    `Label(_("Total size: ")),
+			    `Label(`id(`totsize), `opt(`hstretch), size_text(nopkg_size))
+			)
+		    ),
+		    `VSpacing(0.5),
+		    `Left(
+			`HBox(
+			    `Label(_("Searching in directory: ")),
+			    `Label(`id(`directory), `opt(`hstretch), "")
+			)
+		    )
+		)
+	    ),
+	    _("Some help text..."), false, false
+	);
+
+
+	while(SCR::Read(.background.output_open) || (SCR::Read(.background.newlines) > 0) || (size(script_out) > 0))
+	// test of script_out size is needed, because previous while cycle was interrupted and script could exited with no new output...
+	{
+	    if (size(script_out) == 0)
+	    {
+		script_out = SCR::Read(.background.newout);
+	    }
+	    
+	    while (size(script_out) > 0)
+	    {
+		line = select(script_out, 0); 		// read line
+		script_out = remove(script_out, 0);	// remove line
+
+		y2debug("Script output:", line);
+
+		if  (substring(line, 0, size(id_file)) == id_file)
+		{
+		    line = substring(line, size(id_file));
+
+		    string size_str = substring(line, 0, findfirstof(line, " "));
+		    nopkg_size = nopkg_size + tointeger(size_str);
+		    nopkg_num = nopkg_num + 1;
+		    
+		    UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", size_text(nopkg_size)));
+		    UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", nopkg_num));
+
+		    package_files = add(package_files, substring(line, findfirstof(line, " ") + 1));
+		}
+		else
+		{
+		    if  (substring(line, 0, size(id_dir)) == id_dir)
+		    {
+			actual_dir = substring(line, size(id_dir));
+			UI::ChangeWidget(`id(`directory), `Value, actual_dir);
+		    }
+		}
+	    }
+
+	    ret = waitForUserOrProcess();
+	    if (ret != nil)
+	    {
+		return ret;
+	    }
+	}
+
+	map package_info = $[
+	    "changed_files" : package_files,
+	    "install_prefixes" : actual_instprefixes
+	];
+
+	backup_files = add(backup_files, actual_package, package_info);
+    }
+
+    y2milestone("Searching done");
+
+
+    if (display)
+    {
+	if (selected_files == nil)
+	{
+	    selected_files = backup_files;
+	}
+	    
+	return `next;
+    }
+    else
+    {
+	// no manual selection, backup all files
+	selected_files = backup_files;
+
+	// count number of files
+	selected_files_num = 0;
+
+	foreach(`pak, `val, selected_files,
+	    ``{
+		selected_files_num = selected_files_num + size(lookup(val, "changed_files", []));
+	    }
+	);
+	
+	return `next2;	// skip file selection dialog
+    }
+}
+
+
+global define FilesDialog() ``{
+
+    UI::ClearWizardContents();
+
+    list table_items = MapToTableItems(nil);
+
+    UI::SetWizardContents( _("File selection"),
+	`VBox(
+	    `VSpacing(0.5),
+	    `Left(`Label(_("Select files to backup:"))),
+	    `Table(`id(`table), 
+		`opt(`notify),
+		`header(" ", _("File name"), _("Package")),
+		table_items
+	    ),
+	    `HBox(
+		`PushButton(`id(`sel_all), _("Select all")),
+		`PushButton(`id(`desel_all), _("Deselect all"))
+	    ),
+	    `VSpacing(1.0)
+	),
+	_("Some help text..."), true, true
+    );
+
+
+    symbol ret = UI::UserInput();
+
+    if (ret == `abort)
+    {
+	return ret;
+    }
+
+    while (ret != `next && ret != `back && ret != `abort)
+    {
+    	integer current_item  = UI::QueryWidget(`id(`table), `CurrentItem); 
+	
+	if (ret == `sel_all || ret == `desel_all)
+	{
+	    table_items = (ret == `sel_all) ? MapToTableItems(true) : MapToTableItems(false);
+
+	    UI::ChangeWidget(`id(`table), `Items, table_items);
+	    
+	    if (current_item != nil)
+	    {
+		UI::ChangeWidget(`id(`table), `CurrentItem, current_item);
+	    }
+	}
+	else
+	{
+	    if (ret == `table)
+	    {
+		string current_value = select(UI::QueryWidget(`id(`table), `Item(current_item)), 1);
+
+		if (current_value == checkmark)
+		{
+		    current_value = nocheckmark;
+		}
+		else
+		{
+		    current_value = checkmark;
+		}
+	
+		UI::ChangeWidget(`id(`table), `Item(current_item, 0), current_value);
+	    }
+	}
+
+	ret = UI::UserInput();
+    }
+
+    if (ret == `abort)
+    {
+	return ret;
+    }
+
+    y2debug("Getting selected files...");
+
+
+/* WOW, this takes only 8 secs!
+   but it is required that Table contains files ordered by package 
+*/
+
+    selected_files = $[ ];
+    
+    integer num = size(table_items);
+    integer idx = 1;
+
+    list actual_package_files = [ ];
+    string actual_package_name = nil;
+    selected_files_num = 0;
+
+    while (idx <= num)
+    {
+	term table_item = UI::QueryWidget(`id(`table), `Item(idx));
+
+	if (select(table_item, 1) == checkmark)
+	{
+	    string package_name = select(table_item, 3);
+	    string file_name = select(table_item, 2);
+
+	    selected_files_num = selected_files_num + 1;
+
+	    if (actual_package_name == nil)
+	    {
+		actual_package_name = package_name;
+	    }
+	    
+	    if (package_name != actual_package_name)
+	    {
+		map package_info = $[
+		    "changed_files" : actual_package_files,
+		    "install_prefixes" : lookup(lookup(backup_files, actual_package_name, $[]), "install_prefixes", "(none)")
+		];
+
+		selected_files = add(selected_files, actual_package_name,  package_info);
+
+		actual_package_name = package_name;
+		actual_package_files = add([], file_name);
+	    }
+	    else
+	    {
+		actual_package_files = add(actual_package_files, file_name);
+	    }
+	}
+
+	idx = idx + 1;
+    }
+
+    /* add last package info */
+    if (actual_package_name != nil)
+    {
+	map package_info = $[
+	    "changed_files" : actual_package_files,
+	    "install_prefixes" : lookup(lookup(backup_files, actual_package_name, $[]), "install_prefixes", "(none)")
+	];
+	
+	selected_files = add(selected_files, actual_package_name, package_info);
+    }
+
+    y2debug("Selected files to backup: %1", selected_files);
+
+    return ret;
+}
+
+
+global define ArchivingDialog() ``{
+
+    y2milestone("Storing file names list...");
+    
+    // store selected file names to file
+    string tmpfile_list = SCR::Read(.run.mktemp);
+    file_list_stored = SCR::Write(.target.string, tmpfile_list, MapFilesToString());
+
+    if (!file_list_stored)
+    {
+	y2error("Error writing list of selected files to file %", tmpfile_list);
+    }
+	
+    y2milestone("File names stored");
+
+    // store comment to file
+    string tmpfile_comment = SCR::Read(.run.mktemp);
+    comment_stored = SCR::Write(.target.string, tmpfile_comment, description);
+
+    if (!comment_stored)
+    {
+	y2warning("Error writing comment to file %", tmpfile_comment);
+    }
+
+    string archive_options = " --verbose --files-info " + tmpfile_list + " --archive-name " 
+	+ archive_name + " --comment-file " + tmpfile_comment;
+
+    if (system)
+    {
+        // add partition tabel option
+	if (backup_pt)
+	{
+	    archive_options = archive_options + " --store-ptable";
+	}
+
+	list partitions = (backup_all_ext2) ? detected_ext2 : (backup_none_ext2 ? [] : ext2_backup);
+
+	foreach(`p, partitions, ``{archive_options = archive_options + " --store-ext2 " + select(p, 1);});
+    }
+
+
+    if (archive_type == `tgz)
+    {
+	archive_options = archive_options + " --archive-type tgz";
+    }
+    else
+    {
+	if (archive_type == `tbz)
+	{
+	    archive_options = archive_options + " --archive-type tbz2";
+	}
+	else
+	{
+	    if (archive_type == `tar)
+	    {
+		archive_options = archive_options + " --archive-type tar";
+	    }
+	}
+    }
+
+
+    y2debug("Archive script options: %1", archive_options);
+   
+
+    UI::ClearWizardContents();
+
+    boolean started = SCR::Execute(.background.run_output, script_create_archive + archive_options);
+    list script_out = [ ];
+
+    string id_hostname = "Storing hostname: ";
+    string id_date = "Storing date: ";
+    string id_partab = "Storing partition table: ";
+    string id_ok = "Success";
+    string id_failed = "Failed";
+    string id_ext2 = "Storing ext2 area: ";
+    string id_files = "Files: ";
+    string id_tar_exit = "/Tar result:";
+
+    archived_num = 0;
+    boolean tar_running = false;
+    string title = _("Creating archive");
+
+    e2image_results = [];
+	    
+    y2milestone("Creating archive...");
+ 
+    while(SCR::Read(.background.output_open) || (SCR::Read(.background.newlines) > 0))
+    {
+    	script_out = SCR::Read(.background.newout);
+	
+	while (size(script_out) > 0)
+	{
+	    string line = select(script_out, 0); 	// read line
+	    script_out = remove(script_out, 0);		// remove line
+
+	    y2debug("Archive script output: %1", line);
+
+	    if (tar_running)
+	    {
+		if (substring(line, 0, size(id_tar_exit)) == id_tar_exit)
+		{
+		    tar_result = tointeger(substring(line, size(id_tar_exit)));
+		}
+		else
+		{
+		    archived_num = archived_num + 1;
+		    UI::ChangeWidget(`id(`pbar), `Value, archived_num);
+		}
+	    }
+	    else
+	    {
+		if (substring(line, 0, size(id_hostname)) == id_hostname)
+		{
+		    UI::SetWizardContents(title, `Label(_("Storing host name...")), "", false, false);
+		    
+		    string tmp = substring(line, size(id_hostname));
+		    hostname_stored = (tmp == id_ok);
+		}
+		else
+		{
+		    if (substring(line, 0, size(id_date)) == id_date)
+		    {
+    			UI::SetWizardContents(title, `Label(_("Storing date...")), "", false, false);
+
+			string tmp = substring(line, size(id_date));
+			date_stored = (tmp == id_ok);
+		    }
+		    else
+		    {
+			if (substring(line, 0, size(id_partab)) == id_partab)
+			{
+			    UI::SetWizardContents(title, `Label(_("Storing partition table...")), "", false, false);
+
+			    string tmp = substring(line, size(id_partab));
+			    ptable_stored = (tmp == id_ok);
+			}
+			else
+			{
+			    if (substring(line, 0, size(id_ext2)) == id_ext2)
+			    {
+				UI::SetWizardContents(title, `Label(_("Storing Ext2 area: ") + substring(line, size(id_ext2)) + "..."), "", false, false);
+			    }
+			    else
+			    {
+				if (substring(line, 0, size(id_files)) == id_files)
+				{
+				    total_files = tointeger(substring(line, size(id_files)));
+				     
+				    UI::SetWizardContents(title, `ProgressBar(`id(`pbar), _("Creating archive: ") + archive_name + "...", total_files), "", false, false);
+				    tar_running = true;
+				}
+				else
+				{
+				    if (line == id_ok || line == id_failed)
+				    {
+					e2image_results = add(e2image_results, (line == id_ok));
+				    }
+				    else
+				    {
+					y2warning("Unknown output from archive script: %1", line);
+				    }
+				}
+			    }
+			}
+		    }
+		}
+	    }
+
+
+	    ret = waitForUserOrProcess();
+	    if (ret != nil)
+	    {
+		return ret;
+	    }
+	}
+	
+    }
+
+    // remove temporary file list and file with comment
+    if (!SCR::Execute(.target.remove, tmpfile_list))
+    {
+	y2warning("Error removing file: %1", tmpfile_list);
+    }
+    
+    if (!SCR::Execute(.target.remove, tmpfile_comment))
+    {
+	y2warning("Error removing file: %1", tmpfile_comment);
+    }
+
+    return `next;
+}
+
+
+global define SummaryDialog() ``{
+    string br = "<BR>";
+    string p  = "<P>";
+    string _p = "</P>";
+
+    string em = "<B>";
+    string _em = "</B>";
+
+    string backup_result = p + _("Found modified files: ") + modified_num + br
+	+ _("Total size: ") + size_text(modified_size) + _p;
+
+	
+    if (search)
+    {
+	backup_result = backup_result + p + _("Found files which are not in any package: ") + nopkg_num + br
+	    + _("Total size: ") + size_text(nopkg_size) + _p;
+    }
+   
+    if (display)
+    {
+	backup_result = backup_result + p + _("Selected files to backup: ") + selected_files_num + _p;
+    }
+    
+    backup_result = backup_result + br + p + (hostname_stored ? _("Host name stored successfully") : 
+	em + _("Storing host name failed") + _em) + br + (date_stored ? _("Date stored successfully") :
+	em + _("Storing date failed") + _em) + br + (file_list_stored ? _("File list stored successfully") :
+	em + _("Storing file list failed") + _em) + br + (comment_stored ? _("Comment stored successfully") :
+        em + _("Storing comment failed") + _em);
+
+    integer added_files = 0;
+ 
+    if (system)
+    {
+	if (backup_pt)
+	{
+	    if (ptable_stored)
+	    {
+		added_files = added_files + 1;
+		backup_result = backup_result + br + _("Partition table stored successfully");
+	    }
+	    else
+	    {
+		backup_result = backup_result + br + em + _("Storing partition table failed") + _em;
+	    }
+	}
+
+	y2debug("Ext2 backup: %1", ext2_backup);
+	y2debug("Ext2 results: %1", e2image_results);
+
+	if (size(ext2_backup) > 0)
+	{
+	    integer index = 0;
+
+	    foreach(`r, e2image_results,
+		``{
+		    if (r)
+		    {
+			backup_result = backup_result + br
+			    + sformat(_("Ext2 image %1 stored successfully"), select(select(select(ext2_backup, index), 0) ,0));
+			    
+			added_files = added_files + 1;
+		    }
+		    else
+		    {
+			backup_result = backup_result + br + em
+			    + sformat(_("Storing Ext2 image %1 failed"), select(select(select(ext2_backup, index), 0) ,0)) + _em;
+		    }
+
+		    index = index + 1;
+		}
+	    );
+
+	}
+    }
+
+    if (file_list_stored)
+    {
+	added_files = added_files + 1;
+    }
+    
+    if (hostname_stored)
+    {
+	added_files = added_files + 1;
+    }
+    
+    if (date_stored)
+    {
+	added_files = added_files + 1;
+    }
+    
+    if (comment_stored)
+    {
+	added_files = added_files + 1;
+    }
+
+    y2debug("selected_files_num: %1", selected_files_num);
+    y2debug("added_files: %1", added_files);
+    y2debug("total_files: %1", total_files);
+
+    backup_result = backup_result + _p
+	+ br + ((selected_files_num + added_files != total_files) ? em + _("Warning: Some files were not backuped") + _em + br : "")
+	+ ((tar_result == 0) ? sformat(_("Archive %1 created successfully"), archive_name) + br +_("Total archived files: ") + archived_num :
+	  em + _("Archive creation failed") + _em) + _p;
+	
+    
+    UI::SetWizardContents( _("Backup summary"),
+	`VBox(
+	    `VSpacing(0.5),
+	    `RichText(backup_result),
+	    `VSpacing(1.0)
+	),
+	_("Some help text..."), true, true
+    );
+
+    /* TODO why finish button is not default? */
+    UI::ReplaceWizardNextButton(`PushButton(`id(`finish), `opt(`default), FinishButtonLabel()));
+
+    symbol ret = UI::UserInput();
+
+    if (ret != `finish)
+    {
+	UI::RestoreWizardNextButton();
+    }
+
+    return ret;
+}
+
+
+}
+

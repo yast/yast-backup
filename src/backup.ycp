@@ -1,0 +1,169 @@
+/**
+ *  File:
+ *    backup.ycp
+ *
+ *  Module:
+ *    Backup module
+ *
+ *  Authors:
+ *    Ladislav Slezak <lslezak@suse.cz>
+ *
+ *  $Id$
+ *
+ */
+
+
+{
+
+/* TODO: check default values */
+/* TODO: check for configuration changes, avoid unnecessary searches */
+/* TODO: check exit statuses, result values... if error occured */
+/* TODO: write help texts */
+/* TODO: require confirmation of abort */
+
+y2milestone("Backup module started");
+
+include "wizard/sequencer.ycp";
+include "ui/wizard_dialog.ycp";
+include "ui/common_popups.ycp";
+include "ui/common_functions.ycp";
+
+include "backup/functions.ycp";
+include "backup/ui.ycp";
+
+
+/* TODO move user setting to map?? But some big variables should remain global... */
+
+integer wait_time = 300;    // loop delay (in miliseconds)
+
+string script_store_ext2_area = "e2image";
+string script_get_partition_table = "/sbin/fdisk -l";
+string script_get_files = "/usr/lib/YaST2/bin/backup_search.pl"; 
+string script_create_archive = "/usr/lib/YaST2/bin/backup_archive.pl";			  
+
+// global variables initialized to default values:
+string archive_name = "";		// archive file name
+string description = "";		// user comment
+symbol archive_type = `tgz;		// archive type
+
+boolean search = true;			// search files which do not belong to any package
+boolean system = false;			// backup system areas
+boolean display = false;		// display files before creating archive
+boolean enhanced_check_owner = false;	// enhanced check if file is owned by package
+boolean check_multiple_packages = true;	// check if it is necessary to backup file, which owned by multiple packages
+
+list default_dir = [ "/dev", "/proc", "/tmp", "/var/adm", "/var/lock", "/var/run", "/var/spool", "/var/tmp", "/var/cache", "/var/log", "/var/lib/rpm", "/local", "/etc/opt", "/etc/usbmgr" ];		// default excluded directoried from search
+list dir_list = nil;			// selected directoried to exclude
+
+list fs_exclude = [ ];			// selected filesystems to exclude from search
+list detected_fs = nil;			// detected filesystems
+
+list detected_ext2 = nil;		// detected mounted ext2 filesystems
+list ext2_backup = [];			// selected ext2 filesystems to backup
+
+boolean backup_pt = true;		// backup partition table
+
+boolean backup_all_ext2 = true;		// backup all mounted ext2 partitions
+boolean backup_none_ext2 = false;	// backup none ext2 partitions
+boolean backup_selected_ext2 = false;	// backup selected ext2 partitions
+
+integer modified_num = 0;		// number of modified files
+integer modified_size = 0;		// size
+integer nopkg_num = 0;			// number of found files which do not belong to any package
+integer nopkg_size = 0;			// size
+
+map backup_files = $[ ];		// all found files to backup
+map selected_files = nil;		// selected files to backup
+integer selected_files_num = 0;		// number of selected files to backup
+
+string checkmark = UI::Glyph(`CheckMark);
+string nocheckmark = (checkmark == "[x]") ? "[ ]" : " ";
+
+boolean ptable_stored = false;		// results
+boolean hostname_stored = false;
+boolean date_stored = false;
+boolean file_list_stored = false;
+boolean comment_stored = false;
+list e2image_results = [];		// results of storing ext2 images
+integer archived_num = 0;
+
+integer tar_result = 1;		// exit status of tar
+integer total_files = 0;	// total number of files in archive
+
+boolean confirm_abort = false;	// confirm abort
+
+
+// sequence of dialogs
+map sequence = $[
+    "ws_start"	: "archive",
+
+    "archive" : $[
+        `next	: "backup",
+	`abort	: `abort
+    ],
+    "backup" : $[
+        `next	: "exclude",
+	`next2	: "searching",
+	`next3	: "system",
+	`abort	: `abort
+    ],
+    "exclude" : $[
+        `next	: "system",
+	`next2	: "searching",
+	`expert : "excludefs",
+	`abort	: `abort
+    ],
+    "excludefs" : $[
+	`ok : "exclude",
+	`abort	: `abort
+    ],
+    "system" : $[
+	`next : "searching",
+	`abort	: `abort
+    ],
+    "searching"	: $[
+	`next	: "files",
+	`next2	: "archiving",
+	`abort	: `abort
+    ],
+    "files" : $[
+        `next	: "archiving",
+	`abort	: `abort
+    ],
+    "archiving" : $[
+	`next	: "summary",
+	`abort	: `abort
+    ],
+    "summary" : $[
+    	`abort	: `abort,
+	`finish	: `ws_finish
+    ]
+];
+
+// aliases for dialogs
+map aliases = $[
+    "files"   	: ``(FilesDialog()),
+    "archive" 	: ``(ArchDialog()),
+    "backup"  	: ``(BackupDialog()),
+    "exclude" 	: ``(ExcludeDialog()),
+    "excludefs" : ``(ExcludeFilesystemDialog()),
+    "system"	: ``(SystemBackupDialog()),
+    "searching"	: [ ``(SearchingModifiedDialog()), true ],
+    "archiving"	: [ ``(ArchivingDialog()), true ],
+    "summary"	: ``(SummaryDialog())
+];
+
+// create wizard dialog
+UI::CreateWizardDialog();
+
+// start wizard sequencer
+WizardSequencer(aliases, sequence);
+
+y2milestone("Backup module finished.");
+
+}
+
+
+
+
+

@@ -1,0 +1,197 @@
+/**
+ *  File:
+ *    functions.ycp
+ *
+ *  Module:
+ *    Backup module
+ *
+ *  Authors:
+ *    Ladislav Slezak <lslezak@suse.cz>
+ *
+ *  $Id$
+ *
+ */
+
+
+{
+
+
+global define MapToTableItems(boolean check)
+``{
+    integer idx = 0;
+    list items = [];
+
+    foreach(`key, `val, backup_files, 
+    	``{
+
+	    list ch = lookup(val, "changed_files", []);
+	    
+	    foreach(`file, ch,
+		``{
+		    idx = idx + 1;
+
+		    string mark = "";
+
+		    if (check == nil)
+		    {
+			mark = (contains(lookup(lookup(selected_files, key, $[]), "changed_files", []), file) == true) ? checkmark : nocheckmark; 
+		    }
+		    else
+		    {
+			mark = check ? checkmark : nocheckmark;
+		    }
+
+		    items = add(items, `item(`id(idx), mark, file, key));
+		}
+	    );
+	}
+    );
+
+    return items;
+}
+
+
+global define AbortConfirmation() ``{
+/* TODO abort confirmation */
+
+/*  UI::AnyQuestionPopup( symbol|string headline, string message, string yes_button_message,
+	string no_button_message, symbol focus ) -> boolean
+
+	Returns true if affirmative button is clicked.
+*/
+
+    return UI::YesNoPopup("Really abort?");
+}
+
+
+global define ShowEditDialog(string label, string value) ``{
+    UI::OpenDialog(
+	`VBox(
+	    `TextEntry(`id(`te), label, value),
+	    `VSpacing(1.0),
+	    `HBox(
+	        `PushButton(`id(`ok), "Ok"),
+		`PushButton(`id(`cancel), "Cancel")
+	    )
+	)
+    );
+
+    symbol input = UI::UserInput();
+
+    string text = UI::QueryWidget(`id(`te), `Value);
+    UI::CloseDialog();
+
+    return $[ "text" : text, "clicked" : input ];
+}
+
+// return user input or nil if background data available
+global define waitForUserOrProcess() ``{
+    symbol ret = nil;
+    
+    while (SCR::Read(.background.newlines) == 0 && SCR::Read(.background.output_open))
+    {
+	sleep(wait_time);
+	
+	ret = UI::PollInput(); 
+	
+	if (ret == `abort)
+	{
+	    SCR::Execute(.background.kill, nil);
+	    break;
+	}
+    }
+
+    return ret;
+}
+
+
+global define GetMountedFilesystems() ``{
+    list mounted = SCR::Read(.proc.mounts);
+    list result = [ ];
+
+    foreach(`m, mounted, 
+	``{
+	    string fs = lookup(m, "vfstype", nil);
+	    
+	    if (fs != nil)
+	    {
+		result = add(result, fs);
+	    }
+	}
+    );
+
+    return toset(result);
+}
+
+global define GetMountedExt2Filesystems() ``{
+    list mounted = SCR::Read(.proc.mounts);
+    list result = [ ];
+
+    foreach(`m, mounted, 
+	``{
+	    string fs = lookup(m, "vfstype", nil);
+	    string dev = lookup(m, "spec", nil);
+	    
+	    if (fs == "ext2" && dev != nil)
+	    {
+		result = add(result, dev);
+	    }
+	}
+    );
+
+    return toset(result);
+}
+
+// return list of items created from list
+global define GetListWithFlags(list in, list selected) ``{
+    return maplist(`i, in, ``{
+	return `item(`id(i), i, (contains(selected, i) ? true : false));
+    });
+}
+
+global define AddIdBool(list in, boolean val) ``{
+    return maplist(`i, in, ``{
+        return `item(select(i, 0), select(i, 1), val);
+    });
+}
+
+global define AddId(list in) ``{
+    return maplist(`i, in, ``{
+        return `item(`id(i), i);
+    });
+}
+
+global define MapFilesToString() ``{
+    string result = "";
+
+    foreach(`pkg, `info, selected_files,
+        ``{
+            if (pkg != "")
+            {
+		string tmp = "Package: " + pkg + "\nInstalled: "
+		    + lookup(lookup(backup_files, pkg, $[]), "install_prefixes", "(none)") + "\n";
+
+                foreach(`file, lookup(info, "changed_files", []), ``{tmp = tmp + file + "\n";});
+
+		result = result + tmp;
+            }
+        }
+    );
+ 
+    list nopkg = lookup(lookup(selected_files, "", $[ ]), "changed_files", []);
+ 
+    if (size(nopkg) > 0)
+    {
+	string tmp = "Nopackage:\n";
+        foreach(`file, nopkg, ``{tmp = tmp +  file + "\n";});
+
+	result = result + tmp;
+    }
+ 
+    return result;
+}
+
+
+}
+
+

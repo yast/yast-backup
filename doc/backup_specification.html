@@ -1,0 +1,308 @@
+<HTML>
+<HEAD>
+  <TITLE>Backup module specification</TITLE>
+</HEAD>
+
+<BODY BGCOLOR=#FFFFFF>
+
+<H1>Backup module specification</H1>
+
+<P>
+<I>Author: Ladislav Slezak &lt;<A HREF="mailto:lslezak@suse.cz">
+lslezak@suse.cz</A>&gt;</I>
+</P>
+
+<P>
+Changes:
+</P>
+
+<UL>
+  <LI><B>2001-10-15:</B> New options in <I>Backup settings dialog</I></LI>
+  <LI><B>2001-10-05:</B> Screenshots update</LI>
+  <LI><B>2001-09-26:</B> Detailed batch mode description</LI>
+  <LI><B>2001-09-06:</B> Initial version</LI>
+</UL>
+
+<HR>
+
+<H2>Backup and system recovery solutions</H2>
+
+
+<H3>Backup</H3>
+
+<P>Utilities like dump, kbackup and others are indended for full system backup.
+These utilities do not use rpm database to get changed files, but they support
+incremental backup or client/server architecture or other features.</P>
+
+<H4>YaST1</H4>
+
+<P>YaST1 backup module compares file flags stored in rpm database with actual
+file properties and backups only files which differ, the result is small backup
+archive.</P>
+
+<P>
+How is backup done in YaST1:
+<OL>
+	<LI>get list of installed packages</LI>
+	<LI>get list of files and modification flags for each installed package</LI>
+	<LI>select from list only modified files</LI>
+	<LI>remove duplicate entries from file list</LI>
+	<LI>find files which do not belong to any package (on demand):
+	iterate through directory content (start at root directory), for each:</LI>
+	<UL>
+<LI>file - check whether it is in package files list, if no add it to the backup list</LI>
+<LI>directory - check if it is in exclude directory list or it is on excluded filesystem,
+if no then get recursive file list from it
+</LI></LI></UL></LI>
+	<LI>display list of files to backup, user choose files from list</LI>
+	<LI>display archiving options</LI>
+	<LI>run <I>tar</I> to create backup archive</LI>
+</OL>
+</P>
+
+<P>YaST1 can not restore files from backup archive. Restoration of system
+is done by new system installation and manually updating files from backup
+archive. There is no way how to check whether installed packages are same
+as in backup time or if they are installed in same place (not relocated to
+another directory). </P>
+
+<H3>System recovery utilities</H3>
+
+<P><A HREF="http://mkcdrec.ota.be"><B>Make CDROM recovery</B></A>
+makes a bootable recovery ISO images, with full backup of system. System can be booted 
+from CD and complete recovered from backup. Others utilities only make bootable
+floppy/CD with useful utilities, for example
+<A HREF="http://freshmeat.net/redir/recoveryispossible!/8898/url_tgz/">rip</A> or
+<A HREF="ftp://ibiblio.org/pub/Linux/system/recovery/zdisk-2.03.tar.gz">zdisk</A>.
+<A HREF="http://www.stud.uni-hannover.de/user/76201/gpart">Gpart</A> utility
+can guess lost partition table from disk content, this is useful if no partition backup is available.
+</P>
+
+
+<H2>Documentation</H2>
+<P>YaST1 source, tar, fdisk, e2image and rpm manual pages, 
+<A HREF="http://www.linuxdoc.org/HOWTO/mini/Partition-Rescue/index.html">
+Partition rescue mini HOWTO</A>, 
+<A HREF="http://www.rpmdp.org/rpmbook/node32.html">Maximum RPM - Verification</A>, 
+<A HREF="http://bugzilla.suse.de/show_bug.cgi?id=9556">Bugzilla entry</A></P>
+
+<H2>Features</H2>
+
+<P>List of features is available <A HREF="backup_features.txt">here</A>.</P>
+
+<H2>Implementation</H2>
+<H3>Backup</H3>
+
+<P>Backup archive contains files which differ from files in RPM packages and files which
+do not belong to any RPM package.
+Archive file (tar, tar.gz or tar.bz2) contains all backuped files in their
+original directory, so manual restoring is possible.
+Some additional information will be stored in subdirectory <I>tmp/yast2-backup</I>
+This directory should contain files:
+<UL>
+	<LI><I>hostname</I> - name of machine where archive was created</LI>
+	<LI><I>date</I> - date of backup</LI>
+	<LI><I>comment</I> - user comment, description of backup archive</LI>
+	<LI><I>partition_table</I> - partition table info obtained by <I>fdisk -l</I></LI>
+	<LI><I>e2image_&lt;device&gt;</I> - ext2 metadata obtained by <I>e2image</I> from
+	  <I>device</I></LI>
+	<LI><I>files_info</I> - list of files (with absolute path) and packages to which they belong
+<P>
+Format of file:<BR>
+<PRE>Package: <I>package_name_with_version</I>
+Installed: <I>installation_prefix</I>
+<I>file1
+file2</I>
+Package: <I>package_name_with_version</I>
+Installed: <I>installation_prefix</I>
+<I>file1
+file2
+file3
+...</I>
+Nopackage:
+<I>file1
+file2
+...</I>
+</PRE>
+	</LI>
+</UL>
+</P>
+
+
+<P>Some problems:
+<UL>
+<LI>What if some package was updated after backup? For restoring must
+be present package of the same version!<BR>
+Solution: Store package version with list of changed files
+</LI>
+
+<LI>What if relocation was used in installation? (Package is reinstalled
+in another place.)<BR>
+Solution: Store installation prefix
+</LI>
+
+<LI>What if some file is owned by more packages?
+File can be owned by multiple packages, but if in one packge it has different
+modify time (content is equal) then this file will be unnecessary backuped.
+<BR>
+Solution: Get list of files which are owned by more than one package. If a file has
+only different modify time in the RPM database, but MD5 sum and size tests passes
+and it's in the duplicate list then do not backup it. This check takes some time,
+so it can be turned off by "Extra check files in mupltiple packages" option.
+Default value is do this check because there should be a minimum of files which are
+owned by more than one package.
+</LI>
+
+<LI>Symbolic link problem:
+If a file in RPM package is installed in directory which is symbolic link to another
+directory then it seems like file in linked directory is not in any package (because it
+was not reported by <EM>rpm -qal</EM> command), but <EM>rpm -qf</EM> tells
+right owner.<BR>
+Solution: If file is not in packages files list then check owner by <EM>rpm -qf</EM> query.
+This solution takes a lot of time, so default option is do not make this check, but it can be
+turned on by "Enhanced check of file owner" option.
+</LI>
+
+</UL>
+</P>
+
+
+<P>
+Backup module has two parts: <I>backup scripts</I> and <I>YaST2 frontend</I>.
+</P>
+
+<P>
+<I>Backup scripts</I> are written in Perl. First script collects files to backup,
+second script creates archive file. Two scripts are required so that user
+can exclude some files from backup. These scripts are independent on YaST2
+and they can be used in batch mode backup. In batch mode all parametres are
+entered on command line and backup is done without any interaction with user.
+This feature can be used in shell scripts to do backup automatically.
+</P>
+
+<P>
+<I>YaST2 frontend</I> collects information from user, then it runs backup scripts and
+displays progress of backup.
+</P>
+
+<H3>Restore</H3>
+
+<P>This feature is planned for future, at first must be achieved YaST1 functionality
+(creating backup archive). Here is only small overview of restoring procedure:
+</P>
+
+<P>YaST2 backup module will use some information about system stored in backup archive 
+and will enable simple restoring of files. Restoring partition table or restoring ext2 critical areas
+are dangerous operations, therefore these operations should be done only manually by expert user.
+Restoring partition table is described in
+<A HREF="http://www.linuxdoc.org/HOWTO/mini/Partition-Rescue/x92.html#AEN95">
+Partition rescue mini HOWTO - chapter 8.1</A>
+ Ext2 data are stored in image obtained by e2image utility, see 
+<A HREF="http://mesh.eecs.umich.edu/cgi-bin/man2html/usr/share/man/man8/e2image.8.gz">
+e2image man page</A>.
+</P>
+
+<P>Some problems:
+<UL>
+<LI>What if file was not in any package during backup, but at restoring some package owns it?
+(In other words: no version info is stored in archive)<BR>
+Solution: Query file if it is in some package, if yes, restoring is allowed only in expert mode.
+</LI>
+</UL>
+</P>
+
+<H2>Workflow</H2>
+
+<H3>Overview</H3>
+
+<P>This is backup workflow overview. (<A HREF="workflow.dia">source</A>)
+</P>
+
+<MAP NAME="map">
+<AREA SHAPE="RECT" COORDS="44,0,235,139" HREF="#archive_options">
+<AREA SHAPE="RECT" COORDS="47,164,235,302" HREF="#backup_options">
+<AREA SHAPE="RECT" COORDS="299,269,488,410" HREF="#exclude_dir">
+<AREA SHAPE="RECT" COORDS="514,270,697,410" HREF="#exclude_fs">
+<AREA SHAPE="RECT" COORDS="302,434,490,574" HREF="#system">
+<AREA SHAPE="RECT" COORDS="50,568,234,705" HREF="#searching_modif">
+<AREA SHAPE="RECT" COORDS="315,721,499,860" HREF="#searching_files">
+<AREA SHAPE="RECT" COORDS="315,871,496,1004" HREF="#file_selection">
+<AREA SHAPE="RECT" COORDS="56,991,237,1126" HREF="#creating_archive">
+<AREA SHAPE="RECT" COORDS="54,1147,236,1282" HREF="#summary">
+</MAP>
+
+<P>
+<IMG SRC="workflow.png" USEMAP="#map">
+</P>
+
+<H3>Dialog details</H3>
+
+<P><A NAME="archive_options"></A><B>Archive options</B> - Archive file name, 
+achive type and optional archive description are entered in this dialog.
+(<A HREF="dialog1.ui">source</A>)<BR>
+<IMG SRC="dialog1.png">
+</P>
+
+<P><A NAME="backup_options"></A><B>Backup options</B> - 
+Number of selected parts to backup affects number of dialogs in workflow.
+(<A HREF="dialog2.ui">source</A>)<BR>
+<IMG SRC="dialog2.png">
+</P>
+
+<P><A NAME="exclude_dir"></A><B>Exclude directory</B> - Directories can be excluded from search.
+(<A HREF="dialog3.ui">source</A>)<BR>
+<IMG SRC="dialog3.png">
+</P>
+
+<P><A NAME="exclude_fs"></A><B>Exclude file system</B> - Filesystems can be selected to exclude from search.
+(<A HREF="dialog10.ui">source</A>)<BR>
+<IMG SRC="dialog10.png">
+</P>
+
+
+<P><A NAME="system"></A><B>System backup</B> - Partition table and
+ext2 partitions can be selected here.
+(<A HREF="dialog4.ui">source</A>)<BR>
+<IMG SRC="dialog4.png">
+</P>
+
+<P><A NAME="searching_modif"></A><B>Searching modified files</B> - Progress bar is displayed
+while searching modified files.
+(<A HREF="dialog5.ui">source</A>)<BR>
+<IMG SRC="dialog5.png">
+</P>
+
+<P><A NAME="searching_files"></A><B>Searching files</B> - Progress of searching files
+is displayed here.
+(<A HREF="dialog6.ui">source</A>)<BR>
+<IMG SRC="dialog6.png">
+</P>
+
+<P><A NAME="file_selection"></A><B>File selection</B> - All found files are
+displayed here.
+(<A HREF="dialog7.ycp">source</A>)<BR>
+<IMG SRC="dialog7.png">
+</P>
+
+<P><A NAME="creating_archive"></A><B>Creating archive</B> - 
+Progess is displayed while creating archive.
+(<A HREF="dialog8.ui">source</A>)<BR>
+<IMG SRC="dialog8.png">
+</P>
+
+<P><A NAME="summary"></A><B>Backup summary</B> - Results
+of backup procedure are displayed here.
+(<A HREF="dialog9.ui">source</A>)<BR>
+<IMG SRC="dialog9.png">
+</P>
+
+
+</BODY>
+</HTML>
+
+
+
+
+
+
+
