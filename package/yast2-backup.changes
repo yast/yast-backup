@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Feb 10 15:12:09 CET 2004 - lslezak@suse.cz
+
+- fixed testsuite (initialize testsuite in all test cases)
+- removed hwinfo from neededforbuild
+- version 2.9.7
+
+-------------------------------------------------------------------
 Mon Feb  9 17:48:54 CET 2004 - lslezak@suse.cz
 
 - removed *.y2cc file
