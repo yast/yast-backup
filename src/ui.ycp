@@ -20,6 +20,7 @@ import "Backup";
 import "Wizard";
 import "Progress";
 import "Report";
+import "Label";
 
 include "ui/common_popups.ycp";
 include "ui/common_functions.ycp";
@@ -549,7 +550,10 @@ global define symbol TarOptionsDialog() ``{
     // combo box item - user defined volume size of archive
     description_combo = add(description_combo, `item(`id(`user_defined), _("User-defined")));
 
+    y2milestone("%1", description_combo);
+
     list description_combo_units = MediaList2UIList(Backup::units_description);
+    y2milestone("%1", description_combo_units);
 
     // dialog header
     Wizard::SetContents( _("Archive file options"),
@@ -2756,6 +2760,251 @@ Do you want to replace the existing profile?"), new_name["text"]:"")) ) {
 	return "";
     }
 }
+
+global define symbol Test_PartitionSelection() ``{
+    Wizard::SetContents( _("YaST Backup - Proposal"),
+        `VBox(
+            `Left(`Label(_("Available Disk Partitions") )),
+            `Table(`id(`pts), `header(" ", "Directory", "Partition", "File system"), [`item(`id(1), " ", "/boot", "/dev/hda1", "ext2"), `item(`id(1), "X", "/", "/dev/hda2", "reiserfs"), `item(`id(1), " ", "/usr", "/dev/hda3", "reiserfs")] ),
+            `HBox(
+                `PushButton(`id(`s1), _("Add")),
+                `PushButton(`id(`s2), _("Edit")),
+                `PushButton(`id(`s3), _("Delete"))
+            ),
+            `VSpacing(1.5)
+        ),
+        "note: in the first columnt is the selection mark", false, true
+    );
+
+    return UI::UserInput();
+}
+
+global define symbol Test_LocationSelection() ``{
+    Wizard::SetContents( _("YaST Backup - Proposal"),
+	`VBox(
+	    `Frame(_("Backup archive"),
+		`VBox(
+		    `HBox(
+			`HSpacing(0.5),
+			`TextEntry(`id(`filename), _("Archive file na&me:"), ""),
+			`HSpacing(0.5)
+		    ),
+		    `VSpacing(0.49)
+		)
+	    ),
+	    `VSpacing(0.49),
+	    // frame label
+	    `Frame(_("Backup location"),
+		    `HBox(
+			`RadioButtonGroup(`id(`source), `opt(`notify),
+			    `VBox(
+				`VSpacing(0.49),
+				// radio button label
+				`Left(`RadioButton(`id(`file),  `opt(`notify), _("&Local file"), true)),
+				`VSpacing(0.49),
+				// radio button label
+				`Left(`RadioButton(`id(`nfs), `opt(`notify), _("Network (N&FS)"), false)),
+				`HBox(
+				    `HSpacing(2),
+				    // text entry label
+				    `TextEntry(`id(`nfsserver), _("I&P adress or name of NFS server:"), ""),
+				    `HSpacing(1),
+				    // push button label
+				    `VBox(
+					`Label(""),
+					`PushButton(`id(`selecthost), _("Select..."))
+				    )
+				),
+				`HBox(
+				    `HSpacing(2),
+				    // text entry label
+				    `TextEntry(`id(`nfsfilename), _("&Remote directory:"), ""),
+				    `HSpacing(1),
+				    // push button label
+				    `VBox(
+					`Label(""),
+					`PushButton(`id(`selecthost), _("Select..."))
+				    )
+				),
+				`VSpacing(0.49),
+				// r:adio button label
+				`Left(`RadioButton(`id(`removable), `opt(`notify), _("Rem&ovable device"), false)),
+				`HBox(
+				    `HSpacing(2),
+				    // combo box label
+				    `Left(`ComboBox(`id(`device), `opt(`editable), _("&Device"), [`item(`id("/dev/sr0"), "CDRW-482448 (CD-RW - /dev/sr0)"), `item(`id("/dev//fd0"), "Floppy Disk (Floppy Disk - /dev/fd0)")]))
+				),
+				`VSpacing(0.49)
+			    )
+			),
+			`HSpacing(1)
+		    )
+		),
+		`VSpacing(0.49),
+		`CheckBox(`id(`replace), _("Replace existing archive")),
+		`VSpacing(0.49),
+		`HBox(
+		    `PushButton(`id(`volume), _("Volume size...")),
+		    `PushButton(`id(`expert), _("Expert..."))
+		),
+		`VSpacing(0.49)
+        ),
+        "help", true, true
+    );
+
+    symbol s = nil;
+    while (s != `next && s!= `abort && s!= `abort)
+    {
+	s = UI::UserInput();
+
+	if (s == `volume)
+	{
+	    Test_VolumeSizeDialog();
+	}
+	else if (s == `expert)
+	{
+	    Test_LocationExpertOptions();
+	}
+    }
+
+    return s;
+}
+
+
+global define symbol Test_VolumeSizeDialog() ``{
+
+    list media = [`item (`id (`fd144),
+    "Floppy 1.44 MB"), `item (`id (`fd12), "Floppy 1.2 MB"), `item (`id (`zip100), "ZIP 100 MB"), `item (`id (`cd650), "CD-R/RW 650 MB (74 min.)"), `item (`id (`cd700), "CD-R/RW 700 MB (80 min.)"), `item (`id (`user_defined), "User-defined")];
+    list units = [`item (`id (`B), "bytes"), `item (`id (`kB), "kB"), `item (`id (`kiB), "kiB"), `item (`id (`MB), "MB"), `item (`id (`MiB),
+    "MiB")];
+
+    UI::OpenDialog(
+	`HBox(
+	    `HSpacing(1.0),
+	    `VBox(
+		`VSpacing(0.5),
+		// frame label
+		`Frame(_("Maximum archive size"),
+		    `VBox(
+			`VSpacing(`opt(`hstretch), 0.5),
+			`HBox(
+			    `HSpacing(3.5),
+
+			    `VBox(
+				// combo box label
+				`Left(`ComboBox(`id(`vol), `opt(`notify), _("&Predefined sizes:"), media)),
+				`VSpacing(0.5),
+
+				`Left(
+				    `HBox(
+					// text entry label
+					`TextEntry(`id(`user_size), _("&User-defined size:")),
+					`ComboBox(`id(`user_unit), "", units),
+					`HStretch()
+				    )
+				),
+				`VSpacing(0.5)
+			    ),
+			    `HSpacing(1.0)
+			)
+		    )
+		),
+		`VSpacing(1.0),
+		`HBox(
+		    `PushButton(`id(`ok), Label::OKButton()),
+		    `PushButton(`id(`cancel), Label::CancelButton())
+		)
+	    ),
+	    `HSpacing(1.0)
+	)
+    );
+
+    symbol input = UI::UserInput();
+    while (input != `ok && input != `cancel)
+    {
+	input = UI::UserInput();
+    }
+
+    UI::CloseDialog();
+
+    return input;
+}
+
+
+global define symbol Test_LocationExpertOptions() ``{
+
+    UI::OpenDialog(
+	`HBox(
+	    `HSpacing(1.0),
+	    `VBox(
+		`VSpacing(0.5),
+		// frame label
+		`Frame(_("Temporary location"),
+		    `VBox(
+			`VSpacing(0.3),
+			`TextEntry(`id(`user_size), _("&Directory:")),
+			`VSpacing(0.5)
+		    )
+		),
+		`VSpacing(1.0),
+		`HBox(
+		    `PushButton(`id(`ok), Label::OKButton()),
+		    `PushButton(`id(`cancel), Label::CancelButton())
+		),
+		`VSpacing(0.3)
+	    ),
+	    `HSpacing(1.0)
+	)
+    );
+
+    symbol input = UI::UserInput();
+    while (input != `ok && input != `cancel)
+    {
+	input = UI::UserInput();
+    }
+
+    UI::CloseDialog();
+
+    return input;
+}
+
+
+global define symbol Test_BackupOptions() ``{
+    Wizard::SetContents( _("YaST Backup - Proposal"),
+	`VBox(
+	    `Frame(_("Data selection"),
+		`HBox(
+		    `RadioButtonGroup(`id(`data), `opt(`notify),
+			`VBox(
+			    `VSpacing(0.49),
+			    // radio button label
+			    `Left(`RadioButton(`id(`file), `opt(`notify), _("Exclude unmodified RPM files"), true)),
+			    `VSpacing(0.49),
+			    // radio button label
+			    `Left(`RadioButton(`id(`nfs), `opt(`notify), _("All files"), false)),
+			    `VSpacing(0.49)
+			)
+		    )
+		)
+	    )
+        ),
+        "help", true, true
+    );
+
+    symbol s = nil;
+    while (s != `next && s!= `abort && s != `back)
+    {
+	s = UI::UserInput();
+
+	if (s == `services)
+	{
+	}
+    }
+
+    return s;
+}
+
+
 
 }
 
