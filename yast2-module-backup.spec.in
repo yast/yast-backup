@@ -28,7 +28,7 @@ Requires:		yast2 yast2-trans-backup yast2-lib-wizard yast2-lib-sequencer perl ut
 @YAST2DIR@/clients/backup*.ycp
 @YAST2DIR@/bin/backup_*
 @YAST2DIR@/modules/Backup.ycp
-@YAST2DIR@/menuentries/menuentry_backup.ycp
+@YAST2DIR@/menuentries/menuentry_backup.y2cc
 %doc @DOCDIR@
 
 
