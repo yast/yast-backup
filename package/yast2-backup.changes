@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Feb 20 09:33:24 CET 2003 - lslezak@suse.de
+
+- fixed root user detection (#23880)
+- fixed testsuites
+- version 2.7.8
+
+-------------------------------------------------------------------
 Tue Feb 18 14:10:54 CET 2003 - lslezak@suse.de
 
 - add .tar extension to the archive name if it's missing (#23367)
