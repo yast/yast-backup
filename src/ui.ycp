@@ -34,6 +34,62 @@ textdomain "backup";
 
 global define symbol ArchDialog() ``{
 
+    // do not allow manual changes of configuration
+    if( Backup::no_interactive ) 
+    {
+	boolean cont = true;
+	
+	// no multivolume and does not exists, continue
+	if (!Backup::multi_volume && SCR::Read(.target.size, Backup::archive_name) != -1)
+	{
+	    // For translators %1 is archive file name (e.g. /tmp/backup.tar)
+	    cont = UI::YesNoPopup(sformat(_("File %1 already exists.\nDo you wish to overwrite it?"), Backup::archive_name));
+	}
+	else if (Backup::multi_volume)	// test if some volume part exists
+	{
+	    // list directory content
+	    string dir = substring(Backup::archive_name, 0, findlastof(Backup::archive_name, "/"));
+	    string fn = substring(Backup::archive_name, findlastof(Backup::archive_name, "/") + 1);
+
+	    y2debug("dir: %1", dir);
+	    y2debug("file: %1", fn);
+
+	    list ls = SCR::Read(.target.dir, dir);
+
+	    boolean matched = false;
+
+	    string conflict_file = "";
+
+	    // check if some volume part exists
+	    foreach(`f, ls, ``{
+		    if (regexpmatch(f, "\d*_" + fn) == true)
+		    {
+			if (matched == false)
+			{
+			    matched = true;
+			    conflict_file = f;
+			}
+		    }
+		}
+	    );
+
+	    y2debug("found volume part: %1", conflict_file);
+
+	    // display question
+	    if (matched == true)
+	    {
+		// For translators %1 is volume file name (e.g. /tmp/01_backup.tar)
+		cont = UI::YesNoPopup(sformat(_("Existing file %1\ncan be part of new volume set and it can be rewritten.\nDo you wish to continue?"), dir + "/" + conflict_file));
+	    }
+	    else
+	    {
+		cont = true;
+	    }
+	}
+	
+	if( cont ) return `next;
+    }
+
     // dialog header
     Wizard::SetContents(_("Archive settings"),
 	`VBox(
@@ -389,6 +445,9 @@ global define symbol TarOptionsDialog() ``{
  */
 
 global define symbol BackupDialog() ``{
+
+    // do not allow manual changes of configuration
+    if( Backup::no_interactive ) return `next2;
 
     // dialog header
     Wizard::SetContents( _("Search settings"),
@@ -1243,7 +1302,7 @@ Backup will be aborted.
     y2milestone("Searching done");
 
 
-    if (Backup::display)
+    if (Backup::display && !Backup::no_interactive )
     {
 	if (Backup::selected_files == nil)
 	{
@@ -1256,11 +1315,38 @@ Backup will be aborted.
     {
 	// no manual selection, backup all files
 	Backup::selected_files = Backup::backup_files;
+	
+	// skip the files listed in Backup::unselected_files
+	if (Backup::unselected_files != nil)
+	{
+	    // try to find each file in selected files
+	    foreach(string file, Backup::unselected_files,
+	    ``{
+		map new_selected = $[ ];
+		foreach(string pak, map val, Backup::selected_files,
+		``{
+		    list changed_files = lookup(val, "changed_files", [ ]);
+		    if( contains( changed_files , file ) ) 
+		    {
+			changed_files = filter( string v, changed_files, ``(v != file) );
+			
+			// construct new package description
+			val = $[ "changed_files" : changed_files,
+			         "install_prefixes" : lookup(val, "install_prefixes", [ ] ) ];
+		    }
+		    new_selected = add( new_selected, pak, val );
+		}
+		);
+		Backup::selected_files = eval(new_selected);
+	    }
+	    );
+	    y2milestone("Filtered out unselected files according to profile");
+	}
 
 	// count number of files
 	selected_files_num = 0;
 
-	foreach(`pak, `val, Backup::selected_files,
+	foreach(string pak, map val, Backup::selected_files,
 	    ``{
 		selected_files_num = selected_files_num + size(lookup(val, "changed_files", []));
 	    }
@@ -1373,7 +1459,8 @@ global define symbol FilesDialog() ``{
 // Note: it is required that Table contains files ordered by package!
 
     Backup::selected_files = $[ ];
-
+    Backup::unselected_files = [ ];
+    
     integer num = size(table_items);
     integer idx = 1;
 
@@ -1385,11 +1472,12 @@ global define symbol FilesDialog() ``{
     while (idx <= num)
     {
 	term table_item = UI::QueryWidget(`id(`table), `Item(idx));
+	
+    	string file_name = select(table_item, 2, "unknown file");
 
 	if (select(table_item, 1, nocheckmark) == checkmark)
 	{
 	    string package_name = select(table_item, 3, "unknown package");
-	    string file_name = select(table_item, 2, "unknown file");
 
 	    selected_files_num = selected_files_num + 1;
 
@@ -1404,7 +1492,7 @@ global define symbol FilesDialog() ``{
 		    "changed_files" : actual_package_files,
 		    "install_prefixes" : lookup(lookup(Backup::backup_files, actual_package_name, $[]), "install_prefixes", "(none)")
 		];
-
+		
 		Backup::selected_files = add(Backup::selected_files, actual_package_name,  package_info);
 
 		actual_package_name = package_name;
@@ -1415,6 +1503,10 @@ global define symbol FilesDialog() ``{
 	    {
 		actual_package_files = add(actual_package_files, file_name);
 	    }
+	}
+	else
+	{
+	    Backup::unselected_files = add( Backup::unselected_files, file_name );
 	}
 
 	idx = idx + 1;
@@ -2100,27 +2192,26 @@ global define symbol SummaryDialog() ``{
 
 global define symbol SelectProfileDialog() ``{
 
+    Backup::ReadBackupProfiles();
+    
     // if there is no stored profile return `next
-    /* TODO
-    Backup::ReadProfiles();
-
-    if (size(Backup::Profiles) == 0)
+    if (size(Backup::backup_profiles) == 0)
     {
 	return `next;
-    }*/
+    }
 
     Wizard::SetContents(_("Profile Selection"),
 	`VBox(
 	    `VSpacing(1),
-	    `SelectionBox(`id(`profile), _("&Stored Profiles:"), ["profile1", "profile2", "profile3", "profile4"]),
+	    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames()),
 	    `VSpacing(1),
 	    `Frame(_("Action"),
 		`RadioButtonGroup(`id(`rb),
 		    `VBox(
 			`VSpacing(0.5),
-			`Left(`RadioButton(`id(`noprofile), _("&Don't use any profile"), true)),
-			`Left(`RadioButton(`id(`use), _("&Use values from profile"))),
-			`Left(`RadioButton(`id(`edit), _("R&ead values from profile"))),
+			`Left(`RadioButton(`id(`noprofile), _("&Don't Use Profile"), true)),
+			`Left(`RadioButton(`id(`use), _("&Use Profile Without Changes"))),
+			`Left(`RadioButton(`id(`edit), _("Allow &Changes Before Use"))),
 			`VSpacing(0.5)
 		    )
 		)
@@ -2131,28 +2222,97 @@ global define symbol SelectProfileDialog() ``{
     );
 
     symbol ret = UI::UserInput();
+    
+    if( ret == `next )
+    {
+	symbol profile_use = UI::QueryWidget(`id(`rb), `CurrentButton);
+	if( profile_use == `use )
+	{
+	    // use the settings from profile and proceed without user intervention
+	    Backup::RestoreSettingsFromBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
+	    
+	    Backup::no_interactive = true;
+	}
+	else if( profile_use == `edit )
+	{
+	    // read the settings for the selected profile and continue setup
+	    Backup::RestoreSettingsFromBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
+	    
+	    // interactive configuration
+	    Backup::no_interactive = false;
+	}
+	else
+	{
+	    // do not use profile at all
+	    Backup::RestoreDefaultSettings();
 
+	    // interactive configuration
+	    Backup::no_interactive = false;
+	}
+    }
+    
     return ret;
 }
 
-global define symbol ProfileDialog(boolean edit) ``{
+// select a profile, where to save the current settings
+global define symbol ProfileDialog() ``{
 
     Wizard::SetContents(_("Profiles"),
 	`VBox(
-	    `SelectionBox(`id(`profile), _("&Stored Profiles:"), ["profile1", "profile2", "profile3", "profile4"]),
+	    `ReplacePoint(`id(`selectionBox), 
+	    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames()  )
+	    ),
 	    `HBox(
 		`PushButton(`id(`add), UI::AddButtonLabel() + "..."),
-		(edit == true) ? `PushButton(`id(`edit), UI::EditButtonLabel()) : `Empty(),
+		`PushButton(`id(`replace), _("Re&place")),
 		`PushButton(`id(`delete), UI::DeleteButtonLabel())
 	    ),
 	    `VSpacing(1.5)
 	),
-	profile_help(edit), true, true
+	profile_help(), true, true
     );
 
     Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
 
-    symbol ret = UI::UserInput();
+    
+    symbol ret = nil;
+    do
+    {
+	ret = UI::UserInput();
+	
+	if( ret == `add )
+	{
+	    // add a new profile with the current settings
+	    
+	    // Translators: text of a popup dialog
+	    map new_name = ShowEditDialog(_("Enter name for the new profile"), "");
+
+	    if( lookup( new_name, "clicked", nil ) == `ok )
+	    {
+		Backup::StoreSettingsToBackupProfile( lookup( new_name, "text", "" ) );
+		UI::ReplaceWidget( `id(`selectionBox), 
+		    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames() ) );
+	    }
+	} 
+	else if( ret == `replace ) 
+	{
+	    // replace the selected profile with the current settings
+	    Backup::StoreSettingsToBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
+	}
+	else if( ret == `delete )
+	{
+	    // remove the selected profile
+	    Backup::RemoveBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
+	    UI::ReplaceWidget( `id(`selectionBox), 
+		`SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames() ) );
+	}
+    } while( ret != `ok && ret != `cancel && ret != `abort );
+    
+    if( ret == `ok )
+    {
+	y2milestone(" *** Storing profiles ***");
+	Backup::WriteBackupProfiles();
+    }
 
     Wizard::RestoreNextButton();
     return ret;

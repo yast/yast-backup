@@ -50,7 +50,15 @@ global define list MapToTableItems(boolean check) ``{
 
 			if (check == nil)
 			{
-			    mark = (contains(lookup(lookup(Backup::selected_files, key, $[]), "changed_files", []), file) == true) ? checkmark : nocheckmark;
+			    if ( (contains(lookup(lookup(Backup::selected_files, key, $[]), "changed_files", []), file) == true)
+				&& (!contains(Backup::unselected_files, file) ) )
+			    {
+				mark =  checkmark;
+			    }
+			    else 
+			    {
+				mark = nocheckmark;
+			    }
 			}
 			else
 			{

@@ -172,7 +172,7 @@ map sequence = $[
 // aliases for dialogs
 map aliases = $[
     "readprof"	: ``(SelectProfileDialog()),
-    "profiles"	: [ ``(ProfileDialog(false)), true ],
+    "profiles"	: [ ``(ProfileDialog()), true ],
     "files"	: ``(FilesDialog()),
     "tar_opt"	: ``(TarOptionsDialog()),
     "archive"	: ``(ArchDialog()),

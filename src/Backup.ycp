@@ -31,16 +31,82 @@ global string script_get_partition_table = "/sbin/fdisk -l";
 global string script_get_files = "/usr/lib/YaST2/bin/backup_search.pl";
 global string script_create_archive = "/usr/lib/YaST2/bin/backup_archive.pl";
 
+// global settings 
+
+global map backup_profiles = $[] ;		// map of all available profiles
+
+// global defaults
+global string default_archive_name = "";		// archive file name
+global string default_description = "";			// user comment
+global symbol default_archive_type = `tgz;		// archive type
+
+global boolean default_multi_volume = false;
+global symbol default_volume_size = `fd144;
+global string default_user_volume_size = "";
+global symbol default_user_volume_unit = nil;
+
+global boolean default_search = true;			// search files which do not belong to any package
+global boolean default_system = false;			// backup system areas
+global boolean default_display = false;		// display files before creating archive
+global boolean default_do_md5_test = true;
+
+global list default_default_dir = [ "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache" ];		// default excluded directoried from search
+global list default_dir_list = nil;			// selected directoried to exclude
+
+global list default_fs_exclude = [ "iso9660" ];			// selected filesystems to exclude from search
+global list default_detected_fs = nil;			// detected filesystems
+
+global list default_detected_ext2 = nil;		// detected mounted ext2 filesystems
+global list default_ext2_backup = [];			// selected ext2 filesystems to backup
+
+global boolean default_backup_pt = true;		// backup partition table
+
+global boolean default_backup_all_ext2 = false;		// backup all mounted ext2 partitions
+global boolean default_backup_none_ext2 = true;		// backup none ext2 partitions
+global boolean default_backup_selected_ext2 = false;	// backup selected ext2 partitions
+
+
+global map default_backup_files = $[ ];		// all found files to backup
+global map default_selected_files = nil;	// selected files to backup
+global list default_unselected_files = nil;	// files, which user explicitly unselected
+
 // global variables initialized to default values:
-global string archive_name = "";		// archive file name
-global string description = "";			// user comment
-global symbol archive_type = `tgz;		// archive type
+global string archive_name = eval( default_archive_name );		// archive file name
+global string description = eval( default_description );		// user comment
+global symbol archive_type = eval( default_archive_type );		// archive type
 
-global boolean multi_volume = false;
-global symbol volume_size = `fd144;
-global string user_volume_size = "";
-global symbol user_volume_unit = nil;
+global boolean multi_volume = eval( default_multi_volume );
+global symbol volume_size = eval( default_volume_size );
+global string user_volume_size = eval( default_user_volume_size );
+global symbol user_volume_unit = eval( default_user_volume_unit );
 
+global boolean search = eval( default_search );			// search files which do not belong to any package
+global boolean system = eval( default_system );			// backup system areas
+global boolean display = eval( default_display );		// display files before creating archive
+global boolean do_md5_test = eval( default_do_md5_test );
+
+global list default_dir = eval( default_default_dir ); 		// default excluded directoried from search
+global list dir_list = eval( default_dir_list );		// selected directoried to exclude
+
+global list fs_exclude = eval( default_fs_exclude );		// selected filesystems to exclude from search
+global list detected_fs = eval( default_detected_fs );		// detected filesystems
+
+global list detected_ext2 = eval( default_detected_ext2 );	// detected mounted ext2 filesystems
+global list ext2_backup = eval( default_ext2_backup );		// selected ext2 filesystems to backup
+
+global boolean backup_pt = eval( default_backup_pt );		// backup partition table
+
+global boolean backup_all_ext2 = eval( default_backup_all_ext2 );		// backup all mounted ext2 partitions
+global boolean backup_none_ext2 = eval( default_backup_none_ext2 );		// backup none ext2 partitions
+global boolean backup_selected_ext2 = eval( default_backup_selected_ext2 );	// backup selected ext2 partitions
+
+
+global map backup_files = eval( default_backup_files );		// all found files to backup
+global map selected_files = eval( default_selected_files );	// selected files to backup
+global list unselected_files = eval( default_unselected_files );	// files, which user explicitly unselected
+
+global boolean no_interactive = false; 	// whether the user should setup configuration manually
+// end of global settings
 
 // media description - capacity is maximum file size which fits
 // to formatted medium using widely used file system (FAT on floppies)
@@ -105,30 +171,6 @@ global list units_description = [
 	"symbol"   : `MiB
     ],
 ];
-
-global boolean search = true;			// search files which do not belong to any package
-global boolean system = false;			// backup system areas
-global boolean display = false;		// display files before creating archive
-global boolean do_md5_test = true;
-
-global list default_dir = [ "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache" ];		// default excluded directoried from search
-global list dir_list = nil;			// selected directoried to exclude
-
-global list fs_exclude = [ "iso9660" ];			// selected filesystems to exclude from search
-global list detected_fs = nil;			// detected filesystems
-
-global list detected_ext2 = nil;		// detected mounted ext2 filesystems
-global list ext2_backup = [];			// selected ext2 filesystems to backup
-
-global boolean backup_pt = true;		// backup partition table
-
-global boolean backup_all_ext2 = false;		// backup all mounted ext2 partitions
-global boolean backup_none_ext2 = true;		// backup none ext2 partitions
-global boolean backup_selected_ext2 = false;	// backup selected ext2 partitions
-
-
-global map backup_files = $[ ];		// all found files to backup
-global map selected_files = nil;	// selected files to backup
 
 
 /**
@@ -449,6 +491,151 @@ global define map WriteProfile(list volumes) ``{
     return $[ "result" : Profile::Save(profilefile), "profile" : profilefile ];
 }
 
+// Read backup profiles form file, do not set any global settings
+global define boolean ReadBackupProfiles() ``{
+    backup_profiles = SCR::Read( .target.ycp, "/var/adm/YaST/backup/profiles" );
+    
+    // if the list is empty or the file does not exists, set empty map
+    if( backup_profiles == nil ) backup_profiles = $[];
+    
+    return ( backup_profiles == $[] ) ;
+}
+
+// Write current backup profiles to a file
+global define boolean WriteBackupProfiles() ``{
+    if( SCR::Write (.target.ycp, "/var/adm/YaST/backup/profiles", backup_profiles ) )
+    {
+	y2error( "Unable to write profiles ino a file" );
+	return false;
+    }
+    return true;
+}
+
+// Store current settings into a backup profile. If the name of the profile 
+// cannot be found, create a new one
+global define boolean StoreSettingsToBackupProfile( string profile_name ) ``{
+    
+    // if there is an old profile, remove it
+    if( haskey( backup_profiles, profile_name ) )
+    {
+	remove( backup_profiles, profile_name );
+    }
+    
+    map new_profile = $[
+	`archive_name 		: archive_name, 
+	`description  		: description,
+	`archive_type 		: archive_type,
+	`multi_volume 		: multi_volume,
+	`volume_size  		: volume_size,
+	`user_volume_size 	: user_volume_size,
+	`user_volume_unit 	: user_volume_unit, 
+	`search 		: search, 
+	`system 		: system, 
+	`display 		: display, 
+	`do_md5_test 		: do_md5_test, 
+	`default_dir		: default_dir, 
+	`dir_list		: dir_list, 
+	`fs_exclude		: fs_exclude, 
+	`detected_fs		: detected_fs,
+	`detected_ext2		: detected_ext2, 
+	`ext2_backup		: ext2_backup,
+	`backup_pt		: backup_pt,
+	`backup_all_ext2	: backup_all_ext2, 
+	`backup_none_ext2	: backup_none_ext2, 
+	`backup_selected_ext2	: backup_selected_ext2, 
+	`unselected_files 	: unselected_files
+    ] ;
+    
+    // add the new profile
+    backup_profiles = add( backup_profiles, profile_name, new_profile );    
+}
+
+// Restore the global settings from a given backup profile. If the name of the
+// profile cannot be found, return false, otherwise return true.
+global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``{
+
+    // return false, is there is no such profile
+    if( !haskey( backup_profiles, profile_name ) ) return false;
+    
+    // get the profile data
+    map profile = lookup( backup_profiles, profile_name, nil );
+    
+    // setup global settings according to profile
+    // TODO: check, if all settings are valid
+    archive_name = lookup( profile, `archive_name, default_archive_name ); 
+    description = lookup( profile, `description, default_description);
+    archive_type = lookup( profile, `archive_type, default_archive_type);
+    multi_volume = lookup( profile, `multi_volume, default_multi_volume );
+    volume_size = lookup( profile, `volume_size, default_volume_size );
+    user_volume_size = lookup( profile, `user_volume_size, default_user_volume_size);
+    user_volume_unit = lookup( profile, `user_volume_unit, default_user_volume_unit );
+    search = lookup( profile, `search, default_search );
+    system = lookup( profile, `system, default_system );
+    display = lookup( profile, `display,  default_display );
+    do_md5_test = lookup( profile, `do_md5_test, default_do_md5_test );
+    default_dir = lookup( profile, `default_dir, default_default_dir );
+    dir_list = lookup( profile, `dir_list, default_dir_list );
+    fs_exclude = lookup( profile, `fs_exclude, default_fs_exclude );
+    detected_fs = lookup( profile, `detected_fs, default_detected_fs );
+    detected_ext2 = lookup( profile, `detected_ext2, default_detected_ext2 ); 
+    ext2_backup = lookup( profile, `ext2_backup, default_ext2_backup );
+    backup_pt = lookup( profile, `backup_pt, default_backup_pt );
+    backup_all_ext2 = lookup( profile, `backup_all_ext2, default_backup_all_ext2 );
+    backup_none_ext2 = lookup( profile, `backup_none_ext2, default_backup_none_ext2 );
+    backup_selected_ext2 = lookup( profile, `backup_selected_ext2, default_backup_selected_ext2 );
+    unselected_files = lookup( profile, `unselected_files, default_unselected_files );
+    
+    selected_files = default_selected_files;
+    backup_files = default_backup_files;
+}
+
+// Restore the default global settings.
+global define void RestoreDefaultSettings() ``{
+
+    // setup global settings according to defaults
+    archive_name = eval( default_archive_name ); 
+    description = eval( default_description );
+    archive_type = eval( default_archive_type );
+    multi_volume = eval( default_multi_volume );
+    volume_size = eval( default_volume_size );
+    user_volume_size = eval( default_user_volume_size );
+    user_volume_unit = eval( default_user_volume_unit );
+    search = eval( default_search );
+    system = eval( default_system );
+    display = eval( default_display );
+    do_md5_test = eval( default_do_md5_test );
+    default_dir = eval( default_default_dir );
+    dir_list = eval( default_dir_list );
+    fs_exclude = eval( default_fs_exclude );
+    detected_fs = eval( default_detected_fs );
+    detected_ext2 = eval( default_detected_ext2 ); 
+    ext2_backup = eval( default_ext2_backup );
+    backup_pt = eval( default_backup_pt );
+    backup_all_ext2 = eval( default_backup_all_ext2 );
+    backup_none_ext2 = eval( default_none_ext2 );
+    backup_selected_ext2 = eval( default_selected_ext2 );
+    unselected_files = eval( default_unselected_files );
+    
+    selected_files = eval( default_selected_files );
+    backup_files = eval( default_backup_files );
+}
+
+// helper function to extract the list of currently available profiles
+global define list BackupProfileNames() ``{
+    list result = maplist( `key, `value, backup_profiles, ``(key) );
+    if( result == nil ) return [];
+    else return sort( result );
+}
+
+// Remove a given profile. Returns false if there is no such profile.
+global define boolean RemoveBackupProfile( string profile_name ) ``{
+    // return false, is there is no such profile
+    if( !haskey( backup_profiles, profile_name ) ) return false;
+
+    backup_profiles = remove( backup_profiles, profile_name );
+    
+    return true;
+}
 
 }
 
