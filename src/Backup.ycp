@@ -28,7 +28,7 @@ global string script_create_archive = "/usr/lib/YaST2/bin/backup_archive.pl";
 
 // global variables initialized to default values:
 global string archive_name = "";		// archive file name
-global string description = "";		// user comment
+global string description = "";			// user comment
 global symbol archive_type = `tgz;		// archive type
 
 global boolean multi_volume = false;
@@ -104,8 +104,6 @@ global list units_description = [
 global boolean search = true;			// search files which do not belong to any package
 global boolean system = false;			// backup system areas
 global boolean display = false;		// display files before creating archive
-//global boolean enhanced_check_owner = false;	// enhanced check if file is owned by package
-//global boolean check_multiple_packages = true;	// check if it is necessary to backup file, which owned by multiple packages
 global boolean do_md5_test = true;
 
 global list default_dir = [ "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache" ];		// default excluded directoried from search
@@ -168,17 +166,7 @@ global define string get_search_script_parameters() ``{
 
 	foreach(`i, dir_list, ``{script_options = script_options + " --exclude-dir " + select(select(i, 0), 0);});
 	foreach(`i, fs_exclude, ``{script_options = script_options + " --exclude-fs " + i;});
-
-/*	if (enhanced_check_owner)
-	{
-	    script_options = script_options + " --enhanced-check";
-	}*/
     }
-
-/*    if (!check_multiple_packages)
-    {
-	script_options = script_options + " --disable-check-multiple";
-    }*/
 
     if (!do_md5_test)
     {
