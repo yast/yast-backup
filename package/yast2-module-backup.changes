@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Nov 22 16:08:44 CET 2001 - lslezak@suse.cz
+
+- added option for RPM MD5 test
+- added missing modules/Backup.ycp entry in spec file
+- version 2.5.3
+
+-------------------------------------------------------------------
 Thu Nov 22 11:24:40 CET 2001 - lslezak@suse.cz
 
 - changed to YaST2 modules: created Backup::

@@ -43,5 +43,6 @@ make check
 @YAST2DIR@/include/backup/*
 @YAST2DIR@/clients/backup*.ycp
 @YAST2DIR@/bin/backup_*
+@YAST2DIR@/modules/Backup.ycp
 @YAST2DIR@/menuentries/menuentry_backup.ycp
 %doc @DOCDIR@
