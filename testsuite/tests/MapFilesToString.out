@@ -2,11 +2,6 @@ Read	.target.size "/etc/install.inf" -1
 Read	.target.tmpdir nil
 Read	.target.size nil -1
 Dir	.autoinst.menuentry.s: []
-Read	.probe.architecture nil
-Read	.probe.has_apm nil
-Read	.probe.has_pcmcia nil
-Read	.probe.has_smp false
-Read	.probe.system nil
 Dump	[""]
-Dump	["Package: aaa_base-2001.5.22-0\nInstalled: (none)\n/etc/modules.conf\n"]
-Dump	["Package: aaa_base-2001.5.22-0\nInstalled: (none)\n/etc/modules.conf\nNopackage:\n/etc/fstab\n"]
+Dump	[$["filelist":"Package: aaa_base-2001.5.22-0\nInstalled: (none)\n/etc/modules.conf\n", "sel_files":1, "sel_packages":1]]
+Dump	[$["filelist":"Package: aaa_base-2001.5.22-0\nInstalled: (none)\n/etc/modules.conf\nNopackage:\n/etc/fstab\n", "sel_files":2, "sel_packages":2]]

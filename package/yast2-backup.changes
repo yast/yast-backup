@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Apr  3 13:04:31 CEST 2003 - lslezak@suse.de
+
+- fixed testsuites and help texts
+- version 2.8.0
+
+-------------------------------------------------------------------
 Tue Apr  1 16:29:40 CEST 2003 - lslezak@suse.de
 
 - help texts and button labels improved, changed archive type

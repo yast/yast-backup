@@ -35,7 +35,7 @@ global define string backup_help_archive_settings() ``{
     + _("<P><B>Backup</B><BR>To create a backup of your system, enter the archive name and select the archive type. <B>Archive description</B> is an optional description of the backup archive.</P>")
 
     // For translators: help text in archive setting dialog - part 4/5
-    + _("<P>Backup module will create tar archive with changed files and autoinstallation profile for easy and fast system reinstallation. If you want to store only names of detected file instead of creating an archive then select '<B>only list of file names</B>' as archive type.</P>")
+    + _("<P>Backup module will create tar archive with changed files and autoinstallation profile for easy and fast system reinstallation. If you want to store only names of detected file instead of creating an archive then select '<B>create only list of found files</B>'.</P>")
 
     // For translators: help text in archive setting dialog - part 5/5
     + _("<P>If you use ACLs (Access Control List) for file access and want to back them up, select subarchive type star.</P>");
@@ -74,7 +74,7 @@ package installation or upgrade. Files that do not belong to any
 package can be optionally added to the archive.</P>")
 
     // For translators: help text in backup settings dialog - part 3/5
-    + _("<P>System areas (partition table, ext2 image) can be added to the backup archive. These system area can be restored from archive only manually.</P>")
+    + _("<P>System areas (partition table, ext2 image) can be added to the backup archive. These system areas can be restored from archive only manually.</P>")
 
     // For translators: help text in backup settings dialog - part 4/5
     + _("<P>Check <B>Display list of files...</B> option to show and edit list of found files before creating backup archive.</P>")
