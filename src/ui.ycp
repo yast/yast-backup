@@ -51,9 +51,9 @@ global define symbol ArchDialog() ``{
 			    `HSpacing(2.0),
 			    `ComboBox(`id(`type), `opt(`notify),
 				_("Select archive &type:"),
-				[ `item(`id(`tgz), "tar with gzip subarchives"),
-				  `item(`id(`tbz), "tar with bzip2 subarchives"),
-				  `item(`id(`tar), "tar with tar subarchives"),
+				[ `item(`id(`tgz), _("tar with gzip subarchives")),
+				  `item(`id(`tbz), _("tar with bzip2 subarchives")),
+				  `item(`id(`tar), _("tar with tar subarchives")),
 				  `item(`id(`txt), _("only list file names"))
 				]
 			    ),
@@ -121,13 +121,64 @@ be backed up by root.
 Enter the file name to use.
 "));
 		}
+		else if (substring(Backup::archive_name, 0, 1) != "/" || SCR::Read(.target.dir, Backup::archive_name) != nil)
+		{
+		    UI::WarningPopup(_("Please enter archive file name with\nabsolute path (e.g. /tmp/backup.tar)"));
+		}
+		else if (!Backup::multi_volume && SCR::Read(.target.size, Backup::archive_name) != -1)
+		{
+		    // For translators %1 is archive file name (e.g. /tmp/backup.tar)
+		    cont = UI::YesNoPopup(sformat(_("File %1 already exists.\nDo you wish to overwrite it?"), Backup::archive_name));
+		}
+		else if (Backup::multi_volume)	// test if some volume part exists
+		{
+		    // list directory content
+		    string dir = substring(Backup::archive_name, 0, findlastof(Backup::archive_name, "/"));
+		    string fn = substring(Backup::archive_name, findlastof(Backup::archive_name, "/") + 1);
+
+		    y2debug("dir: %1", dir);
+		    y2debug("file: %1", fn);
+
+		    list ls = SCR::Read(.target.dir, dir);
+
+		    boolean matched = false;
+
+		    string conflict_file = "";
+
+		    // check if some volume part exists
+		    foreach(`f, ls, ``{
+			    if (regexpmatch(f, "\d*_" + fn) == true)
+			    {
+				if (matched == false)
+				{
+				    matched = true;
+				    conflict_file = f;
+				}
+			    }
+			}
+		    );
+
+		    y2debug("found volume part: %1", conflict_file);
+
+		    // display question
+		    if (matched == true)
+		    {
+			// For translators %1 is volume file name (e.g. /tmp/01_backup.tar)
+			cont = UI::YesNoPopup(sformat(_("Existing file %1\ncan be part of new volume set and it can be rewritten.\nDo you wish to continue?"), dir + "/" + conflict_file));
+		    }
+		    else
+		    {
+			cont = true;
+		    }
+		}
 		else
 		{
 		    cont = true;
 		}
 	    }
-	    else if (ret == `abort)
+	    else if (ret == `abort || ret == `cancel)
 	    {
+		ret = `abort;
 		cont = AbortConfirmation(`changed);
 	    }
 	    else
@@ -256,8 +307,9 @@ global define symbol TarOptionsDialog() ``{
 	    }
 	    else
 	    {
-		if (ret == `abort)
+		if (ret == `abort || ret == `cancel)
 		{
+		    ret = `abort;
 		    cont = AbortConfirmation(`changed);
 		}
 		else
@@ -330,8 +382,9 @@ global define symbol BackupDialog() ``{
     {
 	ret = UI::UserInput();
 
-	if (ret == `abort)
+	if (ret == `abort || ret == `cancel)
 	{
+	    ret = `abort;
 	    if(!AbortConfirmation(`changed))
 	    {
 		ret = nil;		// not confirmed, unset ret
@@ -476,8 +529,9 @@ global define symbol ExcludeDialog() ``{
             }
 	}
 
-	if (ret == `abort)
+	if (ret == `abort || ret == `cancel)
 	{
+	    ret = `abort;
 	    if (!AbortConfirmation(`changed))
 	    {
 		ret = nil;
@@ -541,8 +595,9 @@ global define symbol ExcludeFilesystemDialog() ``{
 	    }
 	    else
 	    {
-		if (ret == `abort)
+		if (ret == `abort || ret == `cancel)
 		{
+		    ret = `abort;
 		    if (!AbortConfirmation(`changed))
 		    {
 			ret = nil;	// not confirmed, uset ret
@@ -722,8 +777,9 @@ global define symbol SystemBackupDialog() ``{
 	    UI::ChangeWidget(`id(`delete), `Enabled, Backup::backup_selected_ext2);
 	}
 
-	if (ret == `abort)
+	if (ret == `abort || ret == `cancel)
 	{
+	    ret = `abort;
 	    if (!AbortConfirmation(`changed))
 	    {
 		ret = nil;	// not confirmed, uset ret
@@ -1122,8 +1178,9 @@ global define symbol FilesDialog() ``{
     {
 	ret = UI::UserInput();
 
-	if (ret == `abort)
+	if (ret == `abort || ret == `cancel)
 	{
+	    ret = `abort;
 	    if (!AbortConfirmation(`changed))
 	    {
 		ret = nil;	// not confirmed, uset ret
@@ -1297,7 +1354,8 @@ global define symbol ArchivingDialog() ``{
     y2milestone("Storing file names list...");
 
     // store selected file names to file
-    string tmpfile_list = SCR::Read(.run.mktemp);
+    string tmpfile_list = SCR::Read(.target.tmpdir) + "/filelist";
+
     file_list_stored = SCR::Write(.target.string, tmpfile_list, MapFilesToString());
 
     if (!file_list_stored)
@@ -1308,7 +1366,7 @@ global define symbol ArchivingDialog() ``{
     y2milestone("File names stored");
 
     // store comment to file
-    string tmpfile_comment = SCR::Read(.run.mktemp);
+    string tmpfile_comment = SCR::Read(.target.tmpdir) + "/comment";
     comment_stored = SCR::Write(.target.string, tmpfile_comment, Backup::description);
 
 
@@ -1652,6 +1710,12 @@ global define symbol SummaryDialog() ``{
 	    em + _("Storing list of installed packages failed") + _em) + _p;
 
 
+	if (size(not_readable_files) > 0 || !hostname_stored || !date_stored || !file_list_stored || !comment_stored || !packages_list_stored)
+	{
+	    backup_result = backup_result + p + _("Some errors occurred during backup. See <B>Details</B>.") + _p;
+	}
+
+
 	if (size(not_readable_files) > 0)
 	{
 	    backup_details = backup_details + br + p + em + _("Errors while creating archive:") + _em + br;
@@ -1819,8 +1883,9 @@ global define symbol SummaryDialog() ``{
 	{
 	    UI::LongTextPopup(_("Backup summary details:"), `RichText(backup_details), 70, 15);
 	}
-	else if (ret == `abort)
+	else if (ret == `abort || ret == `cancel)
 	{
+	    ret = `abort;
 	    if (AbortConfirmation(`changed))
 	    {
 		break;

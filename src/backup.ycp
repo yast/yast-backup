@@ -22,6 +22,8 @@
 y2milestone(" *** Backup module started *** ");
 
 import "Wizard";
+import "Mode";
+import "Backup";
 
 include "wizard/sequencer.ycp";
 //include "ui/wizard_dialog.ycp";
@@ -71,6 +73,40 @@ integer added_files = 0;
 
 boolean confirm_abort = false;	// confirm abort
 
+if (Mode::test == true)
+{
+    // set test data
+    root_warning_displayed = true;	// do not display 'non-root' warning
+    modified_num = 2;		// number of modified files
+    modified_size = 14627;	// size
+    nopkg_num = 1;		// number of found files which do not belong to any package
+    nopkg_size = 14956;		// size
+
+    hostname_stored = true;
+    date_stored = true;
+    file_list_stored = true;
+    comment_stored = true;
+    read_ptables_info = true;
+    stored_list = true;
+
+    tar_result = 0;		// exit status of tar
+    total_files = modified_num + nopkg_num;		// total number of files in archive
+    archived_num = total_files + added_files;
+    selected_files_num = total_files;
+    packages_list_stored = true;
+
+    Backup::archive_name = "/tmp/backup/archive.tar";
+    Backup::description = "Backup before partition resize";
+    Backup::fs_exclude = [ "devpts", "iso9660", "proc", "shm"];
+    Backup::detected_fs = [ "devpts", "ext2", "iso9660", "proc", "shm", "reiserfs"];
+    Backup::detected_ext2 = [ $[ "partition": "/dev/hda1", "mountpoint" : "/boot" ], $[ "partition": "/dev/hda2", "mountpoint" : "/home" ] ];
+    Backup::ext2_backup = AddIdExt2(Backup::detected_ext2);
+
+    Backup::backup_files = $[ "aaa_base-2001.10.8-1" : $[ "changed_files" : ["/etc/inittab", "/etc/modules.conf"], "install_prefixes" : "none" ],
+	"" : $[ "changed_files" : ["/etc/X11/XF86Config"], "install_prefixes" : "none" ]
+    ];
+    Backup::selected_files = Backup::backup_files;
+}
 
 // sequence of dialogs
 map sequence = $[
@@ -141,8 +177,23 @@ map aliases = $[
 // create wizard dialog
 Wizard::CreateDialog();
 
-// start wizard sequencer
-WizardSequencer(aliases, sequence);
+if (Mode::test == true)
+{
+    // display all dialogs
+    ArchDialog();
+    TarOptionsDialog();
+    BackupDialog();
+    ExcludeDialog();
+    ExcludeFilesystemDialog();
+    SystemBackupDialog();
+    FilesDialog();
+    SummaryDialog();
+}
+else
+{
+    // start wizard sequencer
+    WizardSequencer(aliases, sequence);
+}
 
 // close dialog
 Wizard::CloseDialog();

@@ -24,6 +24,7 @@ Requires:		yast2 yast2-trans-backup yast2-lib-wizard yast2-lib-sequencer perl ut
 %files
 %defattr(-,root,root)
 %dir @YAST2DIR@/include/backup
+@YAST2DIR@/scrconf/proc_filesystems.scr
 @YAST2DIR@/include/backup/*
 @YAST2DIR@/clients/backup*.ycp
 @YAST2DIR@/bin/backup_*
