@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Jan 30 11:00:34 CET 2004 - lslezak@suse.cz
+
+- fixes for the new interpreter (data types, removed globals)
+- build fix (ycp hook, testsuite update)
+- version 2.9.4
+
+-------------------------------------------------------------------
 Mon Jan 12 16:38:17 CET 2004 - lslezak@suse.cz
 
 - fixes for the new interpreter
