@@ -1,8 +1,13 @@
 -------------------------------------------------------------------
-Thu Mar  3 12:25:48 CET 2005 - locilka@suse.cz
+Thu Mar  3 11:49:48 CET 2005 - locilka@suse.cz
 
 - Fixed bug #67120
-  Backup didn't remove the cronfile when profile was deleted 
+  Backup didn't remove the cronfile when profile was deleted
+- 2.11.6
+
+-------------------------------------------------------------------
+Wed Mar  2 11:07:56 CET 2005 - locilka@suse.cz
+
 - Merged proofed texts
 
 -------------------------------------------------------------------
