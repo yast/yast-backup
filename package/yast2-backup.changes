@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Nov 11 16:50:13 CET 2004 - locilka@suse.cz
+
+- Added testing for the path accuracy of new archive
+- Added error message if backup would be unable to create archive
+
+-------------------------------------------------------------------
 Fri Nov  5 16:00:10 CET 2004 - locilka@suse.cz
 
 - Adjusted for new Mode implementation
