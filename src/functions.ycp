@@ -591,7 +591,7 @@ define boolean AbortConfirmation(symbol type) ``{
     string subject = sformat(_("YaST2 Automatic Backup (%1)"), cron_profile);
 
     // get all warnings and errors from Report module
-    string reported = Report::GetMessages((Report::NumWarnings() > 0), (Report::NumErrors() > 0), false);
+    string reported = Report::GetMessages((Report::NumWarnings() > 0), (Report::NumErrors() > 0), false, false);
     // TODO: remove richtext tags from Report:: result
 
     if (Report::NumErrors() > 0)
