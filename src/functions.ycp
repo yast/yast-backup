@@ -180,7 +180,7 @@ global define symbol waitForUserOrProcess(integer wait, symbol abort_question) `
  */
 
 global define list<string> GetMountedFilesystems() ``{
-    list<map> mounted = (list<map>) SCR::Read(.proc.mounts);
+    list<map<string, any> > mounted = (list<map<string, any> >) SCR::Read(.proc.mounts);
     list<string> result = [ ];
 
     if (mounted == nil)
@@ -188,13 +188,13 @@ global define list<string> GetMountedFilesystems() ``{
 	return [];
     }
 
-    foreach(map m, mounted,
+    foreach(map<string, any> m, mounted,
 	``{
-	    string fs = m["vfstype"]:nil;
+	    string fs = (string) (m["vfstype"]:nil);
 
 	    if (fs != nil)
 	    {
-		result = add(result, fs);
+		result[size(result)] = fs;
 	    }
 	}
     );
@@ -210,17 +210,17 @@ global define list<string> GetMountedFilesystems() ``{
  */
 
 global define list<map> Ext2Filesystems() ``{
-    list<map> mounted = (list<map>)SCR::Read(.proc.mounts);
+    list<map<string, any> > mounted = (list<map<string, any> >) SCR::Read(.proc.mounts);
     list<map> ext2mountpoints = [ ];
     list tmp_parts = [];
 
     if (mounted != nil)
     {
-	foreach(map m, mounted,
+	foreach(map<string, any> m, mounted,
 	    ``{
-		string fs = m["vfstype"]:nil;
-		string dev = m["spec"]:nil;
-		string file = m["file"]:nil;
+		string fs = (string) (m["vfstype"]:nil);
+		string dev = (string) (m["spec"]:nil);
+		string file = (string) (m["file"]:nil);
 
 		if (fs == "ext2" && dev != nil && !contains(tmp_parts, dev))
 		{
@@ -231,15 +231,15 @@ global define list<map> Ext2Filesystems() ``{
 	);
     }
 
-    list<map> fstab = (list<map>)SCR::Read(.etc.fstab);
+    list<map<string, any> > fstab = (list<map<string, any> >)SCR::Read(.etc.fstab);
 
     if (fstab != nil)
     {
-	foreach(map f, fstab,
+	foreach(map<string, any> f, fstab,
 	    ``{
-		string fs = f["vfstype"]:nil;
-		string dev = f["spec"]:nil;
-		string file = f["file"]:nil;
+		string fs = (string) (f["vfstype"]:nil);
+		string dev = (string) (f["spec"]:nil);
+		string file = (string) (f["file"]:nil);
 
 		if (fs == "ext2" && dev != nil && !contains(tmp_parts, dev))
 		{
@@ -333,11 +333,11 @@ global define list AddId(list in) ``{
  * @example AddId([ $["partition" : "/dev/hda3", "mountpoint" : "/usr"] ]) -> [`item(`id("/dev/hda3"), "/dev/hda3", "/usr")]
  */
 
-global define list<term> AddIdExt2(list<map> in) ``{
+global define list<term> AddIdExt2(list<map<string, any> > in) ``{
 
     if (in == nil) return [];
 
-    return maplist(map i, in, ``{
+    return maplist(map<string, any> i, in, ``{
 	string pt = (string)(i["partition"]:nil);
 	string mp = (string)(i["mountpoint"]:nil);
 
@@ -351,7 +351,7 @@ global define list<term> AddIdExt2(list<map> in) ``{
  * @return list Items list for UI widgets
  */
 
-global define list<term> MediaList2UIList(list<map> media) ``{
+global define list<term> MediaList2UIList(list<map<string, any> > media) ``{
     list<term> result = [];
 
     if (media == nil)
@@ -359,7 +359,7 @@ global define list<term> MediaList2UIList(list<map> media) ``{
 	return [];
     }
 
-    foreach(map v, media,
+    foreach(map<string, any> v, media,
 	``{
 	    if (is(v, map))
 	    {
@@ -401,16 +401,16 @@ global define void SetMultiWidgetsState() ``{
 
 global define string Ext2MountPoint(string device_name) ``{
     // chack if partition is now mounted
-    list<map> mp = (list<map>)SCR::Read(.proc.mounts);
+    list<map<string, any> > mp = (list<map<string, any> >)SCR::Read(.proc.mounts);
     string result = nil;
 
     if (mp != nil)
     {
-	foreach(map p, mp,
+	foreach(map<string, any> p, mp,
 	    ``{
-		string d = p["file"]:nil;
-		string dev = p["spec"]:nil;
-		string fs = p["vfstype"]:nil;
+		string d = (string) (p["file"]:nil);
+		string dev = (string) (p["spec"]:nil);
+		string fs = (string) (p["vfstype"]:nil);
 
 		if (fs == "ext2" && dev == device_name)
 		{
@@ -423,15 +423,15 @@ global define string Ext2MountPoint(string device_name) ``{
     // if partition is not mounted then search mount point from fstab
     if (result == nil)
     {
-	list<map> fstab = (list<map>)SCR::Read(.etc.fstab);
+	list<map<string, any> > fstab = (list<map<string, any> >) SCR::Read(.etc.fstab);
 
 	if (fstab != nil)
 	{
-	    foreach(map p, fstab,
+	    foreach(map<string, any> p, fstab,
 		``{
-		    string d = p["file"]:nil;
-		    string dev = p["spec"]:nil;
-		    string fs = p["vfstype"]:nil;
+		    string d = (string) (p["file"]:nil);
+		    string dev = (string) (p["spec"]:nil);
+		    string fs = (string) (p["vfstype"]:nil);
 
 		    if (fs == "ext2" && dev == device_name)
 		    {
@@ -828,13 +828,13 @@ global define map DetectMountpoints() ``{
 
     foreach(string disk, map info, targetmap,
 	``{
-	    list<map> partitions = info["partitions"]:[];
+	    list<map<string, any> > partitions = info["partitions"]:[];
 
-	    foreach(map part_info, partitions,
+	    foreach(map<string, any> part_info, partitions,
 		``{
-		    string device = part_info["device"]:nil;
-		    string mpoint = part_info["mount"]:nil;
-		    symbol fs = part_info["detected_fs"]:nil;
+		    string device = (string) (part_info["device"]:nil);
+		    string mpoint = (string) (part_info["mount"]:nil);
+		    symbol fs = (symbol) (part_info["detected_fs"]:nil);
 
 		    y2debug("device: %1, mount: %2, fs: %3", device, mpoint, fs);
 
