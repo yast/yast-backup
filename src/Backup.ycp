@@ -179,6 +179,7 @@ global boolean systembackup = default_systembackup;
 
 global string nfsserver = default_nfsserver;
 global string nfsexport = default_nfsexport;
+string nfsmount = nil;	// NFS mount point, remember for unmounting
 
 global map backup_files = eval( default_backup_files );		// all found files to backup
 global map selected_files = eval( default_selected_files );	// selected files to backup
@@ -316,7 +317,7 @@ global define integer GetCapacity(list media, symbol m) ``{
  */
 
 global define string get_search_script_parameters() ``{
-    string script_options = " --output-progress";       // required parameter for YaST2 frontend
+    string script_options = " --start-dir / --output-progress";       // required parameter for YaST2 frontend
 
     if (search)
     {
@@ -363,11 +364,35 @@ global define string get_search_script_parameters() ``{
     // add package verification option
     script_options = script_options + " --pkg-verification";
 
-    y2debug("Search script options: %1", script_options);
+    y2milestone("Search script options: %1", script_options);
 
     return script_options;
 }
 
+/**
+ * @return boolean true on success
+ */
+
+global define boolean PrepareBackup() ``{
+    if (target_type == `nfs)
+    {
+	nfsmount = Nfs::Mount(nfsserver, nfsexport, nil, nil);
+	return nfsmount != nil;
+    }
+
+    return true;
+}
+
+global define boolean PostBackup() ``{
+    if (target_type == `nfs && nfsmount != nil)
+    {
+	boolean ret = Nfs::Unmount(nfsmount);
+	nfsmount = nil;
+	return ret;
+    }
+
+    return true;
+}
 
 /**
  * Return backup_search.pl script parameters according to state of variables
@@ -377,8 +402,12 @@ global define string get_search_script_parameters() ``{
  */
 
 global define string get_archive_script_parameters(string file_list, string file_comment) ``{
-    string archive_options = " --verbose --files-info " + file_list + " --archive-name "
-	+ archive_name + " --comment-file " + file_comment;
+    string archive_options = " --verbose --files-info " + file_list + " --comment-file " + file_comment;
+
+    y2warning("nfsmount: %1, archive_name: %2", nfsmount, archive_name);
+
+    archive_options = archive_options + " --archive-name " + ((target_type == `file) ? archive_name :
+	sformat("%1/%2", nfsmount, archive_name));
 
     if (system)
     {
@@ -945,6 +974,8 @@ global define void StoreSettingsToBackupProfile( string profile_name ) ``{
 	`autoprofile		: autoprofile,
 	`systembackup		: systembackup,
 	`perms			: perms,
+	`nfsserver		: nfsserver,
+	`nfsexport		: nfsexport,
 	`target_type		: target_type,
 	`target_device		: target_device,
 	`target_devices_options	: target_devices_options
@@ -998,6 +1029,8 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
     autoprofile =	profile[ `autoprofile ]:	default_autoprofile;
     systembackup =	profile[ `systembackup ]:	default_systembackup;
     perms =		profile[ `perms ]:		default_perms;
+    nfsserver =		profile[ `nfsserver ]:		default_nfsserver;
+    nfsexport =		profile[ `nfsexport ]:		default_nfsexport;
     target_type =	profile[ `target_type ]:	default_target_type;
     target_device =	profile[ `target_device ]:	default_target_device;
     target_devices_options = profile[ `target_devices_options ]:	default_target_devices_options;

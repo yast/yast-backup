@@ -21,6 +21,7 @@ import "Report";
 
 import "AutoinstClone";
 import "Profile";
+import "Nfs";
 
 textdomain "backup";
 
@@ -1152,6 +1153,37 @@ global define list MpointTableContents(list selected, list all, map description)
     }
 
     return ret;
+}
+
+
+global define boolean NFSFileExists(string server, string share, string filename) ``{
+    if (size(server) == 0 || size(share) == 0 || size(filename) == 0)
+    {
+	return nil;
+    }
+
+    string mpoint = Nfs::Mount(server, share, nil, nil);
+
+    if (mpoint == nil)
+    {
+	return nil;
+    }
+
+    boolean ret = SCR::Read(.target.size, mpoint + "/" + filename) >= 0;
+
+    Nfs::Unmount(mpoint);
+
+    return ret;
+}
+
+global define string NFSfile(string server, string share, string filename) ``{
+    if (size(server) == 0 || size(share) == 0 || size(filename) == 0)
+    {
+	return nil;
+    }
+
+    // TODO: check if filename begins with '/' character
+    return server + ":" + share + "/" + filename;
 }
 
 }
