@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Nov  9 13:51:54 CET 2001 - lslezak@suse.cz
+
+- multi volume archive support
+- added help texts
+- version 2.5.1
+
+-------------------------------------------------------------------
 Tue Oct 16 10:57:50 2001 - lslezak@suse.cz
 
 - initial version
