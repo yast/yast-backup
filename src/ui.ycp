@@ -99,7 +99,7 @@ global define ArchDialog() ``{
 
 global define BackupDialog() ``{
     
-    UI::SetWizardContents( _("Backup settings" ),
+    UI::SetWizardContents( _("Backup settings"),
         `VBox(`VSpacing(0.5),
 	    `Frame( _("Backup options"),
 	        `VBox(
@@ -179,7 +179,7 @@ global define ExcludeDialog() ``{
 	}
     }
 
-    UI::SetWizardContents( _("Exclude from search" ),
+    UI::SetWizardContents( _("Exclude from search"),
 	`VBox(
 	    `VSpacing(1.0),
 	    `Left(`Label(_("Directories excluded from search:"))),
