@@ -1,0 +1,38 @@
+@HEADER-COMMENT@
+        
+# neededforbuild  autoconf automake dejagnu expect tcl yast2 yast2-core yast2-core-devel yast2-devtools yast2-testsuite yast2-xml autoyast2-installation autoyast2
+
+@HEADER@
+
+Summary:		Backup module for YaST2
+BuildArchitectures:	noarch
+Requires:		yast2 yast2-core yast2-xml autoyast2-installation autoyast perl util-linux fileutils e2fsprogs
+
+Provides:	yast2-module-backup
+Obsoletes:	yast2-module-backup
+
+%description
+-
+
+
+@PREP@
+
+@BUILD-YCP@
+
+@INSTALL-YCP@
+
+@CLEAN@
+
+%files
+%defattr(-,root,root)
+
+%dir @yncludedir@/backup
+@scrconfdir@/proc_filesystems.scr
+@yncludedir@/backup/*
+@clientdir@/backup*.ycp
+@ybindir@/backup_*
+@moduledir@/Backup.ycp
+@configdir@/backup.y2cc
+%doc @docdir@
+
+
