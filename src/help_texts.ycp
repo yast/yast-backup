@@ -32,7 +32,7 @@ global define string backup_help_archive_settings() ``{
     + _("<P><B>Backup</B><BR>To create a backup of your system, enter the archive name and select the archive type. <B>Archive description</B> is an optional description of the backup archive.</P>")
 
     // For translators: help text in archive setting dialog - part 3/3
-    + _("If you want to store only names of detected file instead of creating an archive then select '<B>only list of file names</B>' as archive type.</P>");
+    + _("<P>If you want to store only names of detected file instead of creating an archive then select '<B>only list of file names</B>' as archive type.</P>");
 }
 
 

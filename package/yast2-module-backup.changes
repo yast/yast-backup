@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Feb 11 10:49:33 CET 2002 - lslezak@suse.cz
+
+- added missing rich text tag
+- updated COPY* files
+- version 2.5.13
+
+-------------------------------------------------------------------
 Fri Feb  1 09:57:37 CET 2002 - lslezak@suse.cz
 
 - fixed edit dialog: default 'OK' button, TextEntry widget has focus
