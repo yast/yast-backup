@@ -322,7 +322,7 @@ foreach my $part (@ext2_parts)
 	if ($verbose)
 	{
 	    print "Success\n";
-	    print OUT "/tmp/YaST2-backup/e2image_".$tr_dev_name;
+	    print OUT "tmp/YaST2-backup/e2image".$tr_dev_name;
 	    $files_num++;
 	}
     }
