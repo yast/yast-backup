@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Aug 25 17:32:01 CEST 2003 - lslezak@suse.cz
+
+- backup RPM DB if some updated package was found
+- version 2.8.8
+
+-------------------------------------------------------------------
 Tue Aug 19 13:22:19 CEST 2003 - arvin@suse.de
 
 - use String::FormatSize

@@ -201,6 +201,18 @@ if ($search_files)
     # start searching from root directory
     SearchDirectory($start_directory, \%packages_files, \%exclude_dirs, \%package_files_inodes);
 }
+# backup RPM DB if some updated package was found
+elsif (keys(%unavailable_pkgs) > 0)
+{
+    if (!$output_files)
+    {
+	print "Nopackage:\n";
+    }
+
+    $start_directory = "/var/lib/rpm";
+    SearchDirectory($start_directory, \%packages_files, \%exclude_dirs, \%package_files_inodes);
+}
+    
 
 if ($widget_file ne "")
 {
