@@ -173,7 +173,7 @@ global define symbol CronDialog() ``{
 				`HStretch()
 			    ),
 			    `VSpacing(0.45),
-			    `Left(`CheckBox(`id(`mail), _("Send summary mail to user 'root'"), Backup::mail_summary)),
+			    `Left(`CheckBox(`id(`mail), _("Send Summary Mail to User 'root'"), Backup::mail_summary)),
 			    `VSpacing(0.45)
 			)
 		    )
