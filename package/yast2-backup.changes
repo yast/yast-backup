@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Aug 12 08:26:38 CEST 2003 - lslezak@suse.cz
+
+- fixed testuite (some constructor was again changed...)
+- version 2.8.4
+
+-------------------------------------------------------------------
 Mon Aug 11 13:38:08 CEST 2003 - lslezak@suse.de
 
 - cron mode bugfixes
