@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Nov 22 11:24:40 CET 2001 - lslezak@suse.cz
+
+- changed to YaST2 modules: created Backup::
+- version 2.5.2
+
+-------------------------------------------------------------------
 Fri Nov  9 13:51:54 CET 2001 - lslezak@suse.cz
 
 - multi volume archive support
