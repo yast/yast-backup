@@ -21,6 +21,8 @@ module	"Backup";
 
 import "Progress";
 import "Report";
+import "Nfs";
+import "Popup";
 
 include "backup/functions.ycp";
 include "hwinfo/classnames.ycp";

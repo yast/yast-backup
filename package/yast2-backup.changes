@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Sep  1 16:04:02 CEST 2003 - lslezak@suse.de
+
+- added missing imports and file descriptions
+- version 2.8.9
+
+-------------------------------------------------------------------
 Mon Aug 25 17:32:01 CEST 2003 - lslezak@suse.cz
 
 - backup RPM DB if some updated package was found
