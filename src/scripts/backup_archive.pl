@@ -651,7 +651,7 @@ if (defined $multi_volume && $multi_volume >= 0)
 
     if ($multi_volume > 0)
     {
-	my $num_blocks = 4;	# set block size to 4*512B (default is 20) with value 1 or 2 I get SIGSEGV :-( 
+	my $num_blocks = 20;	# default block size is 20 * 512B 
 	
 	# round size down: subtract block size
 	if ($multi_volume > ($num_blocks / 2) && $multi_volume % ($num_blocks / 2) != 0)
@@ -659,7 +659,7 @@ if (defined $multi_volume && $multi_volume >= 0)
 	    $multi_volume -= $num_blocks / 2;
 	}
 
-	$tar_command .= " -L $multi_volume -b $num_blocks";
+	$tar_command .= " -L $multi_volume";
     }
 
     # redirect STDERR to STDOUT
