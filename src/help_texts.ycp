@@ -22,11 +22,17 @@
  */
 
 global define backup_help_archive_settings() ``{
-    return _("<P>This module searches package files which were changed since installation and backups them.</P>")
-    + _("<P>It is possible to backup disk system area or files which do not belong to any package too.</P>")
-    + _("<P><B>Archive file name</B> is name of archive.</P>")
-    + _("<P><B>Archive description</B> is optional description of the archive, you can write some notes here about the archive.</P>")
-    + _("<P><B>Archive type</B> selects type of generated archive.</P>");
+    // For translators: help text in archive setting dialog - part 1/4
+    return _("<P><B><BIG>Backup module</BIG></B><BR>")
+
+    // For translators: help text in archive setting dialog - part 2/4
+    + _("This YaST2 module searches files on your system and creates backup archive from them.</P><BR>")
+
+    // For translators: help text in archive setting dialog - part 3/4
+    + _("<P><B>System backup</B><BR>")
+
+    // For translators: help text in archive setting dialog - part 4/4
+    + _("To create backup of your system enter archive name and select archive type. <B>Archive description</B> is optional description - you can write some notes here.");
 }
 
 
@@ -35,10 +41,23 @@ global define backup_help_archive_settings() ``{
  */
 
 global define backup_help_archive_options() ``{
-    return _("<P>If <B>Create multi volume archive</B> is checked then multi volume archive will be created.</P>")
-    + _("<P>Archive volumes will have number prefix in name.</P>")
-    + _("<P><B>Volume size</B> is size of one part of the archive.</P>")
-    + _("<P>If your backup media is not in the list then select <B>User defined</B> item and enter volume size in textbox.</P>");
+    // For translators: help text in tar options dialog - part 1/6
+    return _("<P><B><BIG>Multi volume archive</BIG></B><BR>")
+
+    // For translators: help text in tar options dialog - part 2/6
+    + _("Backup archive can be splitted to more smaller parts. This is useful if archive is larger than free space on backup medium.")
+
+    // For translators: help text in tar options dialog - part 3/6
+    + _("<P><B>Creating multi volume archive</B><BR>")
+
+    // For translators: help text in tar options dialog - part 4/6
+    + _("Check option to create multi volume archive and select your backup medium.<BR>")
+
+    // For translators: help text in tar options dialog - part 5/6
+    + _("If your backup medium is not in the list then select <B>User defined</B> and enter volume size in the textbox.</P>")
+
+    // For translators: help text in tar options dialog - part 6/6
+    + _("<P><B>Note:</B> units with 'i' are power of 2, units without 'i' are power of 10.</P>");
 }
 
 
@@ -47,11 +66,20 @@ global define backup_help_archive_options() ``{
  */
 
 global define backup_help_backup_setting() ``{
-    return _("<P>Here you can select which parts of the system will be backuped.</P>")
-    + _("<P>You can set whether files which do not belong to any package or system areas on disk will be backuped.</P>")
-    + _("<P>List of found files can be displayed and checked after search.</P>")
-    + _("<BR><P>File in mupltiple packages may be wrong reported as changed and unnecessary backuped. There is extra check to get right status.</P>")
-    + _("<P>If file is installed in directory which is symbolic link it may be wrong reported as not owned by any package and unnecessary backuped. It is possible to do additional check of owner, but it slows down searching.</P>");
+    // For translators: help text in backup settings dialog - part 1/
+    return _("<P><B><BIG>Search</BIG></B><BR>")
+
+    // For translators: help text in backup settings dialog - part 2/
+    + _("Here you can select which parts of the system will be searched and backuped.</P><BR>")
+
+    // For translators: help text in backup settings dialog - part 3/
+    + _("<P><B>Search options</B><BR>")
+
+    // For translators: help text in backup settings dialog - part 4/
+    + _("File owned by mupltiple packages can be wrong reported as changed and unnecessary backuped. There is possibility to do extra check to get right status.</P>")
+
+    // For translators: help text in backup settings dialog - part 5/
+    + _("<P>If package file is installed in directory which is symbolic link it can be wrong reported as not owned by any package. Enhanced check gets right owner, but it slows down searching rapidly.</P>");
 }
 
 
@@ -60,9 +88,23 @@ global define backup_help_backup_setting() ``{
  */
 
 global define backup_help_exclude_dir() ``{
-    return _("<P>Here is a list of directories which will be excluded from search.</P>")
-    + _("<P>This list can be edited by <B>Add</B>, <B>Edit</B> and <B>Delete</B> buttons.</P>")
-    + _("<P>In the <B>Expert</B> options you can exclude file systems.</P>");
+    // For translators: help text in exclude directory dialog - part 1/6
+    return _("<P><B><BIG>Exclude</BIG></B><BR>")
+
+    // For translators: help text in exclude directory dialog - part 2/6
+    + _("Here is a list of directories which will be excluded from searching of files not owned by any package.</P><BR>")
+
+    // For translators: help text in exclude directory dialog - part 3/6
+    + _("<P><B>Editing list</B><BR>")
+
+    // For translators: help text in exclude directory dialog - part 4/6
+    + _("List of excluded directories can be edited by <B>Add</B>, <B>Edit</B> and <B>Delete</B> buttons.</P>")
+
+    // For translators: help text in exclude directory dialog - part 5/6
+    + _("<P><B>Excluding directory</B><BR>")
+
+    // For translators: help text in exclude directory dialog - part 6/6
+    + _("To exclude file system types from searching press <B>Expert...</B> button.</P>");
 }
 
 
@@ -71,8 +113,20 @@ global define backup_help_exclude_dir() ``{
  */
 
 global define backup_help_exclude_fs() ``{
-    return _("<P>All directories on selected file systems will be excluded from search.</P>")
-    + _("<P>Root directory will be searched always, even if its file system is selected.<P>");
+    // For translators: help text in exclude file system dialog - part 1/5
+    return _("<P><B><BIG>Exclude</BIG></B><BR>")
+
+    // For translators: help text in exclude file system dialog - part 2/5
+    + _("File systems can be excluded from searching instead of excluding directories where they are mounted.</P><BR>")
+
+    // For translators: help text in exclude file system dialog - part 3/5
+    + _("<P><B>Excluding file system</B><BR>")
+
+    // For translators: help text in exclude file system dialog - part 4/5
+    + _("To exclude all directories on certain file system check box with name of file system.</P>")
+
+    // For translators: help text in exclude file system dialog - part 5/5
+    + _("<P><B>Note:</B> Root directory will be searched always, even if its file system is selected.</P>");
 }
 
 
@@ -81,8 +135,11 @@ global define backup_help_exclude_fs() ``{
  */
 
 global define backup_help_system_backup() ``{
-    return _("<P>Here you can select important parts of system to backup.</P>")
-    + _("<P>It is possible to backup partition tables and Ext2 filesystems critical areas.</P>");
+    // For translators: help text in system backup dialog - part 1/2
+    return _("<P><B><BIG>System backup</BIG></B><BR>")
+
+    // For translators: help text in system backup dialog - part 2/2
+    + _("Critical disk system areas can be added to backup archive.</P>");
 }
 
 
@@ -91,8 +148,16 @@ global define backup_help_system_backup() ``{
  */
 
 global define backup_help_searching_modified() ``{
-    return _("<P>Searching modified files is in progess.</P>")
+    // For translators: help text in searching modified dialog - part 1/4
+    return _("<P><B><BIG>Searching</BIG></B><BR>")
+
+    // For translators: help text in searching modified dialog - part 2/4
+    + _("Searching modified files is in progess.</P>")
+
+    // For translators: help text in searching modified dialog - part 3/4
     + _("<P>This will take several minutes depending on speed of your system and number of installed packages.</P>")
+
+    // For translators: help text in searching modified dialog - part 4/4
     + _("<P>Please wait.</P>");
 }
 
@@ -102,8 +167,16 @@ global define backup_help_searching_modified() ``{
  */
 
 global define backup_help_searching_files() ``{
-    return _("<P>Now searching of files which do not belong to any package is in progress.</P>")
-    + _("<P>This will take several minutes depending on speed of your system and file system size</P>")
+    // For translators: help text in searching files dialog - part 1/4
+    return _("<P><B><BIG>Searching</BIG></B><BR>")
+
+    // For translators: help text in searching files dialog - part 2/4
+    + _("Now searching of files which do not belong to any package is in progress.</P>")
+
+    // For translators: help text in searching files dialog - part 3/4
+    + _("<P>This will take several minutes depending on speed of your system and file system size.</P>")
+
+    // For translators: help text in searching files dialog - part 4/4
     + _("<P>Please wait.</P>");
 }
 
@@ -113,8 +186,16 @@ global define backup_help_searching_files() ``{
  */
 
 global define backup_help_file_selection() ``{
-    return _("<P>Here is list of found files, you can select which files will be backuped.</P>")
+    // For translators: help text in file dialog - part 1/4
+    return _("<P><B><BIG>Found files</BIG></B><BR>")
+
+    // For translators: help text in file dialog - part 2/4
+    + _("Here is list of found files. You can select which files will be stored in the archive.</P>")
+
+    // For translators: help text in file dialog - part 3/4
     + _("<P>Check mark at first column indicates that file will be backuped.</P>")
+
+    // For translators: help text in file dialog - part 4/4
     + _("<P>To change backup status of a file double click on it.</P>");
 }
 
@@ -124,8 +205,16 @@ global define backup_help_file_selection() ``{
  */
 
 global define backup_help_creating_archive() ``{
-    return _("<P>Creating archive is in progress.</P>")
+    // For translators: help text in  creating archive dialog - part 1/4
+    return _("<P><B><BIG>Creating archive</BIG></B><BR>")
+
+    // For translators: help text in creating archive dialog - part 2/4
+    + _("<P>Creating archive is in progress.</P>")
+
+    // For translators: help text in creating archive dialog - part 3/4
     + _("<P>Now files are stored to archive.</P>")
+
+    // For translators: help text in creating archive dialog - part 4/4
     + _("<P>Please wait.</P>");
 }
 
@@ -135,7 +224,13 @@ global define backup_help_creating_archive() ``{
  */
 
 global define backup_help_summary() ``{
-    return _("<P>How many files were found, total sizes and other information are displayed here.</P>")
+    // For translators: help text in summary dialog - part 1/3
+    return _("<P><B><BIG>Summary</BIG></B><BR>")
+
+    // For translators: help text in summary dialog - part 2/3
+    + _("<P>Here is displayed result of backup.</P>")
+
+    // For translators: help text in summary dialog - part 3/3
     + _("<P>Click <B>Details...</B> button to see more information.</P>");
 }
 
