@@ -1,4 +1,5 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
+
 #
 #  File:
 #    backup_files.pl
@@ -20,6 +21,13 @@
 
 use Getopt::Long;
 use strict;
+
+#function prototypes
+sub ReadAllPackages();
+sub FsToDirs(@);
+sub ReadAllFiles(%);
+sub VerifyPackages(@%);
+sub SearchDirectory($%%);
 
 # command line options
 my $search_files = 0;
@@ -139,7 +147,7 @@ sub ReadAllPackages()
 }
 
 # verify each package in the list
-sub VerifyPackages()
+sub VerifyPackages(@%)
 {
     my ($packages, $duplicates) = @_;
 
@@ -250,7 +258,7 @@ sub VerifyPackages()
 
 
 # read all files which belong to packages
-sub ReadAllFiles() 
+sub ReadAllFiles(%) 
 {
     my ($all_files) = @_;
     my %duplicates;
@@ -288,7 +296,7 @@ sub ReadAllFiles()
 }
 
 # search files which do not belong to any package
-sub SearchDirectory()
+sub SearchDirectory($%%)
 {
     my ($dir, $files, $exclude) = @_;
 
@@ -389,7 +397,7 @@ sub SearchDirectory()
 }
 
 # convert filesystems to mount point directories
-sub FsToDirs()
+sub FsToDirs(@)
 {
     my @fs = @_;
     my @dirs = ();
