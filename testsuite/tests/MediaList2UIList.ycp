@@ -12,7 +12,6 @@ include "testsuite.ycp";
 
 DUMP( MediaList2UIList(nil) );
 DUMP( MediaList2UIList([ ]) );
-DUMP( MediaList2UIList(["no map"]) );
 DUMP( MediaList2UIList([
     $[
 	"capacity" : 1440000

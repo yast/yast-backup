@@ -32,83 +32,7 @@ include "backup/ui.ycp";
 
 textdomain "backup";
 
-
-integer wait_time = 300;    // loop delay (in miliseconds)
-
-boolean root_warning_displayed = false;
-
-integer modified_num = 0;		// number of modified files
-integer modified_size = 0;		// size
-integer nopkg_num = 0;			// number of found files which do not belong to any package
-integer nopkg_size = 0;			// size
-
-//list list_of_installed_packages = [];	// names of all installed packages
-boolean packages_list_stored = false;
-
-integer selected_files_num = 0;		// number of selected files to backup
-integer selected_pkg_num = 0;		// number of packages which files are selected
-
-string checkmark = "X";
-string nocheckmark = " ";
-
-boolean hostname_stored = false;
-boolean date_stored = false;
-boolean file_list_stored = false;
-boolean comment_stored = false;
-list e2image_results = [];		// results of storing ext2 images
-integer archived_num = 0;
-list not_readable_files = [];
-list created_archive_files = [];
-list failed_ptables = [];
-list stored_ptables = [];
-boolean read_ptables_info = false;
-boolean stored_list = false;
-
-integer tar_result = 1;		// exit status of tar
-integer total_files = 0;	// total number of files in archive
-integer added_files = 0;
-
 boolean confirm_abort = false;	// confirm abort
-map profilewritten = $[];	// result of writing profile
-
-boolean cron_mode = false;
-string cron_profile = "";
-map remove_result = $[];
-
-if (false/*Mode::test == true*/)
-{
-    // set test data
-    root_warning_displayed = true;	// do not display 'non-root' warning
-    modified_num = 2;		// number of modified files
-    modified_size = 14627;	// size
-    nopkg_num = 1;		// number of found files which do not belong to any package
-    nopkg_size = 14956;		// size
-
-    hostname_stored = true;
-    date_stored = true;
-    file_list_stored = true;
-    comment_stored = true;
-    read_ptables_info = true;
-    stored_list = true;
-
-    tar_result = 0;		// exit status of tar
-    total_files = modified_num + nopkg_num;		// total number of files in archive
-    archived_num = total_files + added_files;
-    selected_files_num = total_files;
-    packages_list_stored = true;
-
-    Backup::archive_name = "/tmp/backup/archive.tar";
-    Backup::description = "Backup before partition resize";
-    Backup::fs_exclude = [ "devpts", "iso9660", "proc", "shm"];
-    Backup::detected_fs = [ "devpts", "ext2", "iso9660", "proc", "shm", "reiserfs"];
-    Backup::detected_ext2 = [ $[ "partition": "/dev/hda1", "mountpoint" : "/boot" ], $[ "partition": "/dev/hda2", "mountpoint" : "/home" ] ];
-    Backup::ext2_backup = AddIdExt2(Backup::detected_ext2);
-
-    Backup::backup_files = $[ "aaa_base-2001.10.8-1" : $[ "changed_files" : ["/etc/inittab", "/etc/modules.conf"], "install_prefixes" : "none" ],
-	"" : $[ "changed_files" : ["/etc/X11/XF86Config"], "install_prefixes" : "none" ]
-    ];
-    Backup::selected_files = eval(Backup::backup_files);
-}
 
 // sequence of dialogs
 map sequence = $[
@@ -202,16 +126,16 @@ y2milestone("args: %1", args);
 if (args[0]:"" == "cron")
 {
     y2milestone("Starting in cron mode");
-    cron_mode = true;
+    Backup::cron_mode = true;
 
     if (args[1]:nil != nil)
     {
-	cron_profile = regexpsub(args[1]:"", "^[ \t]*profile[ \t]*=[ \t]*(.*)", "\\1");
-	y2milestone("Using profile: '%1'", cron_profile);
+	Backup::cron_profile = regexpsub(args[1]:"", "^[ \t]*profile[ \t]*=[ \t]*(.*)", "\\1");
+	y2milestone("Using profile: '%1'", Backup::cron_profile);
     }
 }
 
-if (cron_mode != true)
+if (Backup::cron_mode != true)
 {
     import "Wizard";
 
@@ -219,60 +143,45 @@ if (cron_mode != true)
     Wizard::CreateDialog();
 }
 
-if (false/*Mode::test == true*/)
-{
-    // display all dialogs
-    ArchDialog();
-    TarOptionsDialog();
-    BackupDialog();
-    ExcludeDialog();
-    ExcludeFilesystemDialog();
-    SystemBackupDialog();
-    FilesDialog();
-    SummaryDialog();
-}
-else
-{
-    Backup::ReadBackupProfiles();
+Backup::ReadBackupProfiles();
 
-    if (cron_mode == true)
+if (Backup::cron_mode == true)
+{
+    if (Backup::RestoreSettingsFromBackupProfile(Backup::cron_profile) == false)
     {
-	if (Backup::RestoreSettingsFromBackupProfile(cron_profile) == false)
-	{
-	    y2error("Cannot read settings from profile '%1'", cron_profile);
-	    return false;
-	}
-
-	// change workflow - start searching immediately, exit at summary stage
-	sequence["ws_start"] = "do_searching";
-	sequence["summary"] = $[
-	    `abort	: `abort,
-	    `finish	: `finish
-	];
-
-	// disable user interaction
-	Backup::no_interactive = true;
-
-	// dont'display eny message - there is no UI in cron mode
-	Report::DisplayMessages(false, 0);
-	Report::DisplayWarnings(false, 0);
-	Report::DisplayErrors(false, 0);
-
-	map sel_profile = eval(Backup::backup_profiles[cron_profile]:$[]);
-
-	// prepare backup - e.g. mount NFS share
-	Backup::PrepareBackup();
-
-	// check existing archive, remove old archives
-	string localfilename = Backup::GetLocalArchiveName();
-	remove_result = RemoveOldArchives(localfilename, sel_profile[`cron_settings, "old"]:100000, Backup::multi_volume);
+	y2error("Cannot read settings from profile '%1'", Backup::cron_profile);
+	return false;
     }
 
-    // start wizard sequencer
-    WizardSequencer(aliases, sequence);
+    // change workflow - start searching immediately, exit at summary stage
+    sequence["ws_start"] = "do_searching";
+    sequence["summary"] = $[
+	`abort	: `abort,
+	`finish	: `finish
+    ];
+
+    // disable user interaction
+    Backup::no_interactive = true;
+
+    // dont'display eny message - there is no UI in cron mode
+    Report::DisplayMessages(false, 0);
+    Report::DisplayWarnings(false, 0);
+    Report::DisplayErrors(false, 0);
+
+    map sel_profile = (map)eval(Backup::backup_profiles[Backup::cron_profile]:$[]);
+
+    // prepare backup - e.g. mount NFS share
+    Backup::PrepareBackup();
+
+    // check existing archive, remove old archives
+    string localfilename = Backup::GetLocalArchiveName();
+    Backup::remove_result = Backup::RemoveOldArchives(localfilename, sel_profile[`cron_settings, "old"]:100000, Backup::multi_volume);
 }
 
-if (cron_mode != true)
+// start wizard sequencer
+WizardSequencer(aliases, sequence);
+
+if (Backup::cron_mode != true)
 {
     // close dialog
     Wizard::CloseDialog();

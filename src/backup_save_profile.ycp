@@ -24,10 +24,10 @@ y2milestone("Arguments: %1", WFM::Args());
 
 if (size(WFM::Args()) >= 4 && is(WFM::Args(0), string) && is(WFM::Args(1), list) && is(WFM::Args(2), string) && is(WFM::Args(3), map))
 {
-    string filename = WFM::Args(0);
-    list additional = WFM::Args(1);
-    string extra_key = WFM::Args(2);
-    map extra_options = WFM::Args(3);
+    string filename = (string)WFM::Args(0);
+    list additional = (list)WFM::Args(1);
+    string extra_key = (string)WFM::Args(2);
+    map extra_options = (map)WFM::Args(3);
 
     if (size(filename) > 0)
     {

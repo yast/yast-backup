@@ -22,7 +22,6 @@ import "Report";
 import "AutoinstClone";
 import "Profile";
 import "Nfs";
-import "Backup";
 import "Popup";
 
 textdomain "backup";
@@ -111,9 +110,9 @@ global define map ShowEditDialog(string label, string value, list<string> values
 
     UI::SetFocus(`id(`te));
 
-    symbol input = UI::UserInput();
+    symbol input = (symbol) UI::UserInput();
 
-    string text = UI::QueryWidget(`id(`te), `Value);
+    string text = (string) UI::QueryWidget(`id(`te), `Value);
     UI::CloseDialog();
 
     return $[ "text" : text, "clicked" : input ];
@@ -129,7 +128,7 @@ global define map ShowEditDialog(string label, string value, list<string> values
  */
 
 global define symbol waitForUserOrProcess(integer wait, symbol abort_question) ``{
-    symbol ret = UI::PollInput();
+    symbol ret = (symbol) UI::PollInput();
 
     if (ret == `abort || ret == `cancel)
     {
@@ -147,11 +146,11 @@ global define symbol waitForUserOrProcess(integer wait, symbol abort_question) `
 	}
     }
 
-    while (SCR::Read(.background.newlines) == 0 && SCR::Read(.background.output_open))
+    while ((integer)SCR::Read(.background.newlines) == 0 && (boolean)SCR::Read(.background.output_open))
     {
 	sleep(wait);
 
-	ret = UI::PollInput();
+	ret = (symbol) UI::PollInput();
 
 	if (ret == `abort || ret == `cancel)
 	{
@@ -180,18 +179,18 @@ global define symbol waitForUserOrProcess(integer wait, symbol abort_question) `
  * @example GetMountedFilesystems() -> [ "devpts", "ext2", "nfs", "proc", "reiserfs" ]
  */
 
-global define list GetMountedFilesystems() ``{
-    list mounted = SCR::Read(.proc.mounts);
-    list result = [ ];
+global define list<string> GetMountedFilesystems() ``{
+    list<map> mounted = (list<map>) SCR::Read(.proc.mounts);
+    list<string> result = [ ];
 
     if (mounted == nil)
     {
 	return [];
     }
 
-    foreach(`m, mounted,
+    foreach(map m, mounted,
 	``{
-	    string fs = lookup(m, "vfstype", nil);
+	    string fs = m["vfstype"]:nil;
 
 	    if (fs != nil)
 	    {
@@ -210,48 +209,48 @@ global define list GetMountedFilesystems() ``{
  * @example Ext2Filesystems() -> [ "/dev/hda1", "/dev/hda4" ]
  */
 
-global define list Ext2Filesystems() ``{
-    list mounted = SCR::Read(.proc.mounts);
-    list result = [ ];
+global define list<map> Ext2Filesystems() ``{
+    list<map> mounted = (list<map>)SCR::Read(.proc.mounts);
+    list<map> ext2mountpoints = [ ];
     list tmp_parts = [];
 
     if (mounted != nil)
     {
-	foreach(`m, mounted,
+	foreach(map m, mounted,
 	    ``{
-		string fs = lookup(m, "vfstype", nil);
-		string dev = lookup(m, "spec", nil);
-		string file = lookup(m, "file", nil);
+		string fs = m["vfstype"]:nil;
+		string dev = m["spec"]:nil;
+		string file = m["file"]:nil;
 
 		if (fs == "ext2" && dev != nil && !contains(tmp_parts, dev))
 		{
-		    result = add(result, $[ "partition" : dev, "mountpoint" : file ]);
+		    ext2mountpoints = add(ext2mountpoints, $[ "partition" : dev, "mountpoint" : file ]);
 		    tmp_parts = add(tmp_parts, dev);
 		}
 	    }
 	);
     }
 
-    list fstab = SCR::Read(.etc.fstab);
+    list<map> fstab = (list<map>)SCR::Read(.etc.fstab);
 
     if (fstab != nil)
     {
-	foreach(`f, fstab,
+	foreach(map f, fstab,
 	    ``{
-		string fs = lookup(f, "vfstype", nil);
-		string dev = lookup(f, "spec", nil);
-		string file = lookup(f, "file", nil);
+		string fs = f["vfstype"]:nil;
+		string dev = f["spec"]:nil;
+		string file = f["file"]:nil;
 
 		if (fs == "ext2" && dev != nil && !contains(tmp_parts, dev))
 		{
-		    result = add(result, $[ "partition" : dev, "mountpoint" : file ]);
+		    ext2mountpoints = add(ext2mountpoints, $[ "partition" : dev, "mountpoint" : file ]);
 		    tmp_parts = add(tmp_parts, dev);
 		}
 	    }
 	);
     }
 
-    return result;
+    return ext2mountpoints;
 }
 
 
@@ -283,7 +282,7 @@ global define list GetListWithFlags(list in, list selected) ``{
  * @example AddIdBool( [ `item(`id("ext2"), "ext2", true) ], false) ) -> [ `item (`id ("ext2"), "ext2", false) ]
  */
 
-global define list AddIdBool(list in, boolean val) ``{
+global define list<term> AddIdBool(list in, boolean val) ``{
     if (val == nil)
     {
 	val = false;
@@ -294,7 +293,7 @@ global define list AddIdBool(list in, boolean val) ``{
 	return [];
     }
 
-    return maplist(`i, in, ``{
+    return maplist(any i, in, ``{
 	term tmp_id = nil;
 	string tmp_s = nil;
 
@@ -302,8 +301,8 @@ global define list AddIdBool(list in, boolean val) ``{
 
 	if (isterm)
 	{
-	    tmp_id = select(i, 0, nil);
-	    tmp_s = select(i, 1, nil);
+	    tmp_id = select((term)i, 0, nil);
+	    tmp_s = select((term)i, 1, nil);
 	}
 
         return (isterm && tmp_id != nil && tmp_s != nil) ? `item(tmp_id, tmp_s, val) : nil;
@@ -334,67 +333,17 @@ global define list AddId(list in) ``{
  * @example AddId([ $["partition" : "/dev/hda3", "mountpoint" : "/usr"] ]) -> [`item(`id("/dev/hda3"), "/dev/hda3", "/usr")]
  */
 
-global define list AddIdExt2(list in) ``{
+global define list<term> AddIdExt2(list<map> in) ``{
 
     if (in == nil) return [];
 
-    return maplist(`i, in, ``{
-	string pt = lookup(i, "partition", nil);
-	string mp = lookup(i, "mountpoint", nil);
+    return maplist(map i, in, ``{
+	string pt = (string)(i["partition"]:nil);
+	string mp = (string)(i["mountpoint"]:nil);
 
         return `item(`id(pt), pt, mp);
     });
 }
-
-/**
- * Returns string generated from selected files list. String is in format which
- * is accepted by backup_archive.pl script. Used global variables:
- * selected_files, backup_files.
- * @return map map with keys "filelist" (string - list of files), "sel_files"
- *	(integer - number of selected files), "sel_packages" (integer: number
- *	of selected packages).
- * @see <a href="../backup_specification.html">Backup module specification</a>
- */
-
-global define map MapFilesToString() ``{
-    string result = "";
-    integer num_files = 0;
-    integer num_pack = 0;
-
-    if (Backup::selected_files == nil || Backup::backup_files == nil || list_of_installed_packages == nil)
-    {
-	return "";
-    }
-
-    foreach(`pkg, `info, Backup::selected_files,
-        ``{
-            if (pkg != "")
-            {
-		string tmp = "Package: " + pkg + "\nInstalled: "
-		    + lookup(lookup(Backup::backup_files, pkg, $[]), "install_prefixes", "(none)") + "\n";
-
-		list chfiles = info["changed_files"]:[];
-		result = result + tmp + mergestring(chfiles, "\n") + "\n";
-
-		num_files = num_files + size(chfiles);
-		num_pack = num_pack + 1;
-            }
-        }
-    );
-
-    list nopkg = lookup(lookup(Backup::selected_files, "", $[ ]), "changed_files", []);
-
-    if (size(nopkg) > 0)
-    {
-	result = result + "Nopackage:\n" + mergestring(nopkg, "\n") + "\n";
-
-	num_files = num_files + size(nopkg);
-	num_pack = num_pack + 1;
-    }
-
-    return $[ "filelist" : result, "sel_files" : num_files, "sel_packages" : num_pack ];
-}
-
 
 /**
  * Convert media description list to ComboBox items list
@@ -402,20 +351,20 @@ global define map MapFilesToString() ``{
  * @return list Items list for UI widgets
  */
 
-global define list MediaList2UIList(list media) ``{
-    list result = [];
+global define list<term> MediaList2UIList(list<map> media) ``{
+    list<term> result = [];
 
     if (media == nil)
     {
 	return [];
     }
 
-    foreach(`v, media,
+    foreach(map v, media,
 	``{
 	    if (is(v, map))
 	    {
-		symbol i = lookup(v, "symbol", nil);
-		string l = lookup(v, "label", nil);
+		symbol i = (symbol)(v["symbol"]:nil);
+		string l = (string)(v["label"]:nil);
 
 		if (i != nil && l != nil)
 		{
@@ -435,10 +384,10 @@ global define list MediaList2UIList(list media) ``{
  */
 
 global define void SetMultiWidgetsState() ``{
-    boolean tmp_multi = UI::QueryWidget(`id(`multi_volume), `Value);
+    boolean tmp_multi = (boolean)UI::QueryWidget(`id(`multi_volume), `Value);
     UI::ChangeWidget(`id(`vol), `Enabled, tmp_multi);
 
-    boolean user = (tmp_multi && UI::QueryWidget(`id(`vol), `Value) == `user_defined);
+    boolean user = (tmp_multi && ((symbol)UI::QueryWidget(`id(`vol), `Value)) == `user_defined);
     UI::ChangeWidget(`id(`user_size), `Enabled, user);
     UI::ChangeWidget(`id(`user_unit), `Enabled, user);
 }
@@ -452,16 +401,16 @@ global define void SetMultiWidgetsState() ``{
 
 global define string Ext2MountPoint(string device_name) ``{
     // chack if partition is now mounted
-    list mp = SCR::Read(.proc.mounts);
+    list<map> mp = (list<map>)SCR::Read(.proc.mounts);
     string result = nil;
 
     if (mp != nil)
     {
-	foreach(`p, mp,
+	foreach(map p, mp,
 	    ``{
-		string d = lookup(p, "file", nil);
-		string dev = lookup(p, "spec", nil);
-		string fs = lookup(p, "vfstype", nil);
+		string d = p["file"]:nil;
+		string dev = p["spec"]:nil;
+		string fs = p["vfstype"]:nil;
 
 		if (fs == "ext2" && dev == device_name)
 		{
@@ -474,15 +423,15 @@ global define string Ext2MountPoint(string device_name) ``{
     // if partition is not mounted then search mount point from fstab
     if (result == nil)
     {
-	list fstab = SCR::Read(.etc.fstab);
+	list<map> fstab = (list<map>)SCR::Read(.etc.fstab);
 
 	if (fstab != nil)
 	{
-	    foreach(`p, fstab,
+	    foreach(map p, fstab,
 		``{
-		    string d = lookup(p, "file", nil);
-		    string dev = lookup(p, "spec", nil);
-		    string fs = lookup(p, "vfstype", nil);
+		    string d = p["file"]:nil;
+		    string dev = p["spec"]:nil;
+		    string fs = p["vfstype"]:nil;
 
 		    if (fs == "ext2" && dev == device_name)
 		    {
@@ -519,7 +468,7 @@ global define string AddMissingExtension(string file, string extension)
 	return file;
     }
 
-    list(string) dirs = splitstring(file, "/");
+    list<string> dirs = splitstring(file, "/");
     string filename = dirs[size(dirs) - 1]:file;
 
     string result = "";
@@ -563,10 +512,10 @@ global define string GetBaseName(string file)
 	return result;
     }
 
-    list(string) dirs = splitstring(file, "/");
+    list<string> dirs = splitstring(file, "/");
     string filename = dirs[size(dirs) - 1]:"";
 
-    list(string) parts = splitstring(filename, ".");
+    list<string> parts = splitstring(filename, ".");
 
     if (size(parts) > 1)
     {
@@ -595,7 +544,7 @@ global define boolean SendMail(string user, string subject, string message) ``{
     }
 
     // get temporary directory
-    string d = SCR::Read(.target.tmpdir);
+    string d = (string)SCR::Read(.target.tmpdir);
     if (d == "" || d == nil)
     {
 	y2security("Using /tmp directory for temporary files!");
@@ -605,7 +554,7 @@ global define boolean SendMail(string user, string subject, string message) ``{
     string mail_file = d + "/mail";
 
     // write mail body to the temporary file
-    if (SCR::Write(.target.string, mail_file, body) == false)
+    if (SCR::Write(.target.string, mail_file, message) == false)
     {
 	return false;
     }
@@ -638,7 +587,9 @@ global define string CreateUnderLine(string input, string ch) ``{
  * @param remove_result Result of removing/renaming of the old archives
  * @return boolean True on success
  */
-global define boolean SendSummary(map remove_result) ``{
+global define boolean SendSummary(map remove_result, string cron_profile, string backup_result, string backup_details) ``{
+    string br = "\n";
+
     // e-mail subject - %1 is profile name
     string subject = sformat(_("YaST2 Automatic Backup (%1)"), cron_profile);
 
@@ -711,7 +662,7 @@ global define boolean SendSummary(map remove_result) ``{
  */
 global define string SecondsToDateString(integer sec) ``{
     // convert seconds to time string - use localtime function in perl
-    map result = SCR::Execute(.target.bash_output, "/usr/bin/perl -e '($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(" + sformat("%1", sec) + ");
+    map result = (map)SCR::Execute(.target.bash_output, "/usr/bin/perl -e '($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(" + sformat("%1", sec) + ");
 $mon++;
 $year += 1900;
 printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
@@ -722,338 +673,31 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
     return ret;
 }
 
-/**
- * Remove and/or rename old existing archives
- * @param name Archive name
- * @param max Maximum count of existing archives
- * @param multivolume Is archive archive multivolume?
- * @return map result
- */
-global define map RemoveOldArchives(string name, integer max, boolean multivolume) ``{
-    return (multivolume == true) ? RemoveOldMultiArchives(name, max)
-	: RemoveOldSingleArchives(name, max);
-}
 
-/**
- * Remove and/or rename old existing single archives
- * @param name Archive name
- * @param max Maximum count of existing archives
- * @return map result
- */
-global define map RemoveOldSingleArchives(string name, integer max) ``{
-    list removed = [];
-    map renamed = $[];
-
-    if (name == "" || name == nil)
-    {
-	return true;
-    }
-
-    // check whether archive already exists
-    integer sz = SCR::Read(.target.size, name);
-
-    if (sz < 0)
-    {
-	// file doesn't exist, success
-	y2milestone("Archive doesn't exist");
-	return true;
-    }
-
-    // check wheter older archives exist
-    list parts = splitstring(name, "/");
-    string fname = parts[size(parts) - 1]:"";
-    string dir = mergestring(remove(parts, size(parts) - 1), "/");
-
-    if (size(fname) == 0)
-    {
-	return true;
-    }
-
-    string command = "/bin/ls -1 -t " + dir + "/*-" + fname + " 2> /dev/null";
-    map result = SCR::Execute(.target.bash_output, command);
-    list(string) files = splitstring(result["stdout"]:"", "\n");
-
-    list mv_dates = [];
-
-    // filter files with date - use regexp
-    files = filter(string file, files, ``(regexpmatch(file, "^" + dir + "/[0-9]{14}-" + fname + "$")));
-
-    y2milestone("Old archives: %1", files);
-
-    if (size(files) >= max && max >= 0)
-    {
-	// remove the old archives
-	while(size(files) >= max)
-	{
-	    string oldarchive = files[size(files) - 1]:"__DUMMY__";
-
-	    // remove old archive
-	    command = "/bin/rm -f " + oldarchive;
-	    y2milestone("Removing old archive: %1", oldarchive);
-	    result = SCR::Execute(.target.bash_output, command);
-
-	    string removedoldarchive = oldarchive;
-
-	    // update NFS archive name
-	    if (Backup::target_type == `nfs)
-	    {
-		removedoldarchive = Backup::nfsserver + ":" + Backup::nfsexport + substring(oldarchive, size(Backup::nfsmount));
-	    }
-
-	    removed = add(removed, removedoldarchive);
-
-	    // remove old XML profile
-	    string oldXML = dir + "/" + GetBaseName(oldarchive) + ".xml";
-	    command = "/bin/rm -f " + oldXML;
-	    result = SCR::Execute(.target.bash_output, command);
-
-	    // update NFS archive name
-	    if (Backup::target_type == `nfs)
-	    {
-		oldXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(oldXML, size(Backup::nfsmount));
-	    }
-
-	    removed = add(removed, oldXML);
-
-	    files = remove(files, size(files) - 1);
-	}
-    }
-
-    map stat = SCR::Read(.target.stat, name);
-    integer ctime = stat["ctime"]:0;
-    string ctime_str = SecondsToDateString(ctime);
-
-    // rename existing archive
-    command = "/bin/mv -f " + name + " " + dir + "/" + ctime_str + "-" + fname;
-    result = SCR::Execute(.target.bash_output, command);
-
-    string old_name = name;
-    string new_name = dir + "/" + ctime_str + "-" + fname;
-
-    // update NFS archive name
-    if (Backup::target_type == `nfs)
-    {
-	old_name = Backup::nfsserver + ":" + Backup::nfsexport + substring(name, size(Backup::nfsmount));
-	new_name = Backup::nfsserver + ":" + Backup::nfsexport + substring(new_name, size(Backup::nfsmount));
-	y2debug("NFS archive, old_name: %1, new_name: %2", old_name, new_name);
-    }
-
-
-//    renamed[name] = dir + "/" + ctime_str + "-" + fname;
-    renamed[old_name] = new_name;
-
-    // rename autoinstallation profile
-    string oldXML = dir + "/" + GetBaseName(name) + ".xml";
-    string newXML = dir + "/" + ctime_str + "-" + GetBaseName(fname) + ".xml";
-
-    command = "/bin/mv -f " + oldXML + " " + newXML;
-    result = SCR::Execute(.target.bash_output, command);
-
-    // update NFS archive name
-    if (Backup::target_type == `nfs)
-    {
-	oldXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(oldXML, size(Backup::nfsmount));
-	newXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(newXML, size(Backup::nfsmount));
-	y2debug("NFS archive, oldXML: %1, newXML: %2", oldXML, newXML);
-    }
-
-    renamed[oldXML] = newXML;
-
-    return $[ "removed" : removed, "renamed" : renamed ];
-}
-
-
-/**
- * Remove and/or rename old existing multivolume archives
- * @param name Archive name
- * @param max Maximum count of existing archives
- * @return map result
- */
-global define map RemoveOldMultiArchives(string name, integer max) ``{
-    list removed = [];
-    map renamed = $[];
-
-    if (name == "" || name == nil)
-    {
-	return true;
-    }
-
-    // check wheter older archives exist
-    list parts = splitstring(name, "/");
-    string fname = parts[size(parts) - 1]:"";
-    string dir = mergestring(remove(parts, size(parts) - 1), "/");
-
-    if (size(fname) == 0)
-    {
-	return true;
-    }
-
-    // check whether first archive already exists
-    integer sz = SCR::Read(.target.size, dir + "/" + "01_" + fname);
-
-    if (sz < 0)
-    {
-	// file doesn't exist, success
-	y2milestone("First multivolume archive doesn't exist");
-	return true;
-    }
-    else
-    {
-	y2milestone("First multivolume archive already exists");
-    }
-
-    string command = "/bin/ls -1 -t " + dir + "/*-*_" + fname + " 2> /dev/null";
-    map result = SCR::Execute(.target.bash_output, command);
-    list(string) files = splitstring(result["stdout"]:"", "\n");
-
-    list mv_dates = [];
-
-    // filter files with date - use regexp
-    list multi = [];
-    foreach(string file, files, ``{
-	    if (regexpmatch(file, "^" + dir + "/[0-9]{14}-[0-9][0-9]+_" + fname + "$"))
-	    {
-		multi = add(multi, file);
-
-		string date = regexpsub(file,  "^" + dir + "/([0-9]{14})-[0-9][0-9]+_" + fname + "$", "\\1");
-
-		if (!contains(mv_dates, date))
-		{
-		    mv_dates = add(mv_dates, date);
-		}
-	    }
-	}
-    );
-    files = multi;
-
-    y2milestone("Old archives: %1", files);
-    y2milestone("Old archive dates: %1", mv_dates);
-
-    if (size(mv_dates) >= max && max >= 0)
-    {
-	// remove the old archives
-	while(size(mv_dates) >= max)
-	{
-	    string oldarchivedate = mv_dates[size(mv_dates) - 1]:"__DUMMY__";
-
-	    y2milestone("removing archives with date %1", oldarchivedate);
-
-	    foreach(string fn, files,
-		``{
-		    if (regexpmatch(fn, "^" + dir + "/" + oldarchivedate + "-[0-9]+_" + fname + "$"))
-		    {
-			// remove old archive
-			command = "/bin/rm -f " + fn;
-			y2milestone("Removing old volume: %1", fn);
-
-			// update NFS archive name
-			if (Backup::target_type == `nfs)
-			{
-			    fn = Backup::nfsserver + ":" + Backup::nfsexport + substring(fn, size(Backup::nfsmount));
-			}
-
-			removed = add(removed, fn);
-			SCR::Execute(.target.bash_output, command);
-		    }
-		}
-	    );
-
-	    // remove old XML profile
-	    string oldXML = dir + "/" + oldarchivedate + "-" + GetBaseName(fname) + ".xml";
-	    command = "/bin/rm -f " + oldXML;
-
-	    // update NFS archive name
-	    if (Backup::target_type == `nfs)
-	    {
-		oldXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(oldXML, size(Backup::nfsmount));
-	    }
-
-	    removed = add(removed, oldXML);
-	    result = SCR::Execute(.target.bash_output, command);
-
-	    mv_dates = remove(mv_dates, size(mv_dates) - 1);
-	}
-    }
-
-    // get creation time of the first part of the archive
-    map stat = SCR::Read(.target.stat, dir + "/" + "01_" + fname);
-    integer ctime = stat["ctime"]:0;
-    string ctime_str = SecondsToDateString(ctime);
-
-    command = "/bin/ls -1 -t " + dir + "/*_" + fname + " 2> /dev/null";
-    result = SCR::Execute(.target.bash_output, command);
-    files = splitstring(result["stdout"]:"", "\n");
-    files = filter(string file, files, ``(regexpmatch(file, "^" + dir + "/[0-9]+_" + fname + "$")));
-    y2milestone("Existing volumes: %1", files);
-
-    foreach(string volume, files, ``{
-	list vol_parts = splitstring(volume, "/");
-	string vol_fname = vol_parts[size(vol_parts) - 1]:"";
-	string vol_dir = mergestring(remove(vol_parts, size(vol_parts) - 1), "/");
-
-        // rename existing archive
-	string from =  vol_dir + "/" + vol_fname;
-	string to = vol_dir + "/" + ctime_str + "-" + vol_fname;
-        command = "/bin/mv -f " + from + " " + to;
-	result = SCR::Execute(.target.bash_output, command);
-
-	// update NFS archive name
-	if (Backup::target_type == `nfs)
-	{
-	    from = Backup::nfsserver + ":" + Backup::nfsexport + substring(from, size(Backup::nfsmount));
-	    to = Backup::nfsserver + ":" + Backup::nfsexport + substring(to, size(Backup::nfsmount));
-	    y2debug("NFS archive, from: %1, to: %2", from, to);
-	}
-
-	renamed[from] = to;
-
-	y2milestone("renamed volume %1", volume);
-	}
-    );
-
-    // rename autoinstallation profile
-    string oldXML = dir + "/" + GetBaseName(name) + ".xml";
-    string newXML = dir + "/" + ctime_str + "-" + GetBaseName(fname) + ".xml";
-
-    command = "/bin/mv -f " + oldXML + " " + newXML;
-    result = SCR::Execute(.target.bash_output, command);
-
-    // update NFS archive name
-    if (Backup::target_type == `nfs)
-    {
-	oldXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(oldXML, size(Backup::nfsmount));
-	newXML = Backup::nfsserver + ":" + Backup::nfsexport + substring(newXML, size(Backup::nfsmount));
-	y2debug("NFS archive, oldXML: %1, newXML: %2", oldXML, newXML);
-    }
-
-    renamed[oldXML] = newXML;
-
-    return $[ "removed" : removed, "renamed" : renamed ];
-}
 
 /**
  * Read packages available on the installation sources
  * (Requires at least one installation source, otherwise return empty list)
- * @return list(string) available packages
+ * @return list<string> available packages
  */
-global define list(string) GetInstallPackages() ``{
+global define list<string> GetInstallPackages() ``{
     y2milestone("Reading packages available on the installation sources...");
 
     Pkg::TargetInit("/", false);
 
     // list of available enabled installation sources
-    list(integer) sources = Pkg::SourceStartCache(true);
+    list<integer> sources = Pkg::SourceStartCache(true);
     y2debug("availables sources: %1", sources);
 
     // list of installed products (last installed is first in the list)
-    list(map) installed_products = Pkg::TargetProducts();
+    list installed_products = Pkg::TargetProducts();
     y2debug("installed products: %1", installed_products);
 
     // installation sources for installed products
-    list(integer) product_sources = [];
+    list<integer> product_sources = [];
 
     // user defined installation sources
-    list(integer) nonproduct_sources = [];
+    list<integer> nonproduct_sources = [];
 
     if (size(sources) > 0)
     {
@@ -1103,7 +747,7 @@ global define list(string) GetInstallPackages() ``{
     }
 
     // get all available packages at the product installation sources
-    list(string) installation_packages = Pkg::GetPackages(`available, false);
+    list<string> installation_packages = Pkg::GetPackages(`available, false);
 
     // reenable disabled non-product installation sources
     if (size(nonproduct_sources) > 0)
@@ -1124,7 +768,7 @@ global define list(string) GetInstallPackages() ``{
     // ("pkg version release arch" -> "pkg-version-release")
     installation_packages = maplist(string pkginfo, installation_packages,
 	``{
-	    list(string) parts = splitstring(pkginfo, " ");
+	    list<string> parts = splitstring(pkginfo, " ");
 
 	    return sformat("%1-%2-%3", parts[0]:"", parts[1]:"", parts[2]:"");
 	}
@@ -1184,7 +828,7 @@ global define map DetectMountpoints() ``{
 
     foreach(string disk, map info, targetmap,
 	``{
-	    list(map) partitions = info["partitions"]:$[];
+	    list<map> partitions = info["partitions"]:[];
 
 	    foreach(map part_info, partitions,
 		``{
@@ -1279,7 +923,7 @@ global define boolean NFSFileExists(string server, string share, string filename
 	return nil;
     }
 
-    boolean ret = SCR::Read(.target.size, mpoint + "/" + filename) >= 0;
+    boolean ret = ((integer)SCR::Read(.target.size, mpoint + "/" + filename)) >= 0;
 
     Nfs::Unmount(mpoint);
 
@@ -1321,7 +965,7 @@ global define map get_free_space(string directory) ``{
 	return $[];
     }
 
-    map result = SCR::Execute(.target.bash_output, "/bin/df -P " + directory);
+    map result = (map)SCR::Execute(.target.bash_output, "/bin/df -P " + directory);
     integer exit = result["exit"]:-1;
 
     if (exit != 0)

@@ -24,7 +24,6 @@ import "Backup";
 
 DUMP( Backup::GetCapacity(nil, nil) );
 DUMP( Backup::GetCapacity([ ], `s) );
-DUMP( Backup::GetCapacity(["no map"], nil) );
 DUMP( Backup::GetCapacity([
     $[
 	"capacity" : 1440000
