@@ -867,55 +867,43 @@ global define symbol BackupDialog() ``{
 	    // frame label
 	    `Frame( _("Backup options"),
 	        `VBox(
-		    `VSpacing(0.5),
+		    `VSpacing(0.3),
 		    // check box label
-                    `Left(`CheckBox(`id(`search), `opt(`notify), _("&Backup Files Not Belonging to Any Package"))),
-		    `VSpacing(0.5),
+                    `Left(`CheckBox(`id(`search), `opt(`notify), _("&Backup Files Not Belonging to Any Package"), Backup::search)),
+		    `VSpacing(0.3),
 		    // check box label
-                    `Left(`CheckBox(`id(`system), _("Backup &hard disk system areas"))),
-		    `VSpacing(0.5),
-		    // check box label
-		    `Left(`CheckBox(`id(`display), _("Display List of Files Before &Creating Archive"))),
-		    `VSpacing(0.5)
-		)
-	    ),
-
-	    `VSpacing(1.0),
-
-	    // frame label
-	    `Frame( _("Search options"),
-		`VBox(
-		    `VSpacing(0.5),
-		    // frame label
-                    `Left(`CheckBox(`id(`md5_check), _("Check MD&5 sum instead of time or size"))),
-		    `VSpacing(0.5)
+		    `Left(`CheckBox(`id(`display), _("Display List of Files Before &Creating Archive"), Backup::display)),
+		    `VSpacing(0.3)
 		)
 	    ),
 
 	    `VSpacing(0.5),
+
+	    // frame label
+	    `Frame( _("Search options"),
+		`VBox(
+		    `VSpacing(0.3),
+		    // frame label
+                    `Left(`CheckBox(`id(`md5_check), _("Check MD&5 sum instead of time or size"), Backup::do_md5_test)),
+		    `VSpacing(0.3)
+		)
+	    ),
+
+	    `VSpacing(0.3),
 	    // multi line widget label
 	    `MultiLineEdit(`id(`description), _("Archive &description:"), Backup::description),
 
-	    `VSpacing(1.0)
+	    `VSpacing(0.3),
+	    `PushButton(`id(`xpert), _("E&xpert...")),
+
+	    `VSpacing(0.5)
 	),
         backup_help_backup_setting(), true, true
     );
 
-    // set values
-    UI::ChangeWidget(`id(`search), `Value, Backup::search);
-
-    if (Backup::archive_type == `txt)
-    {
-	UI::ChangeWidget(`id(`system), `Enabled, false);
-    }
-
-    UI::ChangeWidget(`id(`system), `Value, Backup::system);
-    UI::ChangeWidget(`id(`display), `Value, Backup::display);
-    UI::ChangeWidget(`id(`md5_check), `Value, Backup::do_md5_test);
-
     symbol ret = nil;
 
-    while (ret != `next && ret != `abort && ret != `back)
+    while (ret != `next && ret != `abort && ret != `back && ret != `xpert)
     {
 	ret = UI::UserInput();
 
@@ -931,7 +919,6 @@ global define symbol BackupDialog() ``{
 
     // get values
     Backup::search = UI::QueryWidget(`id(`search), `Value);
-    Backup::system = UI::QueryWidget(`id(`system), `Value);
     Backup::display = UI::QueryWidget(`id(`display), `Value);
     Backup::do_md5_test = UI::QueryWidget(`id(`md5_check), `Value);
     Backup::description = UI::QueryWidget(`id(`description), `Value);
@@ -1089,9 +1076,6 @@ global define symbol ExcludeDialog() ``{
 	}
     }
 
-    if (!(Backup::system && Backup::archive_type != `txt) && ret == `next)
-	ret = `next2;
-
     return ret;
 }
 
@@ -1242,6 +1226,8 @@ global define symbol SystemBackupDialog() ``{
 	backup_help_system_backup(), true, true
     );
 
+    Wizard::ReplaceNextButton(`PushButton(`id(`finish), `opt(`default), Label::OKButton()));
+
     UI::ChangeWidget(`id(`par), `Enabled, Backup::backup_selected_ext2);
     UI::ChangeWidget(`id(`addnew), `Enabled, Backup::backup_selected_ext2);
     UI::ChangeWidget(`id(`edit), `Enabled, Backup::backup_selected_ext2);
@@ -1250,7 +1236,7 @@ global define symbol SystemBackupDialog() ``{
 
     symbol ret = nil;
 
-    while (ret != `next && ret != `back && ret != `abort)
+    while (ret != `finish && ret != `back && ret != `abort)
     {
 	ret = UI::UserInput();
 
@@ -1358,6 +1344,8 @@ global define symbol SystemBackupDialog() ``{
     }
 
     Backup::backup_pt = UI::QueryWidget(`id(`pt), `Value);
+
+    Wizard::RestoreNextButton();
 
     return ret;
 }
@@ -2802,6 +2790,63 @@ global define symbol SummaryDialog() ``{
     }
 
     Wizard::RestoreNextButton();
+    return ret;
+}
+
+global define symbol ExpertOptionsDialog() ``{
+    // dialog header
+    Wizard::SetContents( _("Expert Backup Options"),
+	`VBox(
+	    `VSpacing(0.5),
+	    // check box label
+	    `HBox(
+		`CheckBox(`id(`system), `opt(`notify), _("Backup &Hard Disk System Areas"), Backup::system),
+		`HStretch(),
+		`PushButton(`id(`set_system), _("&Options..."))
+	    ),
+	    `VSpacing(1.0),
+	    // text entry label
+	    `TextEntry(`id(`tmp), `opt(`hstretch), _("&Temporary Location of Archive Parts"), Backup::tmp_dir),
+	    `VSpacing(0.5)
+	),
+	expert_options_help(), true, true
+    );
+
+    // enable/disable widges
+    if (Backup::archive_type == `txt)
+    {
+	UI::ChangeWidget(`id(`system), `Enabled, false);
+	UI::ChangeWidget(`id(`set_system), `Enabled, false);
+    }
+    else
+    {
+	UI::ChangeWidget(`id(`set_system), `Enabled, Backup::system);
+    }
+
+    Wizard::ReplaceNextButton(`PushButton(`id(`finish), `opt(`default), Label::OKButton()));
+
+    UI::SetFocus(`id(`finish));
+
+    symbol ret = nil;
+
+    while (ret != `finish && ret != `back && ret != `abort && ret != `set_system)
+    {
+	ret = UI::UserInput();
+
+	if (ret == `finish)
+	{
+	    Backup::tmp_dir = UI::QueryWidget(`id(`tmp), `Value);
+	    Backup::system = UI::QueryWidget(`id(`system), `Value);
+	}
+
+	if (ret == `system)
+	{
+	    UI::ChangeWidget(`id(`set_system), `Enabled, UI::QueryWidget(`id(`system), `Value));
+	}
+    }
+
+    Wizard::RestoreNextButton();
+
     return ret;
 }
 

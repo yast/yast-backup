@@ -102,10 +102,11 @@ global boolean default_display = false;			// display files before creating archi
 global boolean default_do_md5_test = true;
 global boolean default_perms = true;			// store RPM file if owner/permissions were changed
 
-global list default_default_dir = [ "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache" ];		// default excluded directoried from search
+global list default_default_dir = [ "/media", "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache", "/windows" ];		// default excluded directoried from search
 global list default_dir_list = nil;			// selected directoried to exclude
 
-global list default_fs_exclude = [ "iso9660" ];		// selected filesystems to exclude from search
+// iso9660 is used on CDROM, ntfs read-only
+global list default_fs_exclude = [ "iso9660", "ntfs" ];		// selected filesystems to exclude from search
 global list default_detected_fs = nil;			// detected filesystems
 
 global list default_detected_ext2 = nil;		// detected mounted ext2 filesystems
@@ -116,6 +117,8 @@ global boolean default_backup_pt = true;		// backup partition table
 global boolean default_backup_all_ext2 = false;		// backup all mounted ext2 partitions
 global boolean default_backup_none_ext2 = true;		// backup none ext2 partitions
 global boolean default_backup_selected_ext2 = false;	// backup selected ext2 partitions
+
+global string default_tmp_dir = "/tmp";
 
 //global list default_all_entered_dirs = [];
 
@@ -176,6 +179,8 @@ global boolean backup_pt = eval( default_backup_pt );		// backup partition table
 global boolean backup_all_ext2 = eval( default_backup_all_ext2 );		// backup all mounted ext2 partitions
 global boolean backup_none_ext2 = eval( default_backup_none_ext2 );		// backup none ext2 partitions
 global boolean backup_selected_ext2 = eval( default_backup_selected_ext2 );	// backup selected ext2 partitions
+
+global string tmp_dir = default_tmp_dir;
 
 //global boolean LVMsnapshot = default_LVMsnapshot;
 //global boolean testonly = default_testonly;
@@ -430,8 +435,8 @@ global define string get_archive_script_parameters(string file_list, string file
 	string complete_string = mergestring(complete_backup, "\n");
 	string tmpdir = SCR::Read(.target.tmpdir);
 
-	SCR::Write(.target.string, tmpdir + "complete_backup", complete_string);
-	archive_options = archive_options + " --complete-backup " + tmpdir + "complete_backup";
+	SCR::Write(.target.string, tmpdir + "/complete_backup", complete_string);
+	archive_options = archive_options + " --complete-backup " + tmpdir + "/complete_backup";
     }
     else
     {
@@ -506,6 +511,11 @@ global define string get_archive_script_parameters(string file_list, string file
 	{
 	    archive_options = archive_options + " --multi-volume " + tointeger(tofloat(GetCapacity(media_descriptions, volume_size)) / 1024.0);
 	}
+    }
+
+    if (size(tmp_dir) > 0)
+    {
+	archive_options = archive_options + " --tmp-dir " + tmp_dir;
     }
 
     y2milestone("Archive script options: %1", archive_options);
@@ -1035,6 +1045,7 @@ global define void StoreSettingsToBackupProfile( string profile_name ) ``{
 	`nfsserver		: nfsserver,
 	`nfsexport		: nfsexport,
 	`mail_summary		: mail_summary,
+	`tmp_dir		: tmp_dir,
 	`target_type		: target_type
 //	`target_device		: target_device,
 //	`target_devices_options	: target_devices_options
@@ -1094,6 +1105,7 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
 //    target_device =	profile[ `target_device ]:	default_target_device;
 //    target_devices_options = profile[ `target_devices_options ]:	default_target_devices_options;
     mail_summary =	profile[ `mail_summary ]:	default_mail_summary;
+    tmp_dir =		profile[ `tmp_dir ]:		default_tmp_dir;
 
     selected_files = default_selected_files;
     backup_files = default_backup_files;
@@ -1143,6 +1155,7 @@ global define void RestoreDefaultSettings() ``{
     target_type = default_target_type;
 //    target_devices_options = eval(default_target_devices_options);
     mail_summary = default_mail_summary;
+    tmp_dir = default_tmp_dir;
 
     selected_files = eval( default_selected_files );
     backup_files = eval( default_backup_files );
