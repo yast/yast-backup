@@ -32,7 +32,7 @@ global define string backup_help_archive_settings() ``{
     + _("<P>The YaST2 backup module is a small, easy-to-use backup program. If you need advanced features, such as incremental backup or network backup, you should use another expert tool.</P>")
 
     // For translators: help text in archive setting dialog - part 3/5
-    + _("<P><B>Backup</B><BR>To create a backup of your system, enter the archive name and select the archive type. <B>Archive description</B> is an optional description of the backup archive.</P>")
+    + _("<P><B>Backup</B><BR>To create a backup of your system, enter the archive name and select the archive type.</P>")
 
     // For translators: help text in archive setting dialog - part 4/5
     + _("<P>The backup module creates a tar archive with changed files and an autoinstallation profile for easy and fast system reinstallation. To store only names of detected file instead of creating an archive, select <B>Only Create List of Files Found</B>.</P>")
@@ -66,7 +66,7 @@ global define string backup_help_archive_options() ``{
 
 global define string backup_help_backup_setting() ``{
     // For translators: help text in backup settings dialog - part 1/5
-    return _("<P><B><BIG>Search</BIG></B><BR>Here, select which parts of the system to search and back up.</P>")
+    return _("<P><B><BIG>Search</BIG></B><BR>Here, select which parts of the system to search and back up. <B>Archive description</B> is an optional description of the backup archive.</P>")
 
     // For translators: help text in backup settings dialog - part 2/5
     + _("<P>The archive will contain files from packages that were changed since
