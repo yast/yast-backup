@@ -285,9 +285,9 @@ global define symbol TarOptionsDialog() ``{
 	if (ret == `ok)
 	{
 	    if (UI::QueryWidget(`id(`multi_volume), `Value) == true && UI::QueryWidget(`id(`vol), `Value) == `user_defined &&
-		    (tofloat(UI::QueryWidget(`id(`user_size), `Value)) * tofloat(Backup::GetCapacity(Backup::units_description, UI::QueryWidget(`id(`user_unit), `Value))) / 1024.0) < 2.0)
+		    (tofloat(UI::QueryWidget(`id(`user_size), `Value)) * tofloat(Backup::GetCapacity(Backup::units_description, UI::QueryWidget(`id(`user_unit), `Value))) / 1024.0) < 10.0)
 	    {
-		UI::WarningPopup(_("Volume size has to be at least 2048 bytes."));
+		UI::WarningPopup(_("Volume size has to be at least 10240 bytes."));
 	    }
 	    else
 	    {

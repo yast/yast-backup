@@ -493,7 +493,7 @@ if (defined open(FILES, $files_info))
 		{
 		    close(PKGLIST);
 
-		    my $command = "/bin/tar -c -v --files-from $tmp_dir_root/$package_name --ignore-failed-read -S -f $tmp_dir_root/tmp/$package_name-$date_str-0.tar";
+		    my $command = "/bin/tar -c -v --no-recursion --files-from $tmp_dir_root/$package_name --ignore-failed-read -S -f $tmp_dir_root/tmp/$package_name-$date_str-0.tar";
 
 		    print OUT "$package_name-$date_str-0.tar";
 		    $files_num++;
@@ -544,12 +544,12 @@ if (defined open(FILES, $files_info))
     close(FILES);
 }
 
-
+#last package
 if (defined $opened)
 {
     close(PKGLIST);
 
-    my $command = "/bin/tar -c -v --files-from $tmp_dir_root/$package_name --ignore-failed-read -S -f $tmp_dir_root/tmp/$package_name-$date_str-0.tar";
+    my $command = "/bin/tar -c -v --no-recursion --files-from $tmp_dir_root/$package_name --ignore-failed-read -S -f $tmp_dir_root/tmp/$package_name-$date_str-0.tar";
 
     print OUT "$package_name-$date_str-0.tar";
     $files_num++;
