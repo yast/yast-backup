@@ -1,7 +1,4 @@
-Read	.target.size "/etc/install.inf" -1
-Read	.target.tmpdir nil
-Read	.target.size nil -1
-Dir	.autoinst.menuentry.s: []
+Read	.target.tmpdir "/tmp"
 Dump	nil
 Dump	nil
 Dump	nil

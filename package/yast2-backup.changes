@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Jun 30 14:53:52 CEST 2003 - lslezak@suse.de
+
+- make complete backup of updated packages
+- fixed testsuites
+- version 2.8.2
+
+-------------------------------------------------------------------
 Fri Apr 18 15:44:12 CEST 2003 - lslezak@suse.de
 
 - changed profile management dialog

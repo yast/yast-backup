@@ -1210,8 +1210,11 @@ global define symbol SearchingModifiedDialog() ``{
     // set buffer size
     SCR::Write(.background.buffer_size, 500);
 
-    y2debug("Search script: %1", Backup::script_get_files + Backup::get_search_script_parameters());
-    boolean started = SCR::Execute(.background.run_output_err, Backup::script_get_files + Backup::get_search_script_parameters());
+    // read list of available packages at the original installation sources
+    Backup::ReadInstallablePackages();
+
+    y2milestone("Search script: %1", Backup::script_get_files + Backup::get_search_script_parameters());
+    boolean started = SCR::Execute(.background.run_output, Backup::script_get_files + Backup::get_search_script_parameters());
     list script_out = [ ];
 
     symbol ret = nil;

@@ -1,6 +1,7 @@
+Read	.target.tmpdir "/tmp"
 Read	.target.size "/etc/install.inf" -1
-Read	.target.tmpdir nil
-Read	.target.size nil -1
+Read	.target.tmpdir "/tmp"
+Read	.target.size "/tmp/autoinst.xml" -1
 Dir	.autoinst.menuentry.s: []
 Dump	$[]
 Dump	$["test profile":$[`archive_name:"", `archive_type:`tgz, `backup_all_ext2:false, `backup_none_ext2:true, `backup_pt:true, `backup_selected_ext2:false, `default_dir:["/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache"], `description:"", `detected_ext2:nil, `detected_fs:nil, `dir_list:nil, `display:false, `do_md5_test:true, `ext2_backup:[], `fs_exclude:["iso9660"], `multi_volume:false, `search:true, `system:false, `unselected_files:[], `user_volume_size:"", `user_volume_unit:nil, `volume_size:`fd144]]

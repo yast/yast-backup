@@ -158,6 +158,8 @@ global list unselected_files = eval( default_unselected_files );	// files, which
 
 global boolean no_interactive = false; 	// whether the user should setup configuration manually
 global string selected_profile = nil;   // name of the selected profile, nil for no selected profile (default settings)
+
+global list installable_packages = [];
 // end of global settings
 
 // media description - capacity is maximum file size which fits
@@ -290,7 +292,19 @@ global define string get_search_script_parameters() ``{
 		}
 	    }
 	);
+
 	foreach(`i, fs_exclude, ``{script_options = script_options + " --exclude-fs " + i;});
+    }
+
+    // save list of installable packages and pass it to the search script
+    if (size(installable_packages) > 0)
+    {
+	string content = mergestring(installable_packages, "\n");
+	string listfile = SCR::Read(.target.tmpdir) + "/packagelist";
+
+	SCR::Write(.target.string, listfile, content);
+
+	script_options = script_options + " --inst-src-packages " + listfile;
     }
 
     if (!do_md5_test)
@@ -1286,6 +1300,10 @@ global define map RemovableDevices(boolean only_writable) ``{
     }
 
     return ret;
+}
+
+global define void ReadInstallablePackages() ``{
+    installable_packages = GetInstallPackages();
 }
 
 }
