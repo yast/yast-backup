@@ -2,6 +2,7 @@ Makefile
 Makefile.am
 Makefile.in
 configure
+configure.in
 config.cache
 config.status
 config.sub
