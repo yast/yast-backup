@@ -135,7 +135,8 @@ global define backup_help_creating_archive() ``{
  */
 
 global define backup_help_summary() ``{
-    return _("<P>Backup details are displayed here.</P>");
+    return _("<P>How many files were found, total sizes and other information are displayed here.</P>")
+    + _("<P>Click <B>Details...</B> button to see more information.</P>");
 }
 
 }
