@@ -1,5 +1,6 @@
 Read	.target.size "/etc/install.inf" -1
 Read	.target.tmpdir "/tmp"
+Read	.target.tmpdir "/tmp"
 Dir	.autoyast2.desktop."s": []
 Dir	.yast2.groups.s: []
 Read	.probe.architecture nil
@@ -10,7 +11,6 @@ Read	.probe.has_smp false
 Read	.probe.system nil
 Read	.sysconfig.console.CONSOLE_ENCODING nil
 Execute	.target.bash_output "locale -k charmap" $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]
-Read	.target.tmpdir "/tmp"
 Read	.probe.floppy.manual nil
 Read	.probe.cdrom.manual []
 Return	
