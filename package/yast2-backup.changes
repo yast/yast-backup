@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Feb 24 17:31:18 CET 2003 - lslezak@suse.cz
+
+- don't replace existing profile (#24197)
+- version 2.7.10
+
+-------------------------------------------------------------------
 Mon Feb 24 09:40:32 CET 2003 - lslezak@suse.de
 
 - fixed [abort] button in profile dialog (#24064)
