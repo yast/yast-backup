@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Wed Nov  5 13:20:04 CET 2003 - lslezak@suse.cz
+
+- exclude files matching specified regular expressions:
+  new dialog, workflow changes
+- small fixes in searching and archiving script
+- testsuite update
+- version 2.9.2
+
+-------------------------------------------------------------------
 Wed Oct 29 11:37:07 CET 2003 - lslezak@suse.cz
 
 - simply check available free space (#30042)

@@ -33,6 +33,8 @@ sub SearchDirectory($%%%);
 my $search_files = 0;
 my @exclude_d = ();
 my @exclude_fs = ();
+my @exclude_reg = ();
+our @exclude_reg_comp = undef;
 my $start_directory = '/';
 my $help = 0;
 
@@ -53,7 +55,7 @@ my %exclude_dirs;
 
 # parse command line options
 GetOptions('search' => \$search_files, 'exclude-dir=s' => \@exclude_d,
-    'exclude-fs=s' => \@exclude_fs,  'help' => \$help,
+    'exclude-fs=s' => \@exclude_fs, 'help' => \$help, 'exclude-files=s' => \@exclude_reg,
     'output-progress' => \$output_progress, 'output-files' => \$output_files,
     'output-default' => \$output_default, 'widget-file=s'=> \$widget_file,
     'start-dir=s' => \$start_directory, 'same-fs' => \$same_fs,
@@ -74,6 +76,7 @@ if ($help)
     print "  --search           Search files which do not belog to any package\n";
     print "    --exclude-dir <dir>  Exclude directory <dir> from search\n";
     print "    --exclude-fs <fs>    Exclude filesystem <fs> from search\n";
+    print "    --exclude-files <r>	Exclude files matching regular expression <r>\n";
 
     print "  --output-files     Display only names of files to backup\n";
     print "  --output-progress  Display data for frontend\n";
@@ -88,6 +91,12 @@ if ($help)
 
 
 $| = 1;
+
+# compile regular expressions (speed matching up)
+if (@exclude_reg > 0)
+{
+    @exclude_reg_comp = map qr/$_/, @exclude_reg;
+}
 
 if (!$output_files and !$output_progress)
 {
@@ -254,6 +263,7 @@ sub ReadAllPackages()
     return @all_packages;
 }
 
+# uses global variable exclude_reg_comp (precompiled regular expressions)
 sub PrintFoundFile($$$$$$)
 {
     my ($file, $package, $widget_file, $widget_index, $output_files, $start_directory) = @_;
@@ -264,6 +274,15 @@ sub PrintFoundFile($$$$$$)
 	if (substr($file, 0, length($start_directory)) ne $start_directory)
 	{
 	    return;
+	}
+
+	# check wheter file matches any of the specified regular expression
+	foreach my $reg (@exclude_reg_comp) {
+	    if (defined $reg && $file =~ $reg)
+	    {
+		# finish function if a match is found
+		return;
+	    }
 	}
 
 	my @filestat = stat($file);

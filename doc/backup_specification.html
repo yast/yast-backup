@@ -157,8 +157,8 @@ posible to exclude directory or file system type from search. This allows to
 exclude from backup /tmp directory or directories with mounted NFS file
 system.</P>
 
-<P>Default excluded directories are: /tmp, /var/lock, /var/run, /var/tmp and
-/var/cache.  Default excluded file system is iso9660 and file systems with
+<P>Default excluded directories are: /media, /windows, /tmp, /var/lock, /var/run, /var/tmp and
+/var/cache.  Default excluded file system is iso9660, ntfs and file systems with
 "nodev" flag in /proc/filesystems file (e.g. nfs, proc, tmpfs...).</P>
 
 
@@ -250,6 +250,15 @@ right owner.<BR>
 Solution: Stat all files owned by packages, remember device and inode numbers.
 While searching files not owned by any package check if it is in list of all
 files. If not check if its device and inode is in the list. 
+</LI>
+
+<LI>Updated/other packages:
+If a package was updated or it isn't available on the installation sources it
+is not enought to store only changed files because RPM file cannot be available
+at restoration time (e.g. package update was modified, lost installation
+sources...).<BR>
+Solution: Get list of available packagest on the installation sources and backup 
+unavailable packages completly.
 </LI>
 
 </UL>

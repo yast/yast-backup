@@ -347,7 +347,7 @@ if ($store_pt)
 
 		if ($verbose)
 		{
-		    print "Error storing partition: /dev/$disk";
+		    print "Error storing partition: $disk\n";
 		}
 	    }
 	}
@@ -355,7 +355,7 @@ if ($store_pt)
 	{
 	    if ($verbose)
 	    {
-		print "Error storing partition: /dev/$disk";
+		print "Error storing partition: $disk\n";
 	    }
 	}
 
