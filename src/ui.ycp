@@ -397,9 +397,9 @@ global define symbol ExcludeDialog() ``{
 	ret = UI::UserInput();
 
 	string curr = UI::QueryWidget(`id(`dirs), `CurrentItem);
+
 	if (curr != nil)
 	{
-
             if (ret == `edit)
 	    {
 	        map edited = ShowEditDialog(_("&Edit"), curr);
@@ -416,8 +416,6 @@ global define symbol ExcludeDialog() ``{
 			}
 			else
 			{
-			    UI::ChangeWidget(`id(`dirs), `Item(curr, 0), txt);
-
 			    // refresh dir_list content
 			    Backup::dir_list = maplist(`i, Backup::dir_list, ``{
 				if (select(select(i, 0, ""), 0, "") == curr)
@@ -429,6 +427,8 @@ global define symbol ExcludeDialog() ``{
 				    return i;
 				}
 			    });
+
+			    UI::ChangeWidget(`id(`dirs), `Items, Backup::dir_list);
 			}
 		    }
 		}

@@ -124,8 +124,10 @@ attributes, but it is less reliable.
 <P>If backing up files not owned by any package is selected, then it can be
 usefull to set which directories shoud not be backed up (e.g. /tmp)</P>
 
-<P>In Expert settings can be selected file systems instead of directories. Root
-directory '/' is searched always even, if its file system is selected.</P>
+<P>In Expert settings can be selected file systems instead of directories.
+Default excluded file system is iso9660 and file systems with "nodev" flag in
+/proc/filesystems (e.g. nfs, proc, shm, ...). Root directory '/' is searched
+always, even if its file system is selected.</P>
 
 
 <H5>Seaching</H5>

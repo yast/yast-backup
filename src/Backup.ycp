@@ -51,12 +51,12 @@ global list media_descriptions = [
 	"symbol" : `fd12,
 	"capacity" : 1185 // 1213952B is exact size for FAT fs
     ],
-/*    $[
+    $[
 	"label" : _("ZIP 100 MB"),
 	"symbol" : `zip100,
-	"capacity" : ?????
+	"capacity" : 95*1024	// exact size is 96MiB (64 heads, 32 sectors, 96 cylinders, 512B sector)
     ],
-    $[
+/*    $[
 	"label" : _("ZIP 250 MB"),
 	"symbol" : `zip250,
 	"capacity" : ?????
