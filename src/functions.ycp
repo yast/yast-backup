@@ -16,7 +16,7 @@
 
 {
 
-include "ui/common_messages.ycp";
+import "Label";
 
 import "Report";
 
@@ -37,18 +37,18 @@ global define boolean AbortConfirmation(symbol type) ``{
     string heading = _("Abort confirmation");
     // popup dialog question
     string question = _("Do you really want to abort the backup?");
-    string yes = YesButtonLabel();	// from common_messages.ycp
-    string no = NoButtonLabel();
+    string yes = Label::YesButton();	// from common_messages.ycp
+    string no = Label::NoButton();
 
     if (type == `changed)
     {
-	ret = UI::AnyQuestionPopup(heading, question, yes, no, `focus_no);
+	ret = Popup::AnyQuestion(heading, question, yes, no, `focus_no);
     }
     else
     {
 	if (type == `not_changed)
 	{
-	    ret = UI::AnyQuestionPopup(heading, question, yes, no, `focus_yes);
+	    ret = Popup::AnyQuestion(heading, question, yes, no, `focus_yes);
 	}
 	else
 	{
@@ -91,8 +91,8 @@ global define map ShowEditDialog(string label, string value) ``{
 	    `TextEntry(`id(`te), label, value),
 	    `VSpacing(1.0),
 	    `HBox(
-	        `PushButton(`id(`ok), `opt(`default, `key_F10), OKButtonLabel()),
-		`PushButton(`id(`cancel), `opt(`key_F9), CancelButtonLabel())
+	        `PushButton(`id(`ok), `opt(`default, `key_F10), Label::OKButton()),
+		`PushButton(`id(`cancel), `opt(`key_F9), Label::CancelButton())
 	    )
 	)
     );
