@@ -333,8 +333,12 @@ global define list AddIdExt2(list in) ``{
 }
 
 /**
- * Returns string generated from selected files list. String is in format which is accepted by backup_archive.pl script. Used global variables: selected_files, backup_files.
- * @return string String with multiple lines
+ * Returns string generated from selected files list. String is in format which
+ * is accepted by backup_archive.pl script. Used global variables:
+ * selected_files, backup_files.
+ * @return map map with keys "filelist" (string - list of files), "sel_files"
+ *	(integer - number of selected files), "sel_packages" (integer: number
+ *	of selected packages).
  * @see <a href="../backup_specification.html">Backup module specification</a>
  */
 
