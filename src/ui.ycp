@@ -255,6 +255,9 @@ global define symbol TarOptionsDialog() ``{
     Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
     UI::SetFocus(`id(`ok));
 
+    // allow only digits in the text entry
+    UI::ChangeWidget(`id(`user_size), `ValidChars, "0123456789" );
+
     SetMultiWidgetsState();
 
     if (Backup::volume_size == nil)
