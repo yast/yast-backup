@@ -1176,11 +1176,11 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
 
 	    foreach(term i, (list<term>)read_dir_list,
 		``{
-		    term tmp_id = select(i, 0, nil);
+		    term tmp_id = (term)i[0]:nil;
 
 		    if (tmp_id != nil)
 		    {
-			string tmp_d = select(tmp_id, 0, nil);
+			string tmp_d = (string)tmp_id[0]:nil;
 
 			if (tmp_d != nil)
 			{
