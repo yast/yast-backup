@@ -26,7 +26,6 @@ import "Report";
 
 include "wizard/sequencer.ycp";
 import "Popup";
-include "ui/common_functions.ycp";
 
 include "backup/functions.ycp";
 include "backup/ui.ycp";
