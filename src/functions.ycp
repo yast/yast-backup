@@ -301,8 +301,9 @@ define boolean AbortConfirmation(symbol type) ``{
 
 	if (isterm)
 	{
-	    tmp_id = select((term)i, 0, nil);
-	    tmp_s = select((term)i, 1, nil);
+	    term ti = (term)i;
+	    tmp_id = (term)select(ti, 0, nil);
+	    tmp_s = (string)select(ti, 1, nil);
 	}
 
         return (isterm && tmp_id != nil && tmp_s != nil) ? `item(tmp_id, tmp_s, val) : nil;
