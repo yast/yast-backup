@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Feb  8 17:16:03 CET 2005 - visnov@suse.cz
+
+- Fixed testsuite
+- 2.11.4 
+
+-------------------------------------------------------------------
 Wed Jan 26 09:24:56 CET 2005 - locilka@suse.cz
 
 - Fixed user-defined-size entry got disabled wrong in UI (#48651)
