@@ -304,7 +304,7 @@ sub VerifyPackages(@%%)
     foreach my $package (@$packages) {
 	if (!$output_files)
 	{
-	    print "Package: $package\n";
+	    print ((defined $$unavail{$package}) ? "Complete package: $package\n" : "Package: $package\n");
 
 	    print "Installed:";
 	    system('export LC_ALL=C; rpm -q '.$package.' --queryformat " %{INSTPREFIXES}"');
