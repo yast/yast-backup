@@ -73,6 +73,9 @@ integer added_files = 0;
 boolean confirm_abort = false;	// confirm abort
 map profilewritten = $[];	// result of writing profile
 
+boolean cron_mode = false;
+string cron_profile = "";
+
 if (Mode::test == true)
 {
     // set test data
@@ -193,8 +196,29 @@ map aliases = $[
     "summary"	: ``(SummaryDialog())
 ];
 
-// create wizard dialog
-Wizard::CreateDialog();
+
+list args = WFM::Args();
+y2milestone("args: %1", args);
+
+if (args[0]:"" == "cron")
+{
+    y2milestone("Starting in cron mode");
+    cron_mode = true;
+
+    if (args[1]:nil != nil)
+    {
+	cron_profile = args[1]:"";
+	y2milestone("Using profile: '%1'", cron_profile);
+    }
+}
+
+if (cron_mode != true)
+{
+    import "Wizard";
+
+    // create wizard dialog
+    Wizard::CreateDialog();
+}
 
 if (Mode::test == true)
 {
@@ -211,12 +235,35 @@ if (Mode::test == true)
 else
 {
     Backup::ReadBackupProfiles();
+
+    if (cron_mode == true)
+    {
+	if (Backup::RestoreSettingsFromBackupProfile(cron_profile) == false)
+	{
+	    y2error("Cannot read settings from profile '%1'", cron_profile);
+	    return false;
+	}
+
+	// change workflow - start searching immediately, exit at summary stage
+	sequence["ws_start"] = "do_searching";
+	sequence["summary"] = $[
+	    `abort	: `abort,
+	    `finish	: `finish
+	];
+
+	// disable user interaction
+	Backup::no_interactive = true;
+    }
+
     // start wizard sequencer
     WizardSequencer(aliases, sequence);
 }
 
-// close dialog
-Wizard::CloseDialog();
+if (cron_mode != true)
+{
+    // close dialog
+    Wizard::CloseDialog();
+}
 
 y2milestone(" *** Backup module finished *** ");
 
