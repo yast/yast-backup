@@ -22,7 +22,6 @@
  *      "proc":"nodev", 
  *      "reiserfs":"\t", 
  *      "umsdos":"\t", 
- *      "usbdevfs":"nodev", 
  *      "vfat":"\t"
  *    ])
  * 
