@@ -20,8 +20,6 @@
 /* TODO: check default values */
 /* TODO: check for configuration changes, avoid unnecessary searches */
 /* TODO: check exit statuses, result values... if error occured */
-/* TODO: write help texts */
-/* TODO: require confirmation of abort */
 
 y2milestone("Backup module started");
 
@@ -153,13 +151,17 @@ integer selected_files_num = 0;		// number of selected files to backup
 string checkmark = UI::Glyph(`CheckMark);
 string nocheckmark = (checkmark == "[x]") ? "[ ]" : " ";
 
-boolean ptable_stored = false;		// results
 boolean hostname_stored = false;
 boolean date_stored = false;
 boolean file_list_stored = false;
 boolean comment_stored = false;
 list e2image_results = [];		// results of storing ext2 images
 integer archived_num = 0;
+list not_readable_files = [];
+list created_archive_files = [];
+list failed_ptables = [];
+list stored_ptables = [];
+boolean read_ptables_info = false;
 
 integer tar_result = 1;		// exit status of tar
 integer total_files = 0;	// total number of files in archive
