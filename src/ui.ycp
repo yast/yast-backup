@@ -2183,7 +2183,34 @@ Backup will be aborted.
     // store selected file names to file
     string tmpfile_list = (string)SCR::Read(.target.tmpdir) + "/filelist";
 
-    file_list_stored = (boolean)SCR::Write(.target.string, tmpfile_list, selected_info["filelist"]:"");
+
+    string flist = selected_info["filelist"]:"";
+
+    // remove backslash sequence
+    string newstr = "";
+    integer pos = 0;
+    while(size(flist) > 0)
+    {
+	pos = find(flist, "\\\\");
+
+	if (pos >= 0)
+	{
+	    // found
+	    newstr = newstr + substring(flist, 0, pos + 1);
+	    flist = substring(flist, pos + 2);
+	}
+	else
+	{
+	    // not found
+	    newstr = newstr + flist;
+	    flist = "";
+	}
+    }
+
+    flist = newstr;
+    newstr = "";
+
+    file_list_stored = (boolean)SCR::Write(.target.string, tmpfile_list, flist);
 
     if (!file_list_stored)
     {
@@ -2507,17 +2534,6 @@ Backup will be aborted.
 	// write autoinstallation profile
 	Progress::NextStage();
 	profilewritten = Backup::WriteProfile(created_archive_files);
-    }
-
-    // remove temporary file list and file with comment
-    if (! (boolean)SCR::Execute(.target.remove, tmpfile_list))
-    {
-	y2warning("Error removing file: %1", tmpfile_list);
-    }
-
-    if (! (boolean)SCR::Execute(.target.remove, tmpfile_comment))
-    {
-	y2warning("Error removing file: %1", tmpfile_comment);
     }
 
     // free resources when backup is finished
