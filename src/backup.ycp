@@ -117,39 +117,12 @@ if (Mode::test == true)
 map sequence = $[
     "ws_start"	: "readprof",
 
-//    "ws_start" : "test_pts",
-//    "ws_start" : "test_loc",
-
-    "test_pts" : $[
-	`next	: "test_opt",
-	`abort	: `abort
-    ],
-    "test_loc" : $[
-	`next	: "readprof",
-	`abort	: `abort
-    ],
-    "test_opt" : $[
-	`next	: "test_loc",
-	`abort	: `abort,
-	`services : "test_srv",
-	`rpmopts : "test_rpm"
-    ],
-    "test_srv" : $[
-	`next	: "test_opt",
-	`abort	: `abort
-    ],
-    "test_rpm" : $[
-	`next	: "test_opt",
-	`abort	: `abort
-    ],
-
     "readprof" : $[
 	`edit	: "archive",
 	`start  : "do_searching",
 	`manual : "archive",
 	`cron	: "cron",
 	`abort	: `abort,
-	`newworkflow : "test_pts",
 	`finish : `ws_finish
     ],
     "cron" :$[
@@ -210,11 +183,6 @@ map sequence = $[
 
 // aliases for dialogs
 map aliases = $[
-    "test_pts"	: ``(Test_PartitionSelection()),
-    "test_loc"	: ``(Test_LocationSelection()),
-    "test_opt"	: ``(Test_BackupOptions()),
-    "test_srv"	: [ ``(Test_ServiceSelection()), true ],
-    "test_rpm"	: [ ``(Test_RPMoptions()), true ],
     "readprof"	: ``(SelectProfileDialog()),
     "cron"	: [ ``(CronDialog()), true ],
     "files"	: ``(FilesDialog()),
