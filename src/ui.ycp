@@ -22,10 +22,10 @@ import "Progress";
 import "Report";
 import "Label";
 import "Popup";
+import "String";
 import "NetworkPopup";
 
 import "Popup";
-include "ui/common_functions.ycp";
 include "ui/file_popups.ycp";
 
 include "backup/help_texts.ycp";
@@ -1485,7 +1485,7 @@ Backup will be aborted.
 
 			if (cron_mode != true)
 			{
-			    UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", size_text(modified_size)));
+			    UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", String::FormatSize(modified_size)));
 			    UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", modified_num));
 			}
 
@@ -1579,7 +1579,7 @@ Backup will be aborted.
 								`HBox(
 								    // label text
 								    `Label(_("Total size: ")),
-								    `Label(`id(`totsize), `opt(`hstretch), size_text(modified_size))
+								    `Label(`id(`totsize), `opt(`hstretch), String::FormatSize(modified_size))
 								)
 							    ),
 							    `VSpacing(0.5),
@@ -1682,7 +1682,7 @@ Backup will be aborted.
 			    `HBox(
 				// label text
 				`Label(_("Total size: ")),
-				`Label(`id(`totsize), `opt(`hstretch), size_text(nopkg_size))
+				`Label(`id(`totsize), `opt(`hstretch), String::FormatSize(nopkg_size))
 			    )
 			),
 			`VSpacing(0.5),
@@ -1733,7 +1733,7 @@ Backup will be aborted.
 		    // refresh status when 10 new files was found - it's faster...
 		    if (nopkg_num % 10 == 0 && cron_mode != true)
 		    {
-			UI::ChangeWidget(`id(`totsize), `Value, size_text(nopkg_size));
+			UI::ChangeWidget(`id(`totsize), `Value, String::FormatSize(nopkg_size));
 			UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", nopkg_num));
 		    }
 
@@ -2516,14 +2516,14 @@ global define symbol SummaryDialog() ``{
 	// part of summary text
 	backup_result = p + _("Found modified files: ") + modified_num + br
 	// part of summary text
-	    + _("Total size: ") + size_text(modified_size) + _p;
+	    + _("Total size: ") + String::FormatSize(modified_size) + _p;
 
 	if (Backup::search)
 	{
 	    // part of summary text
 	    backup_result = backup_result + p + _("Found files not in a package: ") + nopkg_num + br
 	    // part of summary text
-		+ _("Total size: ") + size_text(nopkg_size) + _p;
+		+ _("Total size: ") + String::FormatSize(nopkg_size) + _p;
 	}
 
 	if (Backup::display)
