@@ -368,7 +368,7 @@ define boolean AbortNewProfileCreation(string profile_name) {
 
     if (cancel_it) {
 	// remove the profile
-	Backup::RemoveBackupProfile(profile_name);
+	Backup::RemoveBackupProfile(profile_name, true);
 	// abort the creation
 	return true;
     } else {
@@ -3056,7 +3056,8 @@ string RenameProfilePupupDialog(string current_name) {
 	// Setting that cron settings were changed
 	Backup::backup_profiles[new_name, `cron_settings, "cron_changed"] = true;
 	Backup::backup_profiles[current_name, `cron_settings, "cron_changed"] = true;
-	Backup::RemoveBackupProfile( current_name );
+	// Remove the backup profile, but do not remove cron file
+	Backup::RemoveBackupProfile( current_name, false );
 	return new_name;
     }
     return nil;
@@ -3178,7 +3179,8 @@ string RenameProfilePupupDialog(string current_name) {
 	    // remove the selected profile
 	    if ( Popup::YesNo ( _("Remove the selected profile?") ) )
 	    {
-		Backup::RemoveBackupProfile( (string)UI::QueryWidget(`id(`profile), `CurrentItem ) );
+		// remove backup profile also with cron file
+		Backup::RemoveBackupProfile( (string)UI::QueryWidget(`id(`profile), `CurrentItem ), true );
 		UI::ReplaceWidget( `id(`selectionBox),
 		    `Table(`id(`profile), `header(tableheader1, tableheader2, tableheader3), Backup::BackupProfileDescriptions() ));
 
