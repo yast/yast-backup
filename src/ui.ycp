@@ -54,7 +54,7 @@ global define symbol ArchDialog() ``{
 				[ `item(`id(`tgz), "tar with gzip subarchives"),
 				  `item(`id(`tbz), "tar with bzip2 subarchives"),
 				  `item(`id(`tar), "tar with tar subarchives"),
-				  `item(`id(`txt), _("only list of file names"))
+				  `item(`id(`txt), _("only list file names"))
 				]
 			    ),
 			    `HSpacing(3.0),
@@ -86,7 +86,14 @@ global define symbol ArchDialog() ``{
 
     if (SCR::Read(.runtime.username) != "root" && root_warning_displayed == false)
     {
-	UI::WarningPopup(_("You are not logged as root!\n\nSome files can be read only by user root,\ntherefore not all files may be backuped\nand then after accident restored.\n\nAlso system areas on harddisks can be\nbackuped only by user root."));
+	UI::WarningPopup(_("You are not logged in as root.
+Some files can only be read by the user 'root'.
+Not all files will be backed up
+so cannot later be restored.
+
+System areas on hard disks can only
+be backed up by root.
+"));
 	root_warning_displayed = true;
     }
 
@@ -109,7 +116,9 @@ global define symbol ArchDialog() ``{
 	    {
 		if (size(Backup::archive_name) == 0)
 		{
-		    UI::WarningPopup(_("Archive file name can not be empty!\nPlease enter archive file name."));
+		    UI::WarningPopup(_("An archive file name is required.
+Enter the file name to use.
+"));
 		}
 		else
 		{
@@ -151,17 +160,17 @@ global define symbol ArchDialog() ``{
 global define symbol TarOptionsDialog() ``{
 
     list description_combo = MediaList2UIList(Backup::media_descriptions);
-    description_combo = add(description_combo, `item(`id(`user_defined), _("User defined")));
+    description_combo = add(description_combo, `item(`id(`user_defined), _("User-defined")));
 
     list description_combo_units = MediaList2UIList(Backup::units_description);
 
     Wizard::SetContents( _("Archive file options"),
 	`VBox(
 	    `VSpacing(0.5),
-	    `Frame(_("Multi volume archive"),
+	    `Frame(_("Multivolume archive"),
 		`VBox(
 		    `VSpacing(`opt(`hstretch), 0.5),
-		    `Left(`CheckBox(`id(`multi_volume), `opt(`notify), _("&Create multi volume archive"), Backup::multi_volume)),
+		    `Left(`CheckBox(`id(`multi_volume), `opt(`notify), _("&Create multivolume archive"), Backup::multi_volume)),
 		    `VSpacing(0.5),
 
 		    `HBox(
@@ -173,7 +182,7 @@ global define symbol TarOptionsDialog() ``{
 
 			    `Left(
 				`HBox(
-				    `TextEntry(`id(`user_size), _("&User defined size:")),
+				    `TextEntry(`id(`user_size), _("&User-defined size:")),
 				    `ComboBox(`id(`user_unit), "", description_combo_units),
 				    `HStretch()
 				)
@@ -277,7 +286,7 @@ global define symbol BackupDialog() ``{
 	    `Frame( _("Backup options"),
 	        `VBox(
 		    `VSpacing(0.5),
-                    `Left(`CheckBox(`id(`search), `opt(`notify), _("&Search files which do not belong to any package"))),
+                    `Left(`CheckBox(`id(`search), `opt(`notify), _("&Search files that do not belong to any package"))),
 		    `VSpacing(0.5),
                     `Left(`CheckBox(`id(`system), _("Backup &hard disk system areas"))),
 		    `VSpacing(0.5),
@@ -291,7 +300,7 @@ global define symbol BackupDialog() ``{
 	    `Frame( _("Search options"),
 		`VBox(
 		    `VSpacing(0.5),
-                    `Left(`CheckBox(`id(`md5_check), _("Check MD&5 sum instead of time/size checking"))),
+                    `Left(`CheckBox(`id(`md5_check), _("Check MD&5 sum instead of time or size"))),
 		    `VSpacing(0.5)
 		)
 	    ),
@@ -365,7 +374,7 @@ global define symbol ExcludeDialog() ``{
     // initialize excluded filesystems
     if (Backup::detected_fs == nil)
     {
-	Wizard::SetContents("", `Label(_("Detecting filesystems types...")), "", false, false);
+	Wizard::SetContents("", `Label(_("Detecting file system types...")), "", false, false);
 	Backup::detected_fs = GetMountedFilesystems();
 	Backup::ExcludeNodevFS();
     }
@@ -490,9 +499,9 @@ global define symbol ExcludeDialog() ``{
 global define symbol ExcludeFilesystemDialog() ``{
 
     list fs = GetListWithFlags(Backup::detected_fs, Backup::fs_exclude);
-    string label_multi = _("&Exclude mounted filesystems:");
+    string label_multi = _("&Exclude mounted file systems");
 
-    Wizard::SetContents( _("Exclude filesystem from search"),
+    Wizard::SetContents( _("Exclude file system from search"),
 	`VBox(
 	    `VSpacing(1.0),
 	    `ReplacePoint(`id(`repl), `MultiSelectionBox(`id(`fss), label_multi, fs)),
@@ -564,7 +573,7 @@ global define symbol SystemBackupDialog() ``{
 
     if (Backup::detected_ext2 == nil)
     {
-	Wizard::SetContents("", `Label(_("Detecting mounted ext2 filesystems...")), "", false, false);
+	Wizard::SetContents("", `Label(_("Detecting mounted ext2 file systems...")), "", false, false);
 	Backup::detected_ext2 = Ext2Filesystems();
 	Backup::ext2_backup = AddIdExt2(Backup::detected_ext2);
     }
@@ -575,7 +584,7 @@ global define symbol SystemBackupDialog() ``{
 	    `Frame( _("Partition table"),
 		`VBox(
 		    `VSpacing(0.4),
-		    `CheckBox(`id(`pt), `opt(`hstretch), _("Ba&ckup partition tables"), Backup::backup_pt),
+		    `CheckBox(`id(`pt), `opt(`hstretch), _("Ba&ck up partition tables"), Backup::backup_pt),
 		    `VSpacing(0.4)
 		)
 	    ),
@@ -743,7 +752,9 @@ global define symbol SearchingModifiedDialog() ``{
 
     if (!started)
     {
-	UI::ErrorPopup(_("Could not start searching script!\nBackup will be aborted."));
+	UI::ErrorPopup(_("Could not start search script.
+Backup will be aborted.
+"));
 	return `abort;
     }
 
@@ -875,7 +886,7 @@ global define symbol SearchingModifiedDialog() ``{
 				    {
 					if (line == id_files_read)
 					{
-					    Wizard::SetContents( _("Searching modified files"),
+					    Wizard::SetContents( _("Searching for modified files"),
 						`Top(
 						    `VBox(
 							`VSpacing(0.5),
@@ -1080,21 +1091,21 @@ global define symbol SearchingModifiedDialog() ``{
 
 global define symbol FilesDialog() ``{
 
-    Wizard::SetContents("", `Label(_("Inserting files to table...")), "", false, false);
+    Wizard::SetContents("", `Label(_("Adding files to table...")), "", false, false);
 
     list table_items = MapToTableItems(nil);
 
     Wizard::SetContents( _("File selection"),
 	`VBox(
 	    `VSpacing(0.5),
-	    `Left(`Label(_("Select files to backup:"))),
+	    `Left(`Label(_("Select files to back up:"))),
 	    `Table(`id(`table),
 		`opt(`notify),
 		`header(" ", _("File name"), _("Package")),
 		table_items
 	    ),
 	    `HBox(
-		`PushButton(`id(`sel_file), _("Select/Deselect &file")),
+		`PushButton(`id(`sel_file), _("Select or Deselect &file")),
 		`PushButton(`id(`sel_all), _("&Select all")),
 		`PushButton(`id(`desel_all), _("&Deselect all"))
 	    ),
@@ -1272,10 +1283,10 @@ global define symbol ArchivingDialog() ``{
 	num_stages = num_stages + 1;	// add NOPACKAGE archive step
     }
 
-    stages1 = add(stages1, _("Create packages archives"));
+    stages1 = add(stages1, _("Create package archives"));
     stages1 = add(stages1, _("Create target archive"));
 
-    stages2 = add(stages2, _("Creating packages archives..."));
+    stages2 = add(stages2, _("Creating package archives..."));
     stages2 = add(stages2, _("Creating target archive..."));
 
     Progress::New(_("Creating archive"), " ", num_stages, stages1, stages2, backup_help_creating_archive());
@@ -1314,7 +1325,9 @@ global define symbol ArchivingDialog() ``{
 
     if (!started)
     {
-	UI::ErrorPopup(_("Could not start archiving script!\nBackup will be aborted."));
+	UI::ErrorPopup(_("Could not start archiving script.
+Backup will be aborted.
+"));
 	y2error("%1", "Error starting archiving script");
 	return `abort;
     }
@@ -1610,7 +1623,7 @@ global define symbol SummaryDialog() ``{
     if (Backup::archive_type == `txt)
     {
 	// For translators: %1 is entered archive file name
-	backup_result = p + (stored_list ? sformat(_("List of files stored to file %1"), Backup::archive_name)
+	backup_result = p + (stored_list ? sformat(_("List of files saved to file %1"), Backup::archive_name)
 	    : em + _("Error storing list of files") + _em) + _p;
     }
     else
@@ -1620,7 +1633,7 @@ global define symbol SummaryDialog() ``{
 
 	if (Backup::search)
 	{
-	    backup_result = backup_result + p + _("Found files which are not in any package: ") + nopkg_num + br
+	    backup_result = backup_result + p + _("Found files not in a package: ") + nopkg_num + br
 		+ _("Total size: ") + size_text(nopkg_size) + _p;
 	}
 
@@ -1640,12 +1653,12 @@ global define symbol SummaryDialog() ``{
 
 	if (size(not_readable_files) > 0)
 	{
-	    backup_details = backup_details + br + p + em + _("Errors during creating archive:") + _em + br;
+	    backup_details = backup_details + br + p + em + _("Errors while creating archive:") + _em + br;
 
 	    foreach(`f, not_readable_files,
 		``{
 		    // For translators: %1 file name
-		    backup_details = backup_details + em + sformat(_("Can not read file %1"), f) + _em + br;
+		    backup_details = backup_details + em + sformat(_("Cannot read file %1"), f) + _em + br;
 		}
 	    );
 
@@ -1661,7 +1674,7 @@ global define symbol SummaryDialog() ``{
 	    {
 		if (!read_ptables_info)
 		{
-		    backup_details = backup_details + p + em + _("Detection of disk partitions failed") + _em + br;
+		    backup_details = backup_details + p + em + _("Detecting disk partitions failed") + _em + br;
 		}
 
 		foreach(`failed_pt, failed_ptables,
@@ -1739,7 +1752,7 @@ global define symbol SummaryDialog() ``{
 	y2debug("total_files: %1", total_files);
 
 	backup_result = backup_result + _p
-	    + br + ((selected_files_num + added_files < total_files) ? em + _("Warning: Some files were not backuped") + _em + br : "");
+	    + br + ((selected_files_num + added_files < total_files) ? em + _("Warning: Some files were not backed up") + _em + br : "");
 
 	string archive_created = "";
 
