@@ -65,6 +65,57 @@ sub create_dirs($)
     }
 }
 
+sub remove_escape($)
+{
+    my ($in) = @_;
+
+    my $num_bkslh = 0;
+    my $len = length($in);
+    my $idx = 0;
+
+    my $result = '';
+    
+    while($idx < $len)
+    {
+	my $char = substr($in, $idx, 1);
+
+	if ($char eq "\\")
+	{
+	    $num_bkslh = $num_bkslh + 1;
+	}
+	else
+	{
+	    if ($num_bkslh > 0)
+	    {
+		$result .= "\\" x ($num_bkslh >> 1);
+
+		if (($char eq "n") and ($num_bkslh % 2 != 0))
+		{
+		    $result .= "\n";
+		}
+		else
+		{
+		    $result .= $char;
+		}
+	    }
+	    else
+	    {
+		$result .= $char;
+	    }
+	    
+	    $num_bkslh = 0;
+	}
+	
+	$idx += 1;
+    }
+
+    # add trailing backslashes
+    $result .= "\\" x ($num_bkslh >> 1);
+
+    return $result;
+}
+
+
 # command line options
 my $archive_name = '';
 my $archive_type = '';
@@ -135,7 +186,7 @@ if ($archive_type eq 'txt')
 	{
 	    chomp($line);
 	    
-	    if ($line =~ /^\/.+/)
+	    if (substr($line, 0, 1) eq "/")
 	    {
 		print OUT $line."\n";
 	    }
@@ -418,7 +469,7 @@ if (defined open(FILES, $files_info))
 	
 	if ($line =~ /^\/.+/)
 	{
-	    if (-r $line)		# output only readable files from files-info
+	    if (-r remove_escape($line))	# output only readable files from files-info
 	    {
     		print FILES_INFO $line."\n";
 

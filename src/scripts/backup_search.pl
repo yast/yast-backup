@@ -268,6 +268,14 @@ sub VerifyPackages(@%)
 	    {
 		my @filestat = stat($file);
 
+
+                # escaping newline characters is needed because each file
+                # is reported on separate line
+		
+		$file =~ s/\\/\\\\/g;
+		$file =~ s/\n/\\n/g;
+
+
 		if (!$output_files)
 		{
 		    print "Size: $filestat[7] $file\n";
@@ -373,6 +381,12 @@ sub SearchDirectory($%%%)
 		# it seem that file is not owned by any package, but do another check - dev/inode number
 		if (!defined $inodes->{$filestat[0].$filestat[1]})
 		{
+		    # escaping newline characters is needed because each file
+		    # is reported on separate line
+
+		    $fullname =~ s/\\/\\\\/g;
+		    $fullname =~ s/\n/\\n/g;
+
 		    if (!$output_files)
 		    {
 			print "Size: $filestat[7] $fullname\n";

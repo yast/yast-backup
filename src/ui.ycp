@@ -894,7 +894,19 @@ Backup will be aborted.
 			UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", size_text(modified_size)));
 			UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", modified_num));
 
-			package_files = add(package_files, substring(line, findfirstof(line, " ") + 1));
+			string found_file = substring(line, findfirstof(line, " ") + 1);
+
+			// escape newlines in file name
+			// double backslashes
+			list parts = splitstring(found_file, "\\");
+			string escaped = mergestring(parts, "\\\\");
+
+			// change newline to \n
+			parts = splitstring(escaped, "\n");
+			escaped = mergestring(parts, "\\n");
+
+			// add file to list of found files
+			package_files = add(package_files, escaped);
 		    }
 		    else
 		    {
@@ -1081,7 +1093,19 @@ Backup will be aborted.
 		    UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", size_text(nopkg_size)));
 		    UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", nopkg_num));
 
-		    package_files = add(package_files, substring(line, findfirstof(line, " ") + 1));
+		    string found_file = substring(line, findfirstof(line, " ") + 1);
+
+		    // escape newlines in file name
+		    // double backslashes
+		    list parts = splitstring(found_file, "\\");
+		    string escaped = mergestring(parts, "\\\\");
+
+		    // change newline to \n
+		    parts = splitstring(escaped, "\n");
+		    escaped = mergestring(parts, "\\n");
+
+		    // add file to list of found files
+		    package_files = add(package_files, escaped);
 		}
 		else
 		{
