@@ -26,10 +26,10 @@ module_DATA = Backup.ycp
 
 include $(top_srcdir)/Makefile.am.common
 
-symlinks:
-	test -L backup || ln -sf . backup
+backup:
+	ln -sf . backup
 
-ycpchook = symlinks
+ycpchook = backup
 
 YCPCFLAGS=-I.
 

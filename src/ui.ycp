@@ -2582,7 +2582,7 @@ global define symbol SummaryDialog() ``{
 	backup_result = p + (stored_list ? sformat(_("List of files saved to file %1"), Backup::archive_name)
 	    // part of summary text
 	    // summary text
-	    : em + _("Error storing list of files") + _em) + _p;
+	    : (em + _("Error storing list of files") + _em)) + _p;
     }
     else
     {
@@ -2608,17 +2608,17 @@ global define symbol SummaryDialog() ``{
 	    // part of summary text
 	backup_details = p + (hostname_stored ? _("Host name stored successfully") :
 	    // part of summary text
-	    em + _("Storing host name failed") + _em) + br + (date_stored ? _("Date stored successfully") :
+	    (em + _("Storing host name failed") + _em)) + br + (date_stored ? _("Date stored successfully") :
 	    // part of summary text
-	    em + _("Storing date failed") + _em) + br + (file_list_stored ? _("File list stored successfully") :
+	    (em + _("Storing date failed") + _em)) + br + (file_list_stored ? _("File list stored successfully") :
 	    // part of summary text
-	    em + _("Storing file list failed") + _em) + br + (comment_stored ? _("Comment stored successfully") :
+	    (em + _("Storing file list failed") + _em)) + br + (comment_stored ? _("Comment stored successfully") :
 	    // part of summary text
-	    em + _("Storing comment failed") + _em) + br
+	    (em + _("Storing comment failed") + _em)) + br
 	    // part of summary text
 	    + (packages_list_stored ? _("List of installed packages stored succesfully") :
 	    // part of summary text
-	    em + _("Storing list of installed packages failed") + _em) + _p;
+	    (em + _("Storing list of installed packages failed") + _em)) + _p;
 
 
 	if (size(not_readable_files) > 0 || !hostname_stored || !date_stored || !file_list_stored || !comment_stored || !packages_list_stored)
@@ -2753,7 +2753,7 @@ global define symbol SummaryDialog() ``{
 
 	backup_result = backup_result
 	    // part of summary text
-	    + ((tar_result == 0) ? archive_created : em + _("Archive creation failed") + _em)
+	    + ((tar_result == 0) ? archive_created : (em + _("Archive creation failed") + _em))
 	    + br + profilesummary + br
 	    + _p;
 
