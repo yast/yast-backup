@@ -153,21 +153,25 @@ global list units_description = [
 	"symbol"   : `B
     ],
     $[
+	// 10^3 bytes
 	"label" : _("kB"),
 	"capacity" : 1000,
 	"symbol"   : `kB
     ],
     $[
+	// 2^10 bytes
 	"label" : _("kiB"),
 	"capacity" : 1024,
 	"symbol"   : `kiB
     ],
     $[
+	// 10^6 bytes
 	"label" : _("MB"),
 	"capacity" : 1000000,
 	"symbol"   : `MB
     ],
     $[
+	// 2^20 bytes
 	"label" : _("MiB"),
 	"capacity" : 1024*1024,
 	"symbol"   : `MiB
