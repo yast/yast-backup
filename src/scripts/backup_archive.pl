@@ -24,23 +24,30 @@ use Getopt::Long;
 use POSIX qw(tmpnam strftime);
 
 # return all harddisks present in system
-sub harddisks()
+sub harddisks($)
 {
     my @disks = ();
+    my ($verbose) = @_;
 
-    open(SFD, 'sfdisk -s |');
-
-    while (my $line = <SFD>)
+    if (defined open(SFD, 'sfdisk -s |'))
     {
-	chomp($line);
-
-	if ($line =~ /^\/dev\/(.d.):\s+\d+$/)
+	while (my $sfline = <SFD>)
 	{
-	    push(@disks, $1);
+	    chomp($sfline);
+
+	    if ($sfline =~ /^\/dev\/(.d.):\s+\d+$/)
+	    {
+		push(@disks, $1);
+	    }
+	}
+
+	close(SFD);
+
+	if ($verbose)
+	{
+	    print "Partition tables info read\n"
 	}
     }
-
-    close(SFD);
 
     return @disks;
 }
@@ -219,7 +226,7 @@ if ($store_pt)
 	print "Storing partition table\n";
     }
 
-    @disks = harddisks();
+    @disks = harddisks($verbose);
 
     foreach my $disk (@disks)
     {
@@ -227,7 +234,7 @@ if ($store_pt)
 
 	if (system("/sbin/sfdisk -d /dev/$disk > $tmp_dir/partition_table_$disk.txt 2> /dev/null") >> 8 == 0)
 	{
-	    if (system("dd if=/dev/$disk of=$tmp_dir/partition_table_$disk bs=512 count=1") >> 8 == 0)
+	    if (system("dd if=/dev/$disk of=$tmp_dir/partition_table_$disk bs=512 count=1 2> /dev/null") >> 8 == 0)
 	    {
 		print OUT "tmp/YaST2-backup/partition_table_$disk.txt\n";
 		print OUT "tmp/YaST2-backup/partition_table_$disk\n";
@@ -235,11 +242,26 @@ if ($store_pt)
 
 		$stored = 1;
 
-		print "Stored partition: $disk\n";
+		if ($verbose)
+		{
+		    print "Stored partition: $disk\n";
+		}
 	    }
 	    else
 	    {
 		unlink("$tmp_dir/partition_table_$disk.txt");
+
+		if ($verbose)
+		{
+		    print "Error storing partition: /dev/$disk";
+		}
+	    }
+	}
+	else
+	{
+	    if ($verbose)
+	    {
+		print "Error storing partition: /dev/$disk";
 	    }
 	}
 
