@@ -19,6 +19,11 @@
 include "ui/common_popups.ycp";
 include "ui/common_functions.ycp";
 
+
+/**
+ * Dialog for setting archive options
+ */
+
 global define ArchDialog() ``{
     UI::SetWizardContents( _("Archive settings"),
 	`VBox(
@@ -36,7 +41,7 @@ global define ArchDialog() ``{
 			`Left(`RadioButton(`id(`tbz), "tar.bz2")),
 			`Left(`RadioButton(`id(`tar), "tar"))
 		    )
-	    	)
+		)
 	    ),
 	    `VSpacing(1.0)
 	),
@@ -53,12 +58,12 @@ global define ArchDialog() ``{
 
     boolean cont = false;
     symbol ret = nil;
-    
+
     if (SCR::Read(.runtime.username) != "root")
     {
 	UI::WarningPopup(_("Only user root can backup all files"));
     }
-    
+
 
     while (!cont)
     {
@@ -67,10 +72,10 @@ global define ArchDialog() ``{
 
 	if (ret == `next)
 	{
-	    
+
 	    if (size(archive_name) == 0)
 	    {
-    		UI::WarningPopup(_("Archive file name can not be empty\nPlease enter archive file name"));
+		UI::WarningPopup(_("Archive file name can not be empty\nPlease enter archive file name"));
 	    }
 	    else
 	    {
@@ -97,8 +102,13 @@ global define ArchDialog() ``{
     return ret;
 }
 
+
+/**
+ * Dialog for setting backup options
+ */
+
 global define BackupDialog() ``{
-    
+
     UI::SetWizardContents( _("Backup settings"),
         `VBox(`VSpacing(0.5),
 	    `Frame( _("Backup options"),
@@ -143,7 +153,7 @@ global define BackupDialog() ``{
     {
 
 	ret = UI::UserInput();
-	
+
 	if (ret == `search)
 	{
 	    UI::ChangeWidget(`id(`enh_check), `Enabled, UI::QueryWidget(`id(`search), `Value));
@@ -167,6 +177,11 @@ global define BackupDialog() ``{
     return ret;
 }
 
+
+
+/**
+ * Dialog for setting excluded directories
+ */
 
 global define ExcludeDialog() ``{
 
@@ -218,7 +233,7 @@ global define ExcludeDialog() ``{
                     if (txt != curr && !contains(dir_list, `item(`id(txt), txt)))
                     {
                         UI::ChangeWidget(`id(`dirs), `Item(curr, 0), txt);
- 
+
                         // refresh dir_list content
                         dir_list = maplist(`i, dir_list, ``{
                             if (select(select(i, 0), 0) == curr)
@@ -248,12 +263,12 @@ global define ExcludeDialog() ``{
             if (lookup(result, "clicked", nil) == `ok)
             {
                 string new_dir = lookup(result, "text", nil);
- 
+
                 // add new partition only if it's not empty a it isn't already in list
                 if (new_dir != "" && new_dir != nil && !contains(dir_list, `item(`id(new_dir), new_dir)))
                 {
                     dir_list = add(dir_list, `item(`id(new_dir), new_dir));
- 
+
                     UI::ChangeWidget(`id(`dirs), `Items, dir_list);
                 }
             }
@@ -268,6 +283,10 @@ global define ExcludeDialog() ``{
     return ret;
 }
 
+
+/**
+ * Dialog for setting excluded file systems from search
+ */
 
 global define ExcludeFilesystemDialog() ``{
 
@@ -331,6 +350,11 @@ global define ExcludeFilesystemDialog() ``{
     return ret;
 }
 
+
+/**
+ * System area backup options
+ */
+
 global define SystemBackupDialog() ``{
 
     if (detected_ext2 == nil)
@@ -351,8 +375,8 @@ global define SystemBackupDialog() ``{
 		)
 	    ),
 	    `VSpacing(0.5),
- 
-	    `Frame(_("Ext2 critical area backup"), 
+
+	    `Frame(_("Ext2 critical area backup"),
 	        `RadioButtonGroup(`id(`rbg),
 	            `VBox(
 		        `VSpacing(0.3),
@@ -366,12 +390,12 @@ global define SystemBackupDialog() ``{
 			    `HSpacing(3.0),
 			    `Table(`id(`par), `header(_("Ext2 partition")), ext2_backup),
 			    `HSpacing(2.0)
-		    	),
+			),
 
 			`HBox(
 			    `PushButton(`id(`addnew), _("Add...") ) ,
 			    `PushButton(`id(`edit), _("Edit...") ) ,
-			    `PushButton(`id(`delete), _("Delete") ) 
+			    `PushButton(`id(`delete), _("Delete") )
 		        ),
 		        `VSpacing(0.4)
 		    )
@@ -472,6 +496,10 @@ global define SystemBackupDialog() ``{
 }
 
 
+/**
+ * Display progress of searching modified files in packages
+ */
+
 global define SearchingModifiedDialog() ``{
 
     UI::ClearWizardContents();
@@ -530,8 +558,8 @@ global define SearchingModifiedDialog() ``{
 
     while(SCR::Read(.background.output_open) || (SCR::Read(.background.newlines) > 0) /*|| (size(script_out) > 0)*/)
     {
-    	script_out = SCR::Read(.background.newout);
-	
+	script_out = SCR::Read(.background.newout);
+
 	while (size(script_out) > 0)
 	{
 	    line = select(script_out, 0); 		// read line
@@ -550,7 +578,7 @@ global define SearchingModifiedDialog() ``{
 		    backup_files = add(backup_files, actual_package, package_info /*package_files*/);
 		    package_files = [ ];
 		}
-		
+
 		actual_package = substring(line, size(id_package));
 		package_num = package_num + 1;
 
@@ -567,7 +595,7 @@ global define SearchingModifiedDialog() ``{
 		    string size_str = substring(line, 0, findfirstof(line, " "));
 		    modified_size = modified_size + tointeger(size_str);
 		    modified_num = modified_num + 1;
-		    
+
 		    UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", size_text(modified_size)));
 		    UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", modified_num));
 
@@ -577,7 +605,7 @@ global define SearchingModifiedDialog() ``{
 		{
 		    if (line == id_nopackage)
 		    {
-	 		if (size(package_files) > 0)
+			if (size(package_files) > 0)
 			{
 			    map package_info = $[
 				"changed_files" : package_files,
@@ -587,12 +615,12 @@ global define SearchingModifiedDialog() ``{
 			    backup_files = add(backup_files, actual_package, package_info);
 			    package_files = [ ];
 			}
-			
+
 			actual_package = "";		// empty package name
 			search_no_package = true;	// no package part of output
 
 			y2milestone("Searching files which are not in any package started");
-			
+
 			break;
 		    }
 		    else
@@ -680,12 +708,12 @@ global define SearchingModifiedDialog() ``{
 	    break;
 	}
 
-	ret = waitForUserOrProcess();
+	ret = waitForUserOrProcess(wait_time);
 	if (ret != nil)
 	{
 	    return ret;
 	}
-	
+
     }
 
     y2milestone("All packages verified.");
@@ -734,7 +762,7 @@ global define SearchingModifiedDialog() ``{
 	    {
 		script_out = SCR::Read(.background.newout);
 	    }
-	    
+
 	    while (size(script_out) > 0)
 	    {
 		line = select(script_out, 0); 		// read line
@@ -749,7 +777,7 @@ global define SearchingModifiedDialog() ``{
 		    string size_str = substring(line, 0, findfirstof(line, " "));
 		    nopkg_size = nopkg_size + tointeger(size_str);
 		    nopkg_num = nopkg_num + 1;
-		    
+
 		    UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", size_text(nopkg_size)));
 		    UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", nopkg_num));
 
@@ -765,7 +793,7 @@ global define SearchingModifiedDialog() ``{
 		}
 	    }
 
-	    ret = waitForUserOrProcess();
+	    ret = waitForUserOrProcess(wait_time);
 	    if (ret != nil)
 	    {
 		return ret;
@@ -789,7 +817,7 @@ global define SearchingModifiedDialog() ``{
 	{
 	    selected_files = backup_files;
 	}
-	    
+
 	return `next;
     }
     else
@@ -805,11 +833,16 @@ global define SearchingModifiedDialog() ``{
 		selected_files_num = selected_files_num + size(lookup(val, "changed_files", []));
 	    }
 	);
-	
+
 	return `next2;	// skip file selection dialog
     }
 }
 
+
+
+/**
+ * Display found files, user can select files to backup
+ */
 
 global define FilesDialog() ``{
 
@@ -845,14 +878,14 @@ global define FilesDialog() ``{
 
     while (ret != `next && ret != `back && ret != `abort)
     {
-    	integer current_item  = UI::QueryWidget(`id(`table), `CurrentItem); 
-	
+	integer current_item  = UI::QueryWidget(`id(`table), `CurrentItem);
+
 	if (ret == `sel_all || ret == `desel_all)
 	{
 	    table_items = (ret == `sel_all) ? MapToTableItems(true) : MapToTableItems(false);
 
 	    UI::ChangeWidget(`id(`table), `Items, table_items);
-	    
+
 	    if (current_item != nil)
 	    {
 		UI::ChangeWidget(`id(`table), `CurrentItem, current_item);
@@ -872,7 +905,7 @@ global define FilesDialog() ``{
 		{
 		    current_value = checkmark;
 		}
-	
+
 		UI::ChangeWidget(`id(`table), `Item(current_item, 0), current_value);
 	    }
 	}
@@ -888,12 +921,10 @@ global define FilesDialog() ``{
     y2debug("Getting selected files...");
 
 
-/* WOW, this takes only 8 secs!
-   but it is required that Table contains files ordered by package 
-*/
+// Note: it is required that Table contains files ordered by package!
 
     selected_files = $[ ];
-    
+
     integer num = size(table_items);
     integer idx = 1;
 
@@ -916,7 +947,7 @@ global define FilesDialog() ``{
 	    {
 		actual_package_name = package_name;
 	    }
-	    
+
 	    if (package_name != actual_package_name)
 	    {
 		map package_info = $[
@@ -945,7 +976,7 @@ global define FilesDialog() ``{
 	    "changed_files" : actual_package_files,
 	    "install_prefixes" : lookup(lookup(backup_files, actual_package_name, $[]), "install_prefixes", "(none)")
 	];
-	
+
 	selected_files = add(selected_files, actual_package_name, package_info);
     }
 
@@ -955,10 +986,14 @@ global define FilesDialog() ``{
 }
 
 
+/**
+ * Display progress of creating archive
+ */
+
 global define ArchivingDialog() ``{
 
     y2milestone("Storing file names list...");
-    
+
     // store selected file names to file
     string tmpfile_list = SCR::Read(.run.mktemp);
     file_list_stored = SCR::Write(.target.string, tmpfile_list, MapFilesToString());
@@ -967,7 +1002,7 @@ global define ArchivingDialog() ``{
     {
 	y2error("Error writing list of selected files to file %", tmpfile_list);
     }
-	
+
     y2milestone("File names stored");
 
     // store comment to file
@@ -979,7 +1014,7 @@ global define ArchivingDialog() ``{
 	y2warning("Error writing comment to file %", tmpfile_comment);
     }
 
-    string archive_options = " --verbose --files-info " + tmpfile_list + " --archive-name " 
+    string archive_options = " --verbose --files-info " + tmpfile_list + " --archive-name "
 	+ archive_name + " --comment-file " + tmpfile_comment;
 
     if (system)
@@ -1017,7 +1052,7 @@ global define ArchivingDialog() ``{
 
 
     y2debug("Archive script options: %1", archive_options);
-   
+
 
     UI::ClearWizardContents();
 
@@ -1038,16 +1073,16 @@ global define ArchivingDialog() ``{
     string title = _("Creating archive");
 
     e2image_results = [];
-	    
+
     y2milestone("Creating archive...");
- 
+
     while(SCR::Read(.background.output_open) || (SCR::Read(.background.newlines) > 0))
     {
-    	script_out = SCR::Read(.background.newout);
-	
+	script_out = SCR::Read(.background.newout);
+
 	while (size(script_out) > 0)
 	{
-	    string line = select(script_out, 0); 	// read line
+	    string line = select(script_out, 0);	// read line
 	    script_out = remove(script_out, 0);		// remove line
 
 	    y2debug("Archive script output: %1", line);
@@ -1069,7 +1104,7 @@ global define ArchivingDialog() ``{
 		if (substring(line, 0, size(id_hostname)) == id_hostname)
 		{
 		    UI::SetWizardContents(title, `Label(_("Storing host name...")), "", false, false);
-		    
+
 		    string tmp = substring(line, size(id_hostname));
 		    hostname_stored = (tmp == id_ok);
 		}
@@ -1077,7 +1112,7 @@ global define ArchivingDialog() ``{
 		{
 		    if (substring(line, 0, size(id_date)) == id_date)
 		    {
-    			UI::SetWizardContents(title, `Label(_("Storing date...")), "", false, false);
+			UI::SetWizardContents(title, `Label(_("Storing date...")), "", false, false);
 
 			string tmp = substring(line, size(id_date));
 			date_stored = (tmp == id_ok);
@@ -1102,7 +1137,7 @@ global define ArchivingDialog() ``{
 				if (substring(line, 0, size(id_files)) == id_files)
 				{
 				    total_files = tointeger(substring(line, size(id_files)));
-				     
+
 				    UI::SetWizardContents(title, `ProgressBar(`id(`pbar), _("Creating archive: ") + archive_name + "...", total_files), "", false, false);
 				    tar_running = true;
 				}
@@ -1124,13 +1159,13 @@ global define ArchivingDialog() ``{
 	    }
 
 
-	    ret = waitForUserOrProcess();
+	    ret = waitForUserOrProcess(wait_time);
 	    if (ret != nil)
 	    {
 		return ret;
 	    }
 	}
-	
+
     }
 
     // remove temporary file list and file with comment
@@ -1138,7 +1173,7 @@ global define ArchivingDialog() ``{
     {
 	y2warning("Error removing file: %1", tmpfile_list);
     }
-    
+
     if (!SCR::Execute(.target.remove, tmpfile_comment))
     {
 	y2warning("Error removing file: %1", tmpfile_comment);
@@ -1147,6 +1182,11 @@ global define ArchivingDialog() ``{
     return `next;
 }
 
+
+
+/**
+ * Display backup summary
+ */
 
 global define SummaryDialog() ``{
     string br = "<BR>";
@@ -1159,26 +1199,26 @@ global define SummaryDialog() ``{
     string backup_result = p + _("Found modified files: ") + modified_num + br
 	+ _("Total size: ") + size_text(modified_size) + _p;
 
-	
+
     if (search)
     {
 	backup_result = backup_result + p + _("Found files which are not in any package: ") + nopkg_num + br
 	    + _("Total size: ") + size_text(nopkg_size) + _p;
     }
-   
+
     if (display)
     {
 	backup_result = backup_result + p + _("Selected files to backup: ") + selected_files_num + _p;
     }
-    
-    backup_result = backup_result + br + p + (hostname_stored ? _("Host name stored successfully") : 
+
+    backup_result = backup_result + br + p + (hostname_stored ? _("Host name stored successfully") :
 	em + _("Storing host name failed") + _em) + br + (date_stored ? _("Date stored successfully") :
 	em + _("Storing date failed") + _em) + br + (file_list_stored ? _("File list stored successfully") :
 	em + _("Storing file list failed") + _em) + br + (comment_stored ? _("Comment stored successfully") :
         em + _("Storing comment failed") + _em);
 
     integer added_files = 0;
- 
+
     if (system)
     {
 	if (backup_pt)
@@ -1207,7 +1247,7 @@ global define SummaryDialog() ``{
 		    {
 			backup_result = backup_result + br
 			    + sformat(_("Ext2 image %1 stored successfully"), select(select(select(ext2_backup, index), 0) ,0));
-			    
+
 			added_files = added_files + 1;
 		    }
 		    else
@@ -1227,17 +1267,17 @@ global define SummaryDialog() ``{
     {
 	added_files = added_files + 1;
     }
-    
+
     if (hostname_stored)
     {
 	added_files = added_files + 1;
     }
-    
+
     if (date_stored)
     {
 	added_files = added_files + 1;
     }
-    
+
     if (comment_stored)
     {
 	added_files = added_files + 1;
@@ -1251,8 +1291,8 @@ global define SummaryDialog() ``{
 	+ br + ((selected_files_num + added_files != total_files) ? em + _("Warning: Some files were not backuped") + _em + br : "")
 	+ ((tar_result == 0) ? sformat(_("Archive %1 created successfully"), archive_name) + br +_("Total archived files: ") + archived_num :
 	  em + _("Archive creation failed") + _em) + _p;
-	
-    
+
+
     UI::SetWizardContents( _("Backup summary"),
 	`VBox(
 	    `VSpacing(0.5),

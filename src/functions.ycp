@@ -10,11 +10,18 @@
  *
  *  $Id$
  *
+ *  Functions used by backup module.
  */
 
 
 {
 
+/**
+ * This function returns list of items for Table widget. Each item contains id, selection mark, file name and package name.
+ * Used global variables: nocheckmark, checkmark, backup_files, selected_files
+ * @param check If true then add check mark to the first column. If check is nil, then check mark is added only if file is in selected_files.
+ * @return list List of items
+ */
 
 global define MapToTableItems(boolean check)
 ``{
@@ -71,7 +78,25 @@ global define AbortConfirmation() ``{
 }
 
 
+/**
+ * Ask user for some value: display dialog with label, text entry and OK/Cancel buttons.
+ * @param label Displayed text above the text entry in the dialog
+ * @param value Default text in text entry, for empty text set value to "" or nil
+ * @return map Returned map: $[ "text" : string, "clicked" : symbol ]. Value with key text is string entered by user, symbol is `ok or `cancel depending which button was pressed.
+ */
+
 global define ShowEditDialog(string label, string value) ``{
+
+    if (label == nil)
+    {
+	label = "";
+    }
+
+    if (value == nil)
+    {
+	value = "";
+    }
+
     UI::OpenDialog(
 	`VBox(
 	    `TextEntry(`id(`te), label, value),
@@ -91,13 +116,20 @@ global define ShowEditDialog(string label, string value) ``{
     return $[ "text" : text, "clicked" : input ];
 }
 
-// return user input or nil if background data available
-global define waitForUserOrProcess() ``{
+
+
+/**
+ * Wait for output from subprocess or user action. If user press `abort button, then subprocess is terminated.
+ * @param wait Delay in miliseconds between user action checks (if no output from subprocess is available)
+ * @return symbol Pressed button id or nil if some data is ready from subprocess.
+ */
+
+global define waitForUserOrProcess(integer wait) ``{
     symbol ret = nil;
 
     while (SCR::Read(.background.newlines) == 0 && SCR::Read(.background.output_open))
     {
-	sleep(wait_time);
+	sleep(wait);
 
 	ret = UI::PollInput();
 
@@ -111,6 +143,12 @@ global define waitForUserOrProcess() ``{
     return ret;
 }
 
+
+/**
+ * Returns list of mounted file systems types.
+ * @return list List of strings, each mounted file system type is reported only onetimes, list is alphabetically sorted.
+ * @example GetMountedFilesystems() -> [ "devpts", "ext2", "nfs", "proc", "reiserfs" ]
+ */
 
 global define GetMountedFilesystems() ``{
     list mounted = SCR::Read(.proc.mounts);
@@ -134,6 +172,13 @@ global define GetMountedFilesystems() ``{
 
     return toset(result);
 }
+
+
+/**
+ * Returns list of Ext2 mountpoints
+ * @return list List of alphabetically sorted strings
+ * @example GetMountedExt2Filesystems() -> [ "/dev/hda1", "/dev/hda4" ]
+ */
 
 global define GetMountedExt2Filesystems() ``{
     list mounted = SCR::Read(.proc.mounts);
@@ -159,7 +204,15 @@ global define GetMountedExt2Filesystems() ``{
     return toset(result);
 }
 
-// return list of items created from list
+
+/**
+ * This function reads two lists: full list and selection list (contains subset of items in full list). Returned list can be used in MultiSelectionBox widget.
+ * @return list List of alphabetically sorted strings
+ * @param in List of items
+ * @param selected List with subset of items from list in.
+ * @example GetListWithFlags(["/dev", "/etc"], ["/etc"]) -> [`item (`id ("/dev"), "/dev", false), `item (`id ("/etc"), "/etc", true)]
+ */
+
 global define GetListWithFlags(list in, list selected) ``{
 
     if (in == nil)
@@ -171,6 +224,14 @@ global define GetListWithFlags(list in, list selected) ``{
 	return `item(`id(i), i, (contains(selected, i) ? true : false));
     });
 }
+
+/**
+ * Set boolean value val to all items in list.
+ * @return list List of items
+ * @param in Input list of items
+ * @param val Requested value
+ * @example AddIdBool( [ `item(`id("ext2"), "ext2", true) ], false) ) -> [ `item (`id ("ext2"), "ext2", false) ]
+ */
 
 global define AddIdBool(list in, boolean val) ``{
     if (val == nil)
@@ -188,6 +249,14 @@ global define AddIdBool(list in, boolean val) ``{
     });
 }
 
+
+/**
+ * Returns list of items from list of values.
+ * @return list List of items
+ * @param in Input list of values
+ * @example AddId("abc", "123") -> [`item(`id("abc"), "abc"), `item(`id("123"), "123")]
+ */
+
 global define AddId(list in) ``{
 
     if (in == nil) return [];
@@ -196,6 +265,13 @@ global define AddId(list in) ``{
         return `item(`id(i), i);
     });
 }
+
+
+/**
+ * Returns string generated from selected files list. String is in format which is accepted by backup_archive.pl script. Used global variables: selected_files, backup_files.
+ * @return string String with multiple lines
+ * @see <a href="../backup_specification.html">Backup module specification</a>
+ */
 
 global define MapFilesToString() ``{
     string result = "";

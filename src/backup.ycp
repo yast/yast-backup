@@ -10,6 +10,8 @@
  *
  *  $Id$
  *
+ *  Main file for backup module - definition of workflow
+ *
  */
 
 
@@ -38,8 +40,8 @@ integer wait_time = 300;    // loop delay (in miliseconds)
 
 string script_store_ext2_area = "e2image";
 string script_get_partition_table = "/sbin/fdisk -l";
-string script_get_files = "/usr/lib/YaST2/bin/backup_search.pl"; 
-string script_create_archive = "/usr/lib/YaST2/bin/backup_archive.pl";			  
+string script_get_files = "/usr/lib/YaST2/bin/backup_search.pl";
+string script_create_archive = "/usr/lib/YaST2/bin/backup_archive.pl";
 
 // global variables initialized to default values:
 string archive_name = "";		// archive file name
@@ -135,17 +137,17 @@ map sequence = $[
 	`abort	: `abort
     ],
     "summary" : $[
-    	`abort	: `abort,
+	`abort	: `abort,
 	`finish	: `ws_finish
     ]
 ];
 
 // aliases for dialogs
 map aliases = $[
-    "files"   	: ``(FilesDialog()),
-    "archive" 	: ``(ArchDialog()),
-    "backup"  	: ``(BackupDialog()),
-    "exclude" 	: ``(ExcludeDialog()),
+    "files"	: ``(FilesDialog()),
+    "archive"	: ``(ArchDialog()),
+    "backup"	: ``(BackupDialog()),
+    "exclude"	: ``(ExcludeDialog()),
     "excludefs" : ``(ExcludeFilesystemDialog()),
     "system"	: ``(SystemBackupDialog()),
     "searching"	: [ ``(SearchingModifiedDialog()), true ],
