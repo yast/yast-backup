@@ -40,6 +40,9 @@ my $output_files = 0;
 my $output_default = 0;
 my $no_md5 = 0;
 
+my $widget_file = "";
+my $widget_index = 1;
+
 my %exclude_dirs;
 
 
@@ -47,7 +50,7 @@ my %exclude_dirs;
 GetOptions('search' => \$search_files, 'exclude-dir=s' => \@exclude_d,
     'exclude-fs=s' => \@exclude_fs,  'help' => \$help,
     'output-progress' => \$output_progress, 'output-files' => \$output_files,
-    'output-default' => \$output_default, 
+    'output-default' => \$output_default, 'widget-file=s'=> \$widget_file,
     'no-md5' => \$no_md5
 );
 
@@ -79,6 +82,14 @@ if (!$output_files and !$output_progress)
     $output_default = 1;
 }
 
+if ($widget_file ne "")
+{
+    open(WIDGETFILE, ">$widget_file");
+    print WIDGETFILE "[\n";
+
+    open(WIDGETFILE2, ">${widget_file}2");
+    print WIDGETFILE2 "[\n";
+}
 
 
 # convert array to hash
@@ -127,6 +138,14 @@ if ($search_files)
     SearchDirectory('/', \%packages_files, \%exclude_dirs, \%package_files_inodes);
 }
 
+if ($widget_file ne "")
+{
+    print WIDGETFILE "\n]\n";
+    close(WIDGETFILE);
+
+    print WIDGETFILE2 "\n]\n";
+    close(WIDGETFILE2);
+}
 ######################################################
 
 # return list of installed packages
@@ -296,6 +315,19 @@ sub VerifyPackages(@%)
 		{
 		    print "$file\n";
 		}
+
+		if ($widget_file ne "")
+		{
+		    if ($widget_index != 1)
+		    {
+			print WIDGETFILE ",\n";
+			print WIDGETFILE2 ",\n";
+		    }
+
+		    print WIDGETFILE "`item(`id($widget_index), \"X\", \"$file\", \"$package\")";
+		    print WIDGETFILE2 "`item(`id($widget_index), \" \", \"$file\", \"$package\")";
+		    $widget_index++;
+		}
 	    }
 	}
 
@@ -414,6 +446,19 @@ sub SearchDirectory($%%%)
 			{
 			    print "$fullname\n";
 			}
+			
+			if ($widget_file ne "")
+			{
+			    if ($widget_index != 1)
+			    {
+				print WIDGETFILE ",\n";
+				print WIDGETFILE2 ",\n";
+			    }
+
+			    print WIDGETFILE "`item(`id($widget_index), \"X\", \"$fullname\", \"\")";
+			    print WIDGETFILE2 "`item(`id($widget_index), \" \", \"$fullname\", \"\")";
+			    $widget_index++;
+			}
 		    }
 		}
 	    }
@@ -442,6 +487,19 @@ sub SearchDirectory($%%%)
 			{
 			    print "$fullname\n";
 			}
+
+			if ($widget_file ne "")
+			{
+			    if ($widget_index != 1)
+			    {
+				print WIDGETFILE ",\n";
+				print WIDGETFILE2 ",\n";
+			    }
+
+			    print WIDGETFILE "`item(`id($widget_index), \"X\", \"$fullname\", \"\")";
+			    print WIDGETFILE2 "`item(`id($widget_index), \" \", \"$fullname\", \"\")";
+			    $widget_index++;
+			}
 		    }
 		}
 
@@ -465,6 +523,20 @@ sub SearchDirectory($%%%)
 		else
 		{
 		    print "$fullname\n";
+		}
+
+		
+		if ($widget_file ne "")
+		{
+		    if ($widget_index != 1)
+		    {
+			print WIDGETFILE ",\n";
+			print WIDGETFILE2 ",\n";
+		    }
+
+		    print WIDGETFILE "`item(`id($widget_index), \"X\", \"$fullname\", \"\")";
+		    print WIDGETFILE2 "`item(`id($widget_index), \" \", \"$fullname\", \"\")";
+		    $widget_index++;
 		}
 	    }
 	}

@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Mar 28 12:49:11 CET 2003 - lslezak@suse.de
+
+- speed improvement: create table content in backup_search.pl
+  script, do not update progress dialog too often, changed user
+  input handling in file selection dialog
+- fixed map assigning
+
+-------------------------------------------------------------------
 Tue Mar 25 14:54:01 CET 2003 - lslezak@suse.de
 
 - fixed [Back] button behaviour in the Archive settings dialog

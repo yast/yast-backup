@@ -236,6 +236,8 @@ global define string get_search_script_parameters() ``{
 	script_options = script_options + " --no-md5";
     }
 
+    script_options = script_options + " --widget-file " + SCR::Read(.target.tmpdir) + "/items.ycp";
+
     y2debug("Search script options: %1", script_options);
 
     return script_options;
