@@ -262,6 +262,8 @@ global define symbol BackupDialog() ``{
                     `Left(`CheckBox(`id(`search), `opt(`notify), _("&Search files which do not belong to any package"))),
 		    `VSpacing(0.5),
                     `Left(`CheckBox(`id(`system), _("Backup &hard disk system areas"))),
+		    `VSpacing(0.5),
+		    `Left(`CheckBox(`id(`display), _("Check list of files before &creating archive"))),
 		    `VSpacing(0.5)
 		)
 	    ),
@@ -271,17 +273,11 @@ global define symbol BackupDialog() ``{
 	    `Frame( _("Search options"),
 		`VBox(
 		    `VSpacing(0.5),
-                    `Left(`CheckBox(`id(`multi_check), _("&Extra check files in multiple packages"))),
-		    `VSpacing(0.5),
-                    `Left(`CheckBox(`id(`enh_check), _("Enhanced check of file &owner"))),
-		    `VSpacing(0.5),
-                    `Left(`CheckBox(`id(`md5_check), _("Check MD&5 instead of time/size checking"))),
+                    `Left(`CheckBox(`id(`md5_check), _("Check MD&5 sum instead of time/size checking"))),
 		    `VSpacing(0.5)
 		)
 	    ),
 
-	    `VSpacing(1.0),
-	    `Left(`CheckBox(`id(`display), _("Check list of files before &creating archive"))),
 
 	    `VSpacing(1.0)
 	),
@@ -292,9 +288,6 @@ global define symbol BackupDialog() ``{
     UI::ChangeWidget(`id(`search), `Value, Backup::search);
     UI::ChangeWidget(`id(`system), `Value, Backup::system);
     UI::ChangeWidget(`id(`display), `Value, Backup::display);
-    UI::ChangeWidget(`id(`enh_check), `Value, Backup::enhanced_check_owner);
-    UI::ChangeWidget(`id(`enh_check), `Enabled, UI::QueryWidget(`id(`search), `Value));
-    UI::ChangeWidget(`id(`multi_check), `Value, Backup::check_multiple_packages);
     UI::ChangeWidget(`id(`md5_check), `Value, Backup::do_md5_test);
 
     symbol ret = nil;
@@ -303,18 +296,11 @@ global define symbol BackupDialog() ``{
     {
 	ret = UI::UserInput();
 
-	if (ret == `search)
+	if (ret == `abort)
 	{
-	    UI::ChangeWidget(`id(`enh_check), `Enabled, UI::QueryWidget(`id(`search), `Value));
-	}
-	else
-	{
-	    if (ret == `abort)
+	    if(!AbortConfirmation(`no_change))
 	    {
-	        if(!AbortConfirmation(`no_change))
-		{
-		    ret = nil;		// not confirmed, unset ret
-		}
+		ret = nil;		// not confirmed, unset ret
 	    }
 	}
     }
@@ -323,8 +309,6 @@ global define symbol BackupDialog() ``{
     Backup::search = UI::QueryWidget(`id(`search), `Value);
     Backup::system = UI::QueryWidget(`id(`system), `Value);
     Backup::display = UI::QueryWidget(`id(`display), `Value);
-    Backup::enhanced_check_owner = UI::QueryWidget(`id(`enh_check), `Value);
-    Backup::check_multiple_packages = UI::QueryWidget(`id(`multi_check), `Value);
     Backup::do_md5_test = UI::QueryWidget(`id(`md5_check), `Value);
 
 
@@ -466,7 +450,7 @@ global define symbol ExcludeFilesystemDialog() ``{
     }
 
     list fs = GetListWithFlags(Backup::detected_fs, Backup::fs_exclude);
-    string label_multi = _("Exclude mounted filesystems:");
+    string label_multi = _("&Exclude mounted filesystems:");
 
     Wizard::SetContents( _("Exclude filesystem from search"),
 	`VBox(
@@ -692,29 +676,6 @@ global define symbol SearchingModifiedDialog() ``{
 
     Wizard::ClearContents();
 
-/*    string script_options = " --output-progress";	// required parameter for YaST2 frontend
-
-    if (Backup::search)
-    {
-	script_options = script_options + " --search";
-
-	foreach(`i, Backup::dir_list, ``{script_options = script_options + " --exclude-dir " + select(select(i, 0), 0);});
-	foreach(`i, Backup::fs_exclude, ``{script_options = script_options + " --exclude-fs " + i;});
-
-	if (Backup::enhanced_check_owner)
-	{
-	    script_options = script_options + " --enhanced-check";
-	}
-    }
-
-    if (!Backup::check_multiple_packages)
-    {
-	script_options = script_options + " --disable-check-multiple";
-    }
-
-    y2debug("Search script options: %1", script_options);
-*/
-
     boolean started = SCR::Execute(.background.run_output, Backup::script_get_files + Backup::get_search_script_parameters());
     list script_out = [ ];
 
@@ -738,8 +699,8 @@ global define symbol SearchingModifiedDialog() ``{
     string id_file = "Size: ";
     string id_nopackage = "Nopackage:";
     string id_instprefixes = "Installed: ";
-    string id_reading_packages = "<installed>";
-    string id_packages_read = "</installed>";
+    string id_reading_packages = "Reading installed packages";
+    string id_packages_num = "Packages: ";
     string id_reading_files = "Reading all files";
     string id_files_read = "Files read";
 
@@ -752,21 +713,17 @@ global define symbol SearchingModifiedDialog() ``{
 
 	while (size(script_out) > 0)
 	{
-	    line = select(script_out, 0); 		// read line
+	    line = select(script_out, 0);		// read line
 	    script_out = remove(script_out, 0);		// remove line
 
 	    if (reading_installed_packages)
 	    {
-		if (line == id_packages_read)
+		if (substring(line, 0, size(id_packages_num)) == id_packages_num)
 		{
 		    reading_installed_packages = false;
-		    total_packages = size(list_of_installed_packages);
+		    total_packages = tointeger(substring(line, size(id_packages_num)));
 
-		    y2debug("Number of installed packages: %1", total_packages);
-		}
-		else
-		{
-		    list_of_installed_packages = add(list_of_installed_packages, line);	// add package to the list
+		    y2milestone("Number of installed packages: %1", total_packages);
 		}
 	    }
 	    else
@@ -1059,6 +1016,7 @@ global define symbol FilesDialog() ``{
 		table_items
 	    ),
 	    `HBox(
+		`PushButton(`id(`sel_file), _("Select/Deselect &file")),
 		`PushButton(`id(`sel_all), _("&Select all")),
 		`PushButton(`id(`desel_all), _("&Deselect all"))
 	    ),
@@ -1101,7 +1059,7 @@ global define symbol FilesDialog() ``{
 	}
 	else
 	{
-	    if (ret == `table)
+	    if (ret == `table || ret == `sel_file)
 	    {
 		string current_value = select(UI::QueryWidget(`id(`table), `Item(current_item)), 1);
 
@@ -1221,74 +1179,7 @@ global define symbol ArchivingDialog() ``{
 	y2warning("Error writing comment to file %", tmpfile_comment);
     }
 
-/*    string archive_options = " --verbose --files-info " + tmpfile_list + " --archive-name "
-	+ archive_name + " --comment-file " + tmpfile_comment;
-
-    if (system)
-    {
-        // add partition tabel option
-	if (backup_pt)
-	{
-	    archive_options = archive_options + " --store-ptable";
-	}
-
-	list tmp_selected_pt = [];
-	foreach(`sel_tmp_pt, ext2_backup,	// get device names from `item(`id(XYZ), "XYZ")
-	    ``{
-		tmp_selected_pt = add(tmp_selected_pt, select(sel_tmp_pt, 1));
-	    }
-	);
-
-	list partitions = (backup_all_ext2) ? detected_ext2 : (backup_none_ext2 ? [] : tmp_selected_pt);
-
-	y2milestone("partitions: %1", partitions);
-
-	foreach(`spt, partitions, ``{archive_options = archive_options + " --store-ext2 " + spt;});
-    }
-
-
-    if (archive_type == `tgz)
-    {
-	archive_options = archive_options + " --archive-type tgz";
-    }
-    else
-    {
-	if (archive_type == `tbz)
-	{
-	    archive_options = archive_options + " --archive-type tbz2";
-	}
-	else
-	{
-	    if (archive_type == `tar)
-	    {
-		archive_options = archive_options + " --archive-type tar";
-	    }
-	}
-    }
-
-    if (multi_volume)
-    {
-	if (volume_size == `user_defined)
-	{
-	    integer vol_size = tointeger( (tofloat(user_volume_size)) * (tofloat(GetCapacity(units_description, user_volume_unit))) );
-
-	    if (vol_size > 0)
-	    {
-		archive_options = archive_options + " --multi-volume " + sformat("%1", vol_size);
-	    }
-	    else
-	    {
-		y2warning("Bad volume size: %1", user_volume_size);
-	    }
-	}
-	else
-	{
-	    archive_options = archive_options + " --multi-volume " + GetCapacity(media_descriptions, volume_size);
-	}
-    }
-
-    y2debug("Archive script options: %1", archive_options);
-*/
+    added_files = 0;
 
     Wizard::ClearContents();
     boolean started = SCR::Execute(.background.run_output, sformat("%1 %2", Backup::script_create_archive, Backup::get_archive_script_parameters(tmpfile_list, tmpfile_comment)));
@@ -1308,6 +1199,8 @@ global define symbol ArchivingDialog() ``{
     string id_ptstored = "Stored partition: ";
     string id_ok = "Success";
     string id_failed = "Failed";
+    string id_storing_installed_pkgs = "Storing list of installed packages";
+    string id_storedpkg = "Packages stored: ";
     string id_ext2 = "Storing ext2 area: ";
     string id_files = "Files: ";
     string id_tar_exit = "/Tar result:";
@@ -1434,7 +1327,21 @@ global define symbol ArchivingDialog() ``{
 						    }
 						    else
 						    {
-							y2warning("Unknown output from archive script: %1", line);
+							if (line == id_storing_installed_pkgs)
+							{
+							    Wizard::SetContents(title, `Label(_("Storing list of installed packages...")), "", false, false);
+							}
+							else
+							{
+							    if (substring(line, 0, size(id_storedpkg)) == id_storedpkg)
+							    {
+								packages_list_stored = (substring(line, size(id_storedpkg)) == id_ok);
+							    }
+							    else
+							    {
+								y2warning("Unknown output from archive script: %1", line);
+							    }
+							}
 						    }
 						}
 					    }
@@ -1504,7 +1411,9 @@ global define symbol SummaryDialog() ``{
 	em + _("Storing host name failed") + _em) + br + (date_stored ? _("Date stored successfully") :
 	em + _("Storing date failed") + _em) + br + (file_list_stored ? _("File list stored successfully") :
 	em + _("Storing file list failed") + _em) + br + (comment_stored ? _("Comment stored successfully") :
-        em + _("Storing comment failed") + _em) + _p;
+        em + _("Storing comment failed") + _em) + br
+	+ (packages_list_stored ? _("List of installed packages stored succesfully") :
+	em + _("Storing list of installed packages failed") + _em) + _p;
 
 
     if (size(not_readable_files) > 0)
@@ -1544,7 +1453,6 @@ global define symbol SummaryDialog() ``{
 		}
 	    );
 
-	    backup_details = backup_details + _p;
 	}
 
 	if (size(Backup::ext2_backup) > 0)
@@ -1555,22 +1463,23 @@ global define symbol SummaryDialog() ``{
 		``{
 		    if (r)
 		    {
-			backup_details = backup_details + br
-			    + sformat(_("Ext2 image %1 stored successfully"), select(select(select(Backup::ext2_backup, index), 0) ,0));
+			backup_details = backup_details
+			    + sformat(_("Ext2 image %1 stored successfully"), select(select(select(Backup::ext2_backup, index), 0) ,0)) + br;
 
 			added_files = added_files + 1;
 		    }
 		    else
 		    {
-			backup_details = backup_details + br + em
-			    + sformat(_("Storing Ext2 image %1 failed"), select(select(select(Backup::ext2_backup, index), 0) ,0)) + _em;
+			backup_details = backup_details + em
+			    + sformat(_("Storing Ext2 image %1 failed"), select(select(select(Backup::ext2_backup, index), 0) ,0)) + _em + br;
 		    }
 
 		    index = index + 1;
 		}
 	    );
-
 	}
+
+	backup_details = backup_details + _p;
     }
 
     if (file_list_stored)
@@ -1593,13 +1502,31 @@ global define symbol SummaryDialog() ``{
 	added_files = added_files + 1;
     }
 
+    if (packages_list_stored)
+    {
+	added_files = added_files +1;
+    }
+
     y2debug("selected_files_num: %1", selected_files_num);
     y2debug("added_files: %1", added_files);
     y2debug("total_files: %1", total_files);
 
     backup_result = backup_result + _p
-	+ br + ((selected_files_num + added_files != total_files) ? em + _("Warning: Some files were not backuped") + _em + br : "")
-	+ ((tar_result == 0) ? _("Archive created successfully") + br +_("Total archived files: ") + archived_num :
+	+ br + ((selected_files_num + added_files < total_files) ? em + _("Warning: Some files were not backuped") + _em + br : "");
+
+    string archive_created = "";
+
+    if (!Backup::multi_volume)
+    {
+	archive_created = sformat(_("Archive %1 created successfully"), Backup::archive_name);
+    }
+    else
+    {
+	archive_created = _("Archive created successfully");
+    }
+
+    backup_result = backup_result
+	+ ((tar_result == 0) ? archive_created + br +_("Total archived files: ") + archived_num :
 	  em + _("Archive creation failed") + _em) + _p;
 
     if (Backup::multi_volume)
