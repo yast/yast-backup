@@ -1,0 +1,36 @@
+// Backup module - testsuite
+//
+// MediaList2UIList function tests
+//
+// $Id$
+//
+
+{
+
+include "backup/functions.ycp";
+include "testsuite.ycp";
+
+DUMP( MediaList2UIList(nil) );
+DUMP( MediaList2UIList([ ]) );
+DUMP( MediaList2UIList(["no map"]) );
+DUMP( MediaList2UIList([
+    $[
+	"capacity" : 1440000
+    ]
+]) );
+
+DUMP( MediaList2UIList([
+    $[
+	"label" : _("Floppy 1.44 MB"),
+	"symbol" : `fd144,
+	"capacity" : 1440000
+    ],
+    $[
+	"label" : _("Floppy 1.2 MB"),
+	"symbol" : `fd12,
+	"capacity" : 1200000
+    ]
+]) );
+
+}
+
