@@ -377,10 +377,10 @@ global define symbol ArchDialog() ``{
 		`HBox(
 		    `RadioButtonGroup(`id(`source), `opt(`notify),
 			`VBox(
-			    `VSpacing(0.49),
+			    `VSpacing(0.3),
 			    // radio button label
 			    `Left(`RadioButton(`id(`file),  `opt(`notify), _("&Local file"), Backup::target_type == `file)),
-			    `VSpacing(0.49),
+			    `VSpacing(0.3),
 			    // radio button label
 			    `Left(`RadioButton(`id(`nfs), `opt(`notify), _("Network (N&FS)"), Backup::target_type == `nfs)),
 			    `HBox(
@@ -405,7 +405,7 @@ global define symbol ArchDialog() ``{
 				    `PushButton(`id(`selectexport), _("Select..."))
 				)
 			    ),
-			    `VSpacing(0.49)
+			    `VSpacing(0.3)
 			)
 		    ),
 		    `HSpacing(1)
@@ -447,7 +447,7 @@ global define symbol ArchDialog() ``{
 				),
 				`HStretch()
 			    ),
-			    `VSpacing(1),
+			    `VSpacing(0.5),
 			    `Left(`RadioButton(`id(`only_list), `opt(`notify), _("Only Create List of Files Found")))
 			)
 		    ),
@@ -455,7 +455,7 @@ global define symbol ArchDialog() ``{
 		)
 	    ),
 
-	    `VSpacing(1.0)
+	    `VSpacing(0.5)
 	),
         backup_help_archive_settings(), true, true
     );
