@@ -40,6 +40,7 @@ my $output_files = 0;
 my $output_default = 0;
 my $enhanced_check_nopkg = 0;
 my $disable_check_multiple = 0;
+my $no_md5 = 0;
 
 my %exclude_dirs;
 
@@ -48,7 +49,7 @@ GetOptions('search' => \$search_files, 'exclude-dir=s' => \@exclude_d,
     'exclude-fs=s' => \@exclude_fs,  'help' => \$help,
     'output-progress' => \$output_progress, 'output-files' => \$output_files,
     'output-default' => \$output_default, 'enhanced-check' => \$enhanced_check_nopkg,
-    'disable-check-multiple' => \$disable_check_multiple 
+    'disable-check-multiple' => \$disable_check_multiple, 'no-md5' => \$no_md5
 );
 
 if ($help)
@@ -62,6 +63,7 @@ if ($help)
 
     print "  --disable-check-multiple   Do not check if backup is needed for changed files \
 which are in multiple packages, always backup them\n\n";
+    print "  --no-md5          Do not use MD5 test in verification\n";
 
     print "  --search           Search files which do not belog to any package\n";
     print "    --exclude-dir <dir>  Exclude directory <dir> from search\n";
@@ -156,8 +158,10 @@ sub VerifyPackages(@%)
 	    print "\n";
 	}
 
-	# verification of the package - do not check md5 checksum and package dependencies, do not run verify scripts
-	open(RPMV, "export LC_ALL=C; rpm -V $package --nomd5 --noscripts --nodeps |")
+	my $md5_param = ($no_md5) ? "--nomd5" : "";
+
+	# verification of the package - do not check package dependencies, do not run verify scripts
+	open(RPMV, "export LC_ALL=C; rpm -V $package $md5_param --noscripts --nodeps |")
 	    or die "Verification of package $package failed.";
 
 	while (my $line = <RPMV>)
@@ -167,82 +171,98 @@ sub VerifyPackages(@%)
 	    # modified files have set flags Size or MTime
 
 	    my $file = undef;
-
-	    my $size = ($line =~ /^S.* (\/.*)/);
-	    if ($size)
-	    {
-		$file = $1;
-	    }
-	    
-	    my $mtime = ($line =~ /^\..{6}T.* (\/.*)/);
-	    if ($mtime)
-	    {
-		$file = $1;
-	    }
+	    my $size = 0;
+	    my $mtime = 0;
+	    my $md5_test = 0;
 
     	    my $backup = 1;
 	    
-	    if ($size or $mtime)
+	    if ($no_md5)
 	    {
-		# check if Mtime changed file is in more than one package
-		if (!$disable_check_multiple and $mtime and !$size and $$duplicates{$file})
+		$size = ($line =~ /^S.* (\/.*)/);
+		if ($size)
 		{
-		    open(RPMQFILE, "rpm -qf $file |");
-		    my @packages_list = ();
-
-		    while (my $pkg = <RPMQFILE>)
-		    {
-			chomp($pkg);
-			
-			if ($pkg ne $package)
-			{
-			    push(@packages_list, $pkg);
-			}
-		    }
-		    close(RPMQFILE);
-
-		    foreach my $pack (@packages_list)
-		    {
-			# it is not possible to verify one file from package
-			# so all files in package are verified
-			# in this verification is not MD5 test excluded
-			# TODO LATER: don't grep and cache results of all files from package
-			open(RPMVRF, "rpm -V $pack --nodeps --noscripts | grep $file |");
-			
-			my $fl = <RPMVRF>;
-			
-			if (!defined $fl)
-			{
-			    $backup = 0;
-			}
-			else
-			{
-			    while (my $fl = <RPMVRF>)
-			    {
-				if (($fl !~ /^S.* \/./) and ($fl !~ /^\..{6}T.* \/.*/) and ($fl !~ /^..5.* \/.*/))
-				{
-				    $backup = 0;
-				}
-			    }
-			}
-			
-			close(RPMVRF);
-			
-		    }
+		    $file = $1;
+		}
+		
+		$mtime = ($line =~ /^\..{6}T.* (\/.*)/);
+		if ($mtime)
+		{
+		    $file = $1;
 		}
 
-		if (defined $file and $backup)
-		{
-		    my @filestat = stat($file);
 
-		    if (!$output_files)
+		if ($size or $mtime)
+		{
+		    # check if Mtime changed file is in more than one package
+		    if (!$disable_check_multiple and $mtime and !$size and $no_md5 and $$duplicates{$file})
 		    {
-			print "Size: $filestat[7] $file\n";
+			open(RPMQFILE, "rpm -qf $file |");
+			my @packages_list = ();
+
+			while (my $pkg = <RPMQFILE>)
+			{
+			    chomp($pkg);
+			    
+			    if ($pkg ne $package)
+			    {
+				push(@packages_list, $pkg);
+			    }
+			}
+			close(RPMQFILE);
+
+			foreach my $pack (@packages_list)
+			{
+			    # it is not possible to verify one file from package
+			    # so all files in package are verified
+			    # in this verification is not MD5 test excluded
+			    # TODO LATER: don't grep but cache results of all files from package
+			    open(RPMVRF, "rpm -V $pack --nodeps --noscripts | grep $file |");
+			    
+			    my $fl = <RPMVRF>;
+			    
+			    if (!defined $fl)
+			    {
+				$backup = 0;
+			    }
+			    else
+			    {
+				while (my $fl = <RPMVRF>)
+				{
+				    if (($fl !~ /^S.* \/./) and ($fl !~ /^\..{6}T.* \/.*/) and ($fl !~ /^..5.* \/.*/))
+				    {
+					$backup = 0;
+				    }
+				}
+			    }
+			    
+			    close(RPMVRF);
+			    
+			}
 		    }
-		    else
-		    {
-			print "$file\n";
-		    }
+		}
+		
+	    }
+	    else
+	    {
+		$md5_test = ($line =~ /^..5.* (\/.*)/);
+		if ($md5_test)
+		{
+		    $file = $1;
+		}
+	    }
+
+	    if (defined $file and $backup)
+	    {
+		my @filestat = stat($file);
+
+		if (!$output_files)
+		{
+		    print "Size: $filestat[7] $file\n";
+		}
+		else
+		{
+		    print "$file\n";
 		}
 	    }
 	}
