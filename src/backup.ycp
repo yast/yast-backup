@@ -26,7 +26,6 @@ import "Mode";
 import "Backup";
 
 include "wizard/sequencer.ycp";
-//include "ui/wizard_dialog.ycp";
 include "ui/common_popups.ycp";
 include "ui/common_functions.ycp";
 
