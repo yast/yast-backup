@@ -1,12 +1,12 @@
 @HEADER-COMMENT@
 
-# neededforbuild  autoconf automake autoyast2 autoyast2-installation dejagnu expect tcl yast2 yast2-core yast2-core-devel yast2-devtools yast2-testsuite yast2-xml
+# neededforbuild  yast2-devel-packages autoyast2-installation yast2-xml
 
 @HEADER@
 
 Summary:		Backup module for YaST2
 BuildArchitectures:	noarch
-Requires:		yast2 yast2-core yast2-xml autoyast2-installation perl util-linux fileutils e2fsprogs
+Requires:		yast2 yast2-core yast2-xml autoyast2-installation perl util-linux fileutils e2fsprogs tar bzip2 gzip
 
 Provides:	yast2-module-backup
 Obsoletes:	yast2-module-backup

@@ -78,7 +78,9 @@ global define boolean AbortConfirmation(symbol type) ``{
 
     boolean ret = nil;
 
+    // popup dialog header
     string heading = _("Abort confirmation");
+    // popup dialog question
     string question = _("Do you really want to abort the backup?");
     string yes = YesButtonLabel();	// from common_messages.ycp
     string no = NoButtonLabel();

@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Aug  5 15:21:02 CEST 2002 - lslezak@suse.cz
+
+- added help texts for translators
+- fixed #neededforbuild and Requires
+- version 2.6.3
+
+-------------------------------------------------------------------
 Mon Jul 22 16:18:33 CEST 2002 - jsrain@suse.cz
 
 - merged proofread texts
