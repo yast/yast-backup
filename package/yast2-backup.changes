@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Oct 21 14:38:53 CEST 2004 - locilka@suse.de
+
+- Partly solved bug #45748, back button from "files to backup"
+  pointed to wrong destination. 
+
+-------------------------------------------------------------------
 Thu Oct 14 15:24:13 CEST 2004 - locilka@suse.cz
 
 - Partly solved Bug #43604, redrawing buttons during creating

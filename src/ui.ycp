@@ -2087,6 +2087,10 @@ Backup will be aborted.
 	Backup::StoreSettingsToBackupProfile(Backup::selected_profile);
     }
 
+    if (ret == `back) {
+	return `back_from_files;
+    }
+
     return ret;
 }
 

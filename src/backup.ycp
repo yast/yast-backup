@@ -89,7 +89,9 @@ map sequence = $[
     ],
     "files" : $[
         `next	: "archiving",
-	`abort	: `abort
+	`abort	: `abort,
+	// from "files" <back points to "constraint"
+	`back_from_files : "constraint"
     ],
     "archiving" : $[
 	`next	: "summary",
