@@ -1,8 +1,21 @@
 Read	.target.size "/etc/install.inf" -1
 Read	.target.tmpdir "/tmp"
 Read	.target.tmpdir "/tmp"
-Read	.target.size "/tmp/autoinst.xml" -1
-Dir	.autoinst.menuentry.s: []
+Read	.sysconfig.autoinstall.REPOSITORY "/var/lib/autoinstall/repository"
+Read	.sysconfig.autoinstall.ALICE_REPOSITORY "/var/lib/autoinstall/repository"
+Read	.sysconfig.autoinstall.CLASS_DIR "/var/lib/autoinstall/repository/classes"
+Read	.sysconfig.autoinstall.XSLT_DONTMERGE "addon,conf"
+Dir	.autoyast2.desktop."s": []
+Dir	.yast2.groups.s: []
+Read	.probe.architecture nil
+Read	.probe.has_apm nil
+Read	.probe.has_pcmcia nil
+Read	.probe.has_smp false
+Read	.probe.system nil
+Read	.sysconfig.console.CONSOLE_ENCODING nil
+Execute	.target.bash_output "locale -k charmap" $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]
+Read	.probe.floppy.manual nil
+Read	.probe.cdrom.manual []
 Read	.target.ycp "/var/adm/YaST/backup/profiles" $["ahoj":$[`archive_name:"/tmp/ahoj.tar", `archive_type:`tgz, `backup_all_ext2:false, `backup_none_ext2:true, `backup_pt:true, `backup_selected_ext2:false, `default_dir:["/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache"], `description:"", `detected_ext2:nil, `detected_fs:nil, `dir_list:nil, `display:true, `do_md5_test:false, `ext2_backup:[], `fs_exclude:["iso9660"], `multi_volume:false, `search:false, `system:false, `unselected_files:["/etc/inittab"], `user_volume_size:"", `user_volume_unit:nil, `volume_size:`fd144], "final":$[`archive_name:"/tmp/ahoj.tar", `archive_type:`tgz, `backup_all_ext2:false, `backup_none_ext2:true, `backup_pt:true, `backup_selected_ext2:false, `default_dir:["/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache"], `description:"", `detected_ext2:nil, `detected_fs:["devpts", "nfs", "proc", "reiserfs", "rootfs", "shm"], `dir_list:["/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache", "/usr", "/home", "/local", "/etc", "/var", "/opt"], `display:false, `do_md5_test:true, `ext2_backup:[], `fs_exclude:["bdev", "devpts", "futexfs", "iso9660", "nfs", "pipefs", "proc", "ramfs", "rootfs", "shm", "sockfs", "tmpfs", "usbdevfs", "usbfs"], `multi_volume:false, `search:true, `system:false, `unselected_files:nil, `user_volume_size:"", `user_volume_unit:`B, `volume_size:`fd144]]
 Read	.target.dir "/etc/cron.d" nil
 Return	true

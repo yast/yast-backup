@@ -1,7 +1,20 @@
 Read	.target.size "/etc/install.inf" -1
 Read	.target.tmpdir "/tmp"
 Read	.target.tmpdir "/tmp"
-Read	.target.size "/tmp/autoinst.xml" -1
-Dir	.autoinst.menuentry.s: []
+Read	.sysconfig.autoinstall.REPOSITORY "/var/lib/autoinstall/repository"
+Read	.sysconfig.autoinstall.ALICE_REPOSITORY "/var/lib/autoinstall/repository"
+Read	.sysconfig.autoinstall.CLASS_DIR "/var/lib/autoinstall/repository/classes"
+Read	.sysconfig.autoinstall.XSLT_DONTMERGE "addon,conf"
+Dir	.autoyast2.desktop."s": []
+Dir	.yast2.groups.s: []
+Read	.probe.architecture nil
+Read	.probe.has_apm nil
+Read	.probe.has_pcmcia nil
+Read	.probe.has_smp false
+Read	.probe.system nil
+Read	.sysconfig.console.CONSOLE_ENCODING nil
+Execute	.target.bash_output "locale -k charmap" $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]
+Read	.probe.floppy.manual nil
+Read	.probe.cdrom.manual []
 Dump	$[]
 Dump	$["test profile":$[`archive_name:"", `archive_type:`tgz, `autoprofile:true, `backup_all_ext2:false, `backup_none_ext2:true, `backup_pt:true, `backup_selected_ext2:false, `default_dir:["/media", "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache", "/windows"], `description:"", `detected_ext2:nil, `detected_fs:nil, `dir_list:["/media", "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache", "/windows"], `display:false, `do_md5_test:true, `ext2_backup:[], `fs_exclude:["iso9660", "ntfs"], `mail_summary:true, `multi_volume:false, `nfsexport:"", `nfsserver:"", `perms:true, `regexp_list:[], `search:true, `system:false, `target_type:`file, `tmp_dir:"/tmp", `unselected_files:[], `user_volume_size:"", `user_volume_unit:nil, `volume_size:`fd144]]
