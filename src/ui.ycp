@@ -89,8 +89,8 @@ global define symbol ArchDialog() ``{
     {
 	UI::WarningPopup(_("You are not logged in as root.
 Some files can only be read by the user 'root'.
-Not all files will be backed up;
-thus it isn't possible to restore
+Not all files will be backed up,
+so it will not be possible to restore
 the system completely later.
 
 System areas on hard disks can only
@@ -291,7 +291,7 @@ global define symbol TarOptionsDialog() ``{
 	    if (UI::QueryWidget(`id(`multi_volume), `Value) == true && UI::QueryWidget(`id(`vol), `Value) == `user_defined &&
 		    (tofloat(UI::QueryWidget(`id(`user_size), `Value)) * tofloat(Backup::GetCapacity(Backup::units_description, UI::QueryWidget(`id(`user_unit), `Value))) / 1024.0) < 10.0)
 	    {
-		UI::WarningPopup(_("Volume size has to be at least 10240 bytes."));
+		UI::WarningPopup(_("Volume size must be at least 10240 bytes."));
 	    }
 	    else
 	    {
@@ -1749,7 +1749,7 @@ global define symbol SummaryDialog() ``{
 
 	if (size(not_readable_files) > 0 || !hostname_stored || !date_stored || !file_list_stored || !comment_stored || !packages_list_stored)
 	{
-	    backup_result = backup_result + p + _("Some errors occurred during backup. Press button Details for more information.") + _p;
+	    backup_result = backup_result + p + _("Some errors occurred during backup. Press 'Details' for more information.") + _p;
 	}
 
 
@@ -1868,7 +1868,7 @@ global define symbol SummaryDialog() ``{
 	    archive_created = _("Archive created successfully");
 	}
 
-	string profilesummary = (lookup(profilewritten, "result", false) == true) ? sformat(_("Autoinstallation profile saved to file %1"), lookup(profilewritten, "profile", "")) : (b + _("Autoinstallation profile was not saved.") + _b);
+	string profilesummary = (lookup(profilewritten, "result", false) == true) ? sformat(_("Autoinstallation profile saved to file %1."), lookup(profilewritten, "profile", "")) : (b + _("Autoinstallation profile was not saved.") + _b);
 
 	backup_result = backup_result
 	    + ((tar_result == 0) ? archive_created : em + _("Archive creation failed") + _em)
