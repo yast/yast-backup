@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Mar  3 12:25:48 CET 2005 - locilka@suse.cz
+
+- Fixed bug #67120
+  Backup didn't remove the cronfile when profile was deleted 
+- Merged proofed texts
+
+-------------------------------------------------------------------
 Mon Feb 14 15:56:24 CET 2005 - locilka@suse.cz
 
 - Merged proofed texts
