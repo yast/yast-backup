@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Mon Dec  3 14:07:46 CET 2001 - lslezak@suse.cz
+
+- summary dialog fixes
+- storing only list of found files is possible
+- device/inode numbers are used in searching files
+  not owned by any package
+- documentation: *.ui files moved to ui.tar.bz2
+- version 2.5.4
+
+-------------------------------------------------------------------
 Thu Nov 22 16:08:44 CET 2001 - lslezak@suse.cz
 
 - added option for RPM MD5 test
