@@ -117,7 +117,7 @@ if (Mode::test == true)
 map sequence = $[
     "ws_start"	: "readprof",
 
-    "ws_start" : "test_pts",
+//    "ws_start" : "test_pts",
 //    "ws_start" : "test_loc",
 
     "test_pts" : $[
@@ -125,7 +125,7 @@ map sequence = $[
 	`abort	: `abort
     ],
     "test_loc" : $[
-	`next	: `ws_finish,
+	`next	: "readprof",
 	`abort	: `abort
     ],
     "test_opt" : $[
@@ -149,6 +149,7 @@ map sequence = $[
 	`manual : "archive",
 	`cron	: "cron",
 	`abort	: `abort,
+	`newworkflow : "test_pts",
 	`finish : `ws_finish
     ],
     "cron" :$[

@@ -2638,7 +2638,8 @@ global define symbol SelectProfileDialog() ``{
                         `item(`id(`clone), _("&Duplicate...")),
                         `item(`id(`edit), Label::EditButton()+"..."),
                         `item(`id(`delete), Label::DeleteButton()),
-			`item(`id(`cron), tableheader3 + "...")
+			`item(`id(`cron), tableheader3 + "..."),
+			`item(`id(`newworkflow), "New workflow - preview")
                     ])
             ),
             `PushButton(`id(`manual),_("Backup &manually...")),
@@ -2729,11 +2730,15 @@ global define symbol SelectProfileDialog() ``{
 		ret = nil;
 	    }
 	}
+	else if (ret == `newworkflow)
+	{
+	    ret = `newworkflow;
+	}
 	else if (ret == `cancel)
 	{
 	    ret = `abort;
 	}
-    } while( ret != `finish && ret != `manual && ret != `start && ret != `edit && ret != `cron && ret != `abort);
+    } while( ret != `finish && ret != `manual && ret != `start && ret != `edit && ret != `cron && ret != `abort && ret != `newworkflow);
 
     if( ret == `finish )
     {
@@ -2844,7 +2849,7 @@ global define symbol Test_PartitionSelection() ``{
 	    `PushButton(`id(`expert), `opt(`key_F7), _("Expert...")),
             `VSpacing(1.0)
         ),
-        "note: in the first column is the selection mark", false, true
+        "note: in the first column is the selection mark", true, true
     );
 
     symbol ret = nil;
@@ -3246,6 +3251,24 @@ Enter the file name to use.
 "));
 		s = nil;
 	    }
+	    // check NFS server and export name
+	    else if (UI::QueryWidget(`id(`nfs), `Value) == true)
+	    {
+		if (size(UI::QueryWidget(`id(`nfsserver), `Value)) == 0)
+		{
+		    Popup::Warning(_("A server name is required.
+Enter the server name to use.
+"));
+		    s = nil;
+		}
+		else if (size(UI::QueryWidget(`id(`nfsexport), `Value)) == 0)
+		{
+		    Popup::Warning(_("A remote directory name is required.
+Enter the directory name to use.
+"));
+		    s = nil;
+		}
+	    }
 	}
     }
 
@@ -3565,8 +3588,8 @@ global define symbol Test_BackupOptions() ``{
 		    )
 		)
 	    ),
-/*	    `VSpacing(1),
-	    `Frame(_("Backup type"),
+	    `VSpacing(1),
+/*	    `Frame(_("Backup type"),
 		`HBox(
 		    `RadioButtonGroup(`id(`data), `opt(`notify),
 			`VBox(
@@ -3581,9 +3604,13 @@ global define symbol Test_BackupOptions() ``{
 		    )
 		)
 	    ),*/
+	    // multi line widget label
+	    `MultiLineEdit(`id(`description), _("Archive &description:"), Backup::description),
 	    `VSpacing(1),
 //	    `Left(`CheckBox(`id(`autoprofile), _("Create AutoYaST installation profile"), Backup::autoprofile)),
 //	    `VSpacing(1),
+	    `Left(`CheckBox(`id(`display), _("Display list of files before &creating archive"), Backup::display)),
+	    `VSpacing(1),
 	    `Left(`CheckBox(`id(`lvm_snapshot), _("Use LVM snapshot if possible"), Backup::LVMsnapshot)),
 	    `VSpacing(1),
 	    `Left(`CheckBox(`id(`only_test), _("Only test, don't store backup archive file"), Backup::testonly)),
@@ -3601,11 +3628,18 @@ global define symbol Test_BackupOptions() ``{
 	y2milestone("enable: %1", en);
 
 	s = UI::UserInput();
+
+	if (s == `close)
+	{
+	    s = `abort;
+	}
     }
 
     Backup::LVMsnapshot = UI::QueryWidget(`id(`lvm_snapshot), `Value);
     Backup::testonly = UI::QueryWidget(`id(`only_test), `Value);
     Backup::systembackup = UI::QueryWidget(`id(`system), `Value);
+    Backup::display = UI::QueryWidget(`id(`display), `Value);
+    Backup::description = UI::QueryWidget(`id(`description), `Value);
 
     return s;
 }
