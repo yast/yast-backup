@@ -71,20 +71,18 @@ global define string backup_help_archive_options() ``{
  */
 
 global define string backup_help_backup_setting() ``{
-    // For translators: help text in backup settings dialog - part 1/
+    // For translators: help text in backup settings dialog - part 1/4
     return _("<P><B><BIG>Search</BIG></B><BR>")
 
-    // For translators: help text in backup settings dialog - part 2/
+    // For translators: help text in backup settings dialog - part 2/4
     + _("Here you can select which parts of the system will be searched and backuped.<BR></P>")
 
-    // For translators: help text in backup settings dialog - part 3/
+    // For translators: help text in backup settings dialog - part 3/4
     + _("<P><B>Search options</B><BR>")
 
-    // For translators: help text in backup settings dialog - part 4/
-    + _("File owned by mupltiple packages can be wrong reported as changed and unnecessary backuped. There is possibility to do extra check to get right status.</P>")
+    // For translators: help text in backup settings dialog - part 4/4
+    + _("MD5 sum can be used to determine if file was changed. It is more reliable than size or modification time checking, but it takes more time.</P>");
 
-    // For translators: help text in backup settings dialog - part 5/
-    + _("<P>If package file is installed in directory which is symbolic link it can be wrong reported as not owned by any package. Enhanced check gets right owner, but it slows down searching rapidly.</P>");
 }
 
 
@@ -147,7 +145,7 @@ global define string backup_help_system_backup() ``{
     return _("<P><B><BIG>System backup</BIG></B><BR>")
 
     // For translators: help text in system backup dialog - part 2/2
-    + _("Critical disk system areas can be added to backup archive.</P>");
+    + _("Critical disk system areas can be added to backup archive. After an accident they can be used at restoration of the system.</P>");
 }
 
 
@@ -197,17 +195,14 @@ global define string backup_help_searching_files() ``{
  */
 
 global define string backup_help_file_selection() ``{
-    // For translators: help text in file dialog - part 1/4
+    // For translators: help text in file dialog - part 1/3
     return _("<P><B><BIG>Found files</BIG></B><BR>")
 
-    // For translators: help text in file dialog - part 2/4
+    // For translators: help text in file dialog - part 2/3
     + _("Here is list of found files. You can select which files will be stored in the archive.</P>")
 
-    // For translators: help text in file dialog - part 3/4
+    // For translators: help text in file dialog - part 3/3
     + _("<P>Check mark at first column indicates that file will be backuped.</P>")
-
-    // For translators: help text in file dialog - part 4/4
-    + _("<P>To change backup status of a file double click on it.</P>");
 }
 
 
