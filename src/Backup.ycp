@@ -38,7 +38,7 @@ global string script_get_files = "/usr/lib/YaST2/bin/backup_search.pl";
 global string script_create_archive = "/usr/lib/YaST2/bin/backup_archive.pl";
 
 // day names, key is integer used in crontab
-global map daynames = $[
+global map<integer,string> daynames = $[
     1 : _("Monday"),
     2 : _("Tuesday"),
     3 : _("Wednesday"),
@@ -48,7 +48,7 @@ global map daynames = $[
     7 : _("Sunday")
 ];
 
-global map ordinal_numbers = $[
+global map<integer,string> ordinal_numbers = $[
      1 :  _("1st"),
      2 :  _("2nd"),
      3 :  _("3rd"),
@@ -102,7 +102,7 @@ global boolean default_display = false;			// display files before creating archi
 global boolean default_do_md5_test = true;
 global boolean default_perms = true;			// store RPM file if owner/permissions were changed
 
-global list<string> default_default_dir = [ "/media", "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache", "/windows" ];		// default excluded directoried from search
+global list<string> default_default_dir = [ "/media", "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache", "/sys", "/windows" ];		// default excluded directoried from search
 global list<string> default_dir_list = default_default_dir;			// selected directoried to exclude
 global list<string> default_regexp_list = [];
 
@@ -123,9 +123,9 @@ global string default_tmp_dir = "/tmp";
 
 //global list default_all_entered_dirs = [];
 
-global map default_backup_files = $[ ];		// all found files to backup
-global map default_selected_files = nil;	// selected files to backup
-global list default_unselected_files = [ ];	// files, which user explicitly unselected
+global map<string,map> default_backup_files = $[ ];		// all found files to backup
+global map<string,map> default_selected_files = nil;	// selected files to backup
+global list<string> default_unselected_files = [ ];	// files, which user explicitly unselected
 //global list default_selected_directories = [];	// default directories to backup
 
 //global boolean default_LVMsnapshot = true;
@@ -197,9 +197,9 @@ global string nfsserver = default_nfsserver;
 global string nfsexport = default_nfsexport;
 global string nfsmount = nil;	// NFS mount point, remember for unmounting
 
-global map backup_files = (map)eval( default_backup_files );		// all found files to backup
-global map selected_files = (map)eval( default_selected_files );	// selected files to backup
-global list unselected_files = default_unselected_files;	// files, which user explicitly unselected
+global map<string,map> backup_files = (map<string,map>)eval( default_backup_files );		// all found files to backup
+global map<string,map> selected_files = (map<string,map>)eval( default_selected_files );	// selected files to backup
+global list<string> unselected_files = default_unselected_files;	// files, which user explicitly unselected
 
 //global list selected_directories = default_selected_directories;
 //global list all_entered_dirs = default_all_entered_dirs;
@@ -312,7 +312,7 @@ global list< map<string,any> > units_description = [
  * @return integer Size of medium in bytes
  */
 
-global define integer GetCapacity(list<map> media, symbol m) ``{
+global define integer GetCapacity(list<map<string,any> > media, symbol m) ``{
     integer result = nil;
 
     if (media != nil)
@@ -586,7 +586,7 @@ global define void ExcludeNodevFS() ``{
  * @return map map $[ "result" : boolean (true on success), "profile" : string (profile file name) ]
  */
 
-global define map WriteProfile(list volumes) ``{
+global define map WriteProfile(list<string> volumes) ``{
     string archive = ((target_type == `nfs && nfsmount != nil) ? nfsmount + "/" : "") + archive_name;
     integer pos = findlastof(archive, "/");
     string dir = "";
@@ -1174,7 +1174,7 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
 	    // convert dir list from the old format
 	    list<string> new_dir_list = [];
 
-	    foreach(term i, dir_list,
+	    foreach(term i, (list<term>)read_dir_list,
 		``{
 		    term tmp_id = select(i, 0, nil);
 
@@ -1273,8 +1273,8 @@ global define void RestoreDefaultSettings() ``{
     tmp_dir = default_tmp_dir;
     regexp_list = default_regexp_list;
 
-    selected_files = (map)eval(default_selected_files);
-    backup_files = (map)eval(default_backup_files);
+    selected_files = (map<string,map>)eval(default_selected_files);
+    backup_files = (map<string,map>)eval(default_backup_files);
 
     selected_profile = nil;
 }
@@ -1283,8 +1283,8 @@ global define void RestoreDefaultSettings() ``{
  * Get a sorted list of profile names currently available.
  * @return the list of strings (possibly empty).
  */
-global define list BackupProfileNames() ``{
-    list result = maplist( `key, `value, backup_profiles, ``(key) );
+global define list<string> BackupProfileNames() ``{
+    list<string> result = (list<string>)maplist(string key, any value, backup_profiles, ``(key) );
     if( result == nil ) return [];
     else return sort( result );
 }
@@ -1522,7 +1522,7 @@ global define map RemovableDevices(boolean only_writable) ``{
 		    {
 			type_symbol = `floppy;
 			media = floppy_media_descriptions;
-			list sizes = dev["resource", "size"]:[];
+			list<map> sizes = dev["resource", "size"]:[];
 			integer sect_sz = 0;
 
 			foreach(map m, sizes,

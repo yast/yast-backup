@@ -66,7 +66,7 @@ textdomain "backup";
 
  define string backup_help_backup_setting() ``{
     // For translators: help text in backup settings dialog - part 1/4
-    return _("<P><B><BIG>Search</BIG></B><BR>Here, select which parts of the system to search and back up. <B>Archive description</B> is an optional description of the backup archive.</P>")
+    return _("<P><B><BIG>Search</BIG></B><BR>Here, select which parts of the system to search and back up. <B>Archive Description</B> is an optional description of the backup archive.</P>")
 
     // For translators: help text in backup settings dialog - part 2/4
     + _("<P>The archive will contain files from packages that were changed since
@@ -223,9 +223,10 @@ can be set in this dialog. Usually there is no need to modify the default values
 	// For translators: help text in backup expert options dialog - part 3/3
 	+ _("<P>System areas (partition table, ext2 image) can be added to the backup archive. These system areas can only be restored from an archive manually.</P>")
 	// For translators: help text in backup expert options dialog - part 2/3
-	+ _("<P><B>Temporary directory</B><BR>You can change location where are stored parts
-of the archive before final archive is created. Temporary directory should have enough
-free space for whole achive.</P>");
+	+ _("<P><B>Temporary Directory</B><BR>You can change location in which parts
+of the archive are stored before final archive is created. The temporary directory should have enough
+free space for the entire achive.</P>
+");
 
 }
 
@@ -237,10 +238,10 @@ free space for whole achive.</P>");
  define string backup_help_constraints() ``{
 
     // For translators: help text in exclude directory dialog - part 1/5
-    return _("<P><BIG><B>Constraints</B></BIG><BR>It is possible to exclude some files from backup. Search constrain can be directory, file system or regular expession.</P>")
+    return _("<P><BIG><B>Constraints</B></BIG><BR>It is possible to exclude some files from backup. Search constraints can be a directory, file system, or regular expression.</P>")
 
     // For translators: help text in exclude directory dialog - part 2/5
-    + _("<P><B>Directories</B><BR>All files which are located in the specified directories will not be backed up.</P>")
+    + _("<P><B>Directories</B><BR>All files located in the specified directories will not be backed up.</P>")
 
     // For translators: help text in exclude directory dialog - part 3/5
     + _("<P><B>File Systems</B><BR>It is possible to exclude all files located on a certain type of file system (e.g., ReiserFS, Ext2). The root directory will always be searched, even if its file system is selected.</P>")
@@ -249,7 +250,7 @@ free space for whole achive.</P>");
     + _("<P>File systems that cannot be used on local disk (e.g., network file systems) are excluded by default.</P>")
 
     // For translators: help text in exclude directory dialog - part 5/5
-    + _("<P><B>Regular expressions</B><BR>Any file name which matches any of the regular expressions will not be backed up. Use perl regular expresions. To exclude for example <I>*.bak</I> files add a regular expression <I>\\.bak$</I></P>");
+    + _("<P><B>Regular Expressions</B><BR>Any file name that matches any of the regular expressions will not be backed up. Use perl regular expresions. To exclude, for example, <I>*.bak</I> files, add the regular expression <I>\\.bak$</I></P>");
 
 }
 

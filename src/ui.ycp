@@ -35,14 +35,14 @@ textdomain "backup";
 
  symbol last_input = nil;
 
- map deselected_ids = $[];
+ map<integer,integer> deselected_ids = $[];
 
 // type of item (displayed in the table)
  string filesystem_text = _("File System");
 // type of item (displayed in the table)
  string directory_text = _("Directory");
 // type of item (displayed in the table)
- string regexp_text = _("Reg. expression");
+ string regexp_text = _("Reg. Expression");
 
  integer selected_pkg_num = 0;		// number of packages which files are selected
  integer modified_size = 0;		// size
@@ -63,12 +63,12 @@ textdomain "backup";
  boolean hostname_stored = false;
  boolean date_stored = false;
  boolean comment_stored = false;
- list e2image_results = [];		// results of storing ext2 images
+ list<boolean> e2image_results = [];		// results of storing ext2 images
  integer archived_num = 0;
- list not_readable_files = [];
- list created_archive_files = [];
- list failed_ptables = [];
- list stored_ptables = [];
+ list<string> not_readable_files = [];
+ list<string> created_archive_files = [];
+ list<string> failed_ptables = [];
+ list<string> stored_ptables = [];
  boolean read_ptables_info = false;
  boolean stored_list = false;
 
@@ -1262,12 +1262,16 @@ Enter the file name to use.
     if (fits == false)
     {
 	// there is no enough space
-	cont = Popup::YesNo(sformat(_("There is not enough free space in directory %1.\nDo you wish to continue anyway?"), dir));
+	cont = Popup::YesNo(sformat(_("There is not enough free space in directory %1.
+Continue anyway?
+"), dir));
     }
     else if (fits == nil)
     {
 	// may be that there is not enough space
-	cont = Popup::YesNo(sformat(_("There may not be enough free space in directory %1.\nDo you wish to continue anyway?"), dir));
+	cont = Popup::YesNo(sformat(_("There may not be enough free space in directory %1.
+Continue anyway?
+"), dir));
     }
 
     return cont;
@@ -1816,7 +1820,7 @@ Backup will be aborted.
     {
 	if (Backup::selected_files == nil)
 	{
-	    Backup::selected_files = (map)eval(Backup::backup_files);
+	    Backup::selected_files = (map<string,map>)eval(Backup::backup_files);
 	}
 
 	return `next;
@@ -1824,7 +1828,7 @@ Backup will be aborted.
     else
     {
 	// no manual selection, backup all files
-	Backup::selected_files = (map)eval(Backup::backup_files);
+	Backup::selected_files = (map<string,map>)eval(Backup::backup_files);
 
 	// skip the files listed in Backup::unselected_files
 	if (Backup::unselected_files != nil)
@@ -1847,7 +1851,7 @@ Backup will be aborted.
 		    new_selected = add( new_selected, pak, val );
 		}
 		);
-		Backup::selected_files = (map)eval(new_selected);
+		Backup::selected_files = (map<string,map>)eval(new_selected);
 	    }
 	    );
 	    y2milestone("Filtered out unselected files according to profile");
@@ -1973,7 +1977,7 @@ Backup will be aborted.
 	    {
 		Backup::unselected_files = [];
 		deselected_ids = $[];
-		Backup::selected_files = (map)eval(Backup::backup_files);
+		Backup::selected_files = (map<string,map>)eval(Backup::backup_files);
 	    }
 	    else
 	    {
@@ -1981,7 +1985,7 @@ Backup will be aborted.
 		Backup::unselected_files = [];
 
 		foreach(string pack, map info, Backup::backup_files, ``{
-			Backup::unselected_files = merge(Backup::unselected_files, info["changed_files"]:[]);
+			Backup::unselected_files = (list<string>)merge(Backup::unselected_files, info["changed_files"]:[]);
 		    }
 		);
 
@@ -2030,7 +2034,7 @@ Backup will be aborted.
 		    map info = (map)eval(Backup::selected_files[package_name]:$[]);
 		    if (size(info) > 0)
 		    {
-			list chfiles = info["changed_files"]:[];
+			list<string> chfiles = info["changed_files"]:[];
 			chfiles = filter(string fn, chfiles, ``(fn != file_name));
 
 			info["changed_files"] = chfiles;
@@ -2094,9 +2098,9 @@ Backup will be aborted.
     // create Progress bar
 
     // progress bar stage
-    list stages1 = [ _("Store host information") ];
+    list<string> stages1 = [ _("Store host information") ];
     // progress bar stage
-    list stages2 = [ _("Storing host information...") ];
+    list<string> stages2 = [ _("Storing host information...") ];
 
     map selected_info = Backup::MapFilesToString();
     selected_files_num = selected_info["sel_files"]:0;
@@ -2874,7 +2878,7 @@ Replace the existing profile?
 	    `VSpacing(0.5),
 	    // check box label
 	    `HBox(
-		`CheckBox(`id(`system), `opt(`notify), _("Backup &Hard Disk System Areas"), Backup::system),
+		`CheckBox(`id(`system), `opt(`notify), _("Back up &Hard Disk System Areas"), Backup::system),
 		`HStretch(),
 		`PushButton(`id(`set_system), _("&Options..."))
 	    ),
@@ -3135,7 +3139,7 @@ Replace the existing profile?
 	if (input == `browse)
 	{
 	    // title in the file selection dialog
-	    string new = UI::AskForExistingDirectory(dir, _("Directory selection"));
+	    string new = UI::AskForExistingDirectory(dir, _("Directory Selection"));
 
 	    if (size(new) > 0)
 	    {
@@ -3351,7 +3355,7 @@ Replace the existing profile?
 	`VBox(
 	    `VSpacing(1.0),
 	    // table label
-	    `Left(`Label(_("Items excluded from search:"))),
+	    `Left(`Label(_("Items Excluded from Search:"))),
 	    // table header
 	    `Table(`id(`const), `header(_("Value"), _("Type")), table),
 
@@ -3359,8 +3363,8 @@ Replace the existing profile?
 		// push button label
                 `MenuButton(_("A&dd"), [
 			`item(`id(`dir), _("&Directory...")),
-			`item(`id(`fs), _("&File system...")),
-			`item(`id(`regexp), _("&Reg. expression..."))
+			`item(`id(`fs), _("&File System...")),
+			`item(`id(`regexp), _("&Reg. Expression..."))
 		    ]
 		),
 		// push button label
@@ -3380,7 +3384,7 @@ Replace the existing profile?
 
     symbol ret = nil;
 
-    map foundfilesystems = (map) SCR::Read(.proc.filesystems);
+    map<string,string> foundfilesystems = (map<string,string>) SCR::Read(.proc.filesystems);
     list<string> all_fss = [];
 
     if (size(foundfilesystems) > 0)

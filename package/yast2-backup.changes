@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Mon Mar  1 18:00:38 CET 2004 - lslezak@suse.cz
+
+- merged proofread texts
+- typed lists and maps
+- exclude /sys directory
+- testsuite update
+- version 2.9.8
+
+-------------------------------------------------------------------
 Tue Feb 10 15:12:09 CET 2004 - lslezak@suse.cz
 
 - fixed testsuite (initialize testsuite in all test cases)
