@@ -10,6 +10,8 @@ Requires:		yast2 yast2-core autoyast2-installation perl util-linux fileutils e2f
 
 Provides:	yast2-module-backup
 Obsoletes:	yast2-module-backup
+Provides:	yast2-trans-backup
+Obsoletes:	yast2-trans-backup
 
 %description
 -
