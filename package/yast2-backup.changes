@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Oct 29 11:37:07 CET 2003 - lslezak@suse.cz
+
+- simply check available free space (#30042)
+- version 2.9.1
+
+-------------------------------------------------------------------
 Wed Oct 22 09:31:10 CEST 2003 - lslezak@suse.cz
 
 - exclude /media and /windows directories, exclude ntfs file
