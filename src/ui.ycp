@@ -220,11 +220,13 @@ be backed up by root.
     {
         ret = UI::UserInput();
         Backup::archive_name = UI::QueryWidget(`id(`filename), `Value);
+	symbol type = (UI::QueryWidget(`id(`rbgroup), `CurrentButton) == `only_list) ? `txt : UI::QueryWidget(`id(`type), `Value);
 
 	// add extension ".tar" if it is missing
-	if (Backup::archive_type != `txt)
+	if (type != `txt)
 	{
 	    Backup::archive_name = AddMissingExtension(Backup::archive_name, ".tar");
+	    UI::ChangeWidget(`id(filename), `Value, Backup::archive_name);
 	}
 
 	if (ret == `type)
@@ -238,8 +240,6 @@ be backed up by root.
 	{
 	    if (ret == `next)
 	    {
-		symbol type = UI::QueryWidget(`id(`type), `Value);
-
 		// check if star is installed for star subarchive type
 		if (type == `star || type == `stgz || type == `stbz)
 		{

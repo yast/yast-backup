@@ -1,0 +1,13 @@
+Read	.target.size "/etc/install.inf" -1
+Read	.target.tmpdir nil
+Read	.target.size nil -1
+Dir	.autoinst.menuentry.s: []
+Read	.proc.filesystems nil
+Return	nil
+Dump	["iso9660"]
+Read	.proc.filesystems $["afs":"nodev", "iso9660":"\t", "minix":"\t", "nfs":"nodev", "pipefs":"nodev", "proc":"nodev", "ramfs":"nodev", "reiserfs":"\t", "rootfs":"nodev"]
+Return	nil
+Dump	["afs", "iso9660", "nfs", "pipefs", "proc", "ramfs", "rootfs"]
+Read	.proc.filesystems nil
+Return	nil
+Dump	[]

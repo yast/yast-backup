@@ -1,0 +1,19 @@
+// Backup module - testsuite
+//
+// AddIdExt function tests
+//
+// $Id$
+//
+
+{
+
+include "backup/functions.ycp";
+include "testsuite.ycp";
+
+DUMP( AddIdExt2(nil) );
+DUMP( AddIdExt2([]) );
+DUMP( AddIdExt2([$["partition" : "/dev/hda3", "mountpoint" : "/usr"]]) );
+DUMP( AddIdExt2([$["partition" : "/dev/hda3", "mountpoint" : "/usr"], $["partition" : "/dev/hda1", "mountpoint" : "/"]]) );
+
+}
+
