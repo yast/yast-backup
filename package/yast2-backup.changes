@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Mon Sep 15 16:00:10 CEST 2003 - lslezak@suse.de
+
+- check for nil value (#30232)
+- don't disable profile description if archive type is file list
+- log more debug messages
+- version 2.8.13
+
+-------------------------------------------------------------------
 Sun Sep 14 21:08:41 CEST 2003 - adrian@suse.de
 
 - make it working in kcontrol

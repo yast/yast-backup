@@ -329,23 +329,33 @@ global define string get_search_script_parameters() ``{
     {
 	script_options = script_options + " --search";
 
-	foreach(`i, dir_list,
-	    ``{
-		term tmp_id = select(i, 0, nil);
+	y2milestone("Directories to exclude: %1", dir_list);
 
-		if (tmp_id != nil)
-		{
-		    string tmp_d = select(tmp_id, 0, nil);
+	if (size(dir_list) > 0)
+	{
+	    foreach(`i, dir_list,
+		``{
+		    term tmp_id = select(i, 0, nil);
 
-		    if (tmp_d != nil)
+		    if (tmp_id != nil)
 		    {
-			script_options = script_options + " --exclude-dir " + tmp_d;
+			string tmp_d = select(tmp_id, 0, nil);
+
+			if (tmp_d != nil)
+			{
+			    script_options = script_options + " --exclude-dir " + tmp_d;
+			}
 		    }
 		}
-	    }
-	);
+	    );
+	}
 
-	foreach(`i, fs_exclude, ``{script_options = script_options + " --exclude-fs " + i;});
+	y2milestone("Filesystems to exclude: %1", fs_exclude);
+
+	if (size(fs_exclude) > 0)
+	{
+	    foreach(`i, fs_exclude, ``{script_options = script_options + " --exclude-fs " + i;});
+	}
     }
 
     // save list of installable packages and pass it to the search script
@@ -525,6 +535,8 @@ global define void ExcludeNodevFS() ``{
     );
 
     fs_exclude = toset(fs_exclude);
+
+    y2milestone("Detected nodev filesystems: %1", fs_exclude);
 }
 
 

@@ -908,7 +908,6 @@ global define symbol BackupDialog() ``{
     if (Backup::archive_type == `txt)
     {
 	UI::ChangeWidget(`id(`system), `Enabled, false);
-	UI::ChangeWidget(`id(`description), `Enabled, false);
     }
 
     UI::ChangeWidget(`id(`system), `Value, Backup::system);
@@ -2359,6 +2358,7 @@ Backup will be aborted.
 				{
 				    if (substring(line, 0, size(id_not_stored)) == id_not_stored)
 				    {
+					y2warning("PTble was not stored: %1", line);
 					failed_ptables = add(failed_ptables, substring(line, size(id_not_stored)));
 				    }
 				    else
