@@ -26,3 +26,5 @@ Features:
 
     * restore files from archive (by Yast2 Restore module)
 
+    * profile manager (reuse previous setting)
+

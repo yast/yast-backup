@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Mon Feb 17 15:54:55 CET 2003 - lslezak@suse.de
+
+- added profile manager (reuse previous settings)
+- documentation update
+- fixed testsuite
+- version 2.7.6
+
+-------------------------------------------------------------------
 Mon Feb 10 15:04:12 CET 2003 - lslezak@suse.de
 
 - use new autoinstallation API

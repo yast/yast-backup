@@ -18,6 +18,7 @@ Changes:
 
 <P>
 <UL>
+  <LI><B>2003-02-17:</B> Profiles</LI>
   <LI><B>2003-02-06:</B> Star support (ACL backup), documentation update</LI>
   <LI><B>2002-02-01:</B> Added default excluded directories and file systems</LI>
   <LI><B>2002-01-03:</B> Multi volume problems with tar utility</LI>
@@ -180,8 +181,25 @@ to store ACLs.</P>
 
 <P>All package archives, files in <I>info</I> and <I>system</I> subdirectories are archived to one big archive by tar utility.</P>
 
-<P>It is possible to store only list of changed files to file - script <I>backup_archive.pl</I> outputs file names from
-<I>packages_info</I> file. This list of files can be used to create another archive type.</P>
+<P>It is possible to store only list of changed files to file - script
+<I>backup_archive.pl</I> outputs file names from <I>packages_info</I> file.
+This list of files can be used to create another archive type.</P>
+
+
+<H4>Profiles</H4>
+
+<P>Yast2 Backup module contains profile manager. After backup archive is
+created it is possible to store entered settings to profile with specified
+name.</P>
+
+<P>When backup module find any stored profile after start it opens profile dialog.
+Action which can be selected:
+<UL>
+    <LI>don't use profile - start backup with default settings, standard workflow</LI>
+    <LI>use profile without changes - read settings from profile, start backup immediately</LI>
+    <LI>allow changes before use - read settings from profile, start standard workflow to allow changes</LI>
+</UL>
+</P>
 
 
 <H4>Problems and solutions</H4>
@@ -221,9 +239,9 @@ If a file in RPM package is installed in directory which is symbolic link to ano
 directory then it seems like file in linked directory is not in any package (because it
 was not reported by <EM>rpm -qal</EM> command), but <EM>rpm -qf</EM> tells
 right owner.<BR>
-Solution: Stat all files owned by packages, remember device and inode numbers. While searching files
-not owned by any package check if it is in list of all files. If not check if its device
-and inode is in the list. 
+Solution: Stat all files owned by packages, remember device and inode numbers.
+While searching files not owned by any package check if it is in list of all
+files. If not check if its device and inode is in the list. 
 </LI>
 
 </UL>
