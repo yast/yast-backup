@@ -57,11 +57,17 @@ global define symbol ArchDialog() ``{
 				// combo box label
 				_("Select archive &type:"),
 				// archive type - combo box item
-				[ `item(`id(`tgz), _("tar with gzip subarchives")),
+				[ `item(`id(`tgz), _("tar with tar-gzip subarchives")),
 				// archive type - combo box item
-				  `item(`id(`tbz), _("tar with bzip2 subarchives")),
+				  `item(`id(`tbz), _("tar with tar-bzip2 subarchives")),
 				// archive type - combo box item
 				  `item(`id(`tar), _("tar with tar subarchives")),
+				// archive type - combo box item
+				  `item(`id(`stgz), _("tar with star-gzip subarchives")),
+				// archive type - combo box item
+				  `item(`id(`stbz), _("tar with star-bzip2 subarchives")),
+				// archive type - combo box item
+				  `item(`id(`star), _("tar with star subarchives")),
 				// archive type - combo box item
 				  `item(`id(`txt), _("only list file names"))
 				]
@@ -207,7 +213,7 @@ Enter the file name to use.
 
     if (ret == `opts)
     {
-	if (Backup::archive_type == `tar || Backup::archive_type == `tgz || Backup::archive_type == `tbz)
+	if (contains([`tar, `tgz, `tbz, `stgz, `stbz, `star], Backup::archive_type))
 	{
 	    ret = `tar_opt;
 	}
@@ -270,7 +276,7 @@ global define symbol TarOptionsDialog() ``{
     );
 
     // replace 'Next' buton with 'Ok'
-    Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
+    Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default, `key_F10), OKButtonLabel()));
     UI::SetFocus(`id(`ok));
 
     // allow only digits in the text entry
@@ -475,16 +481,16 @@ global define symbol ExcludeDialog() ``{
 
 	    `HBox(
 		// push button label
-                `PushButton(`id(`addnew), _("A&dd...") ) ,
+                `PushButton(`id(`addnew), `opt(`key_F3), _("A&dd...") ) ,
 		// push button label
-		`PushButton(`id(`edit), _("&Edit...") ) ,
+		`PushButton(`id(`edit), `opt(`key_F4), _("&Edit...") ) ,
 		// push button label
-		`PushButton(`id(`delete), _("De&lete") )
+		`PushButton(`id(`delete), `opt(`key_F5), _("De&lete") )
 	    ),
 
 	    `VSpacing(1.0),
 	    // push button label
-            `PushButton(`id(`expert), _("E&xpert...") ),
+            `PushButton(`id(`expert), `opt(`key_F7), _("E&xpert...") ),
 	    `VSpacing(1.0)
 	),
         backup_help_exclude_dir(), true, true
@@ -619,7 +625,7 @@ global define symbol ExcludeFilesystemDialog() ``{
     );
 
     // replace 'Next' buton with 'Ok'
-    Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
+    Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default, `key_F10), OKButtonLabel()));
     UI::SetFocus(`id(`ok));
 
     symbol ret = nil;
@@ -2014,7 +2020,7 @@ global define symbol SummaryDialog() ``{
 	    `RichText(backup_result),
 	    `VSpacing(0.5),
 	    // push button label
-	    `PushButton(`id(`details), _("&Details...")),
+	    `PushButton(`id(`details), `opt(`key_F2), _("&Details...")),
 	    `VSpacing(1.0)
 	),
 	backup_help_summary(), true, true
