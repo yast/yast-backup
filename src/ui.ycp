@@ -88,8 +88,9 @@ global define symbol ArchDialog() ``{
     {
 	UI::WarningPopup(_("You are not logged in as root.
 Some files can only be read by the user 'root'.
-Not all files will be backed up
-so cannot later be restored.
+Not all files will be backed up;
+thus it isn't possible to restore
+the system completely later.
 
 System areas on hard disks can only
 be backed up by root.

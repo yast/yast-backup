@@ -49,7 +49,7 @@ global define string backup_help_archive_options() ``{
     + _("<P><B>Creating a multivolume archive</B><BR>Check the option to create a multivolume archive and select your backup medium.<BR>If your backup medium is not in the list, select <B>User defined</B> and enter the volume size in the field.</P>")
 
     // For translators: help text in tar options dialog - part 3/3
-    + _("<P><B>Note:</B> 1 kB = 1000 Bytes, 1 kiB = 1024 Bytes, etc. Volume size is truncated to multiply of 2048.</P>");
+    + _("<P><B>Note:</B> 1 kB = 1000 Bytes, 1 kiB = 1024 Bytes, etc. Volume size is truncated to multiples of 2048.</P>");
 }
 
 
