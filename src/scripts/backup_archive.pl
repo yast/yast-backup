@@ -256,13 +256,11 @@ open(FILES_INFO, "> $tmp_dir/files_info")
 
 if (defined open(FILES, $files_info))
 {
-# TODO: do not copy package descriptions if no file can be backuped
-    
     while (my $line = <FILES>)
     {
 	chomp($line);
 	
-	if ($line =~ /\/.+/)
+	if ($line =~ /^\/.+/)
 	{
 	    if (-r $line)		# output only readable files from files-info
 	    {
