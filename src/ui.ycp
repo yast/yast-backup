@@ -364,7 +364,7 @@ define boolean InstallNeededPackages (list<string> packages) {
  */
 define boolean AbortNewProfileCreation(string profile_name) {
     // TRANSLATORS: Popup question, [Yes] means `cancel the profile creation`
-    boolean cancel_it = Popup::YesNo(_("Are you sure you want to cancel the profile creation?"));
+    boolean cancel_it = Popup::YesNo(_("Really cancel the profile creation?"));
 
     if (cancel_it) {
 	// remove the profile
