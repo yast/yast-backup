@@ -84,7 +84,7 @@ global map ordinal_numbers = $[
 
 // global settings
 
-global map backup_profiles = $[] ;			// map of all available profiles
+global map<string, map> backup_profiles = $[] ;			// map of all available profiles
 
 // global defaults
 global string default_archive_name = "";		// archive file name
@@ -317,9 +317,9 @@ global define integer GetCapacity(list<map> media, symbol m) ``{
 
     if (media != nil)
     {
-	foreach(map val, media,
+	foreach(map<string,any> val, media,
 	    ``{
-		if (is(val, map) && ((symbol)(val["symbol"]:nil)) == m)
+		if (((symbol)(val["symbol"]:nil)) == m)
 		{
 		    result = (integer)(val["capacity"]:nil);
 		}
@@ -487,7 +487,7 @@ global define string get_archive_script_parameters(string file_list, string file
 
 	list<string> detected_ext2_strings = [];
 
-	foreach(map info, detected_ext2,
+	foreach(map<string, any> info, detected_ext2,
 	    ``{
 		string part = (string)(info["partition"]:nil);
 
@@ -938,7 +938,7 @@ global define void ReadCronSettings() ``{
  */
 
 global define boolean ReadBackupProfiles() ``{
-    backup_profiles = (map)SCR::Read( .target.ycp, "/var/adm/YaST/backup/profiles" );
+    backup_profiles = (map<string, map>) SCR::Read( .target.ycp, "/var/adm/YaST/backup/profiles" );
 
     // if the list is empty or the file does not exists, set empty map
     if( backup_profiles == nil ) backup_profiles = $[];
@@ -1128,7 +1128,7 @@ global define void StoreSettingsToBackupProfile( string profile_name ) ``{
     ] ;
 
     // add the new profile
-    backup_profiles = add( backup_profiles, profile_name, new_profile );
+    backup_profiles[profile_name] = new_profile;
 }
 
 /**
@@ -1142,7 +1142,7 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
     if( !haskey( backup_profiles, profile_name ) ) return false;
 
     // get the profile data
-    map profile = backup_profiles[profile_name]:nil;
+    map profile = (map) (backup_profiles[profile_name]:nil);
 
     // setup global settings according to profile
     // TODO: check, if all settings are valid
@@ -1189,7 +1189,7 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
 	}
 	else if (is(read_dir_list, list<string>))
 	{
-	    dir_list = read_dir_list;
+	    dir_list = (list<string>) read_dir_list;
 	}
 	else
 	{
@@ -1386,7 +1386,7 @@ global define boolean RemoveBackupProfile( string profile_name ) ``{
     // return false, is there is no such profile
     if( !haskey( backup_profiles, profile_name ) ) return false;
 
-    backup_profiles = remove( backup_profiles, profile_name );
+    backup_profiles = (map<string, map>) remove( backup_profiles, profile_name );
 
     return true;
 }

@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Jan 12 16:38:17 CET 2004 - lslezak@suse.cz
+
+- fixes for the new interpreter
+- require autoyast2 package
+- version 2.9.3
+
+-------------------------------------------------------------------
 Thu Dec 18 13:12:59 CET 2003 - lslezak@suse.cz
 
 - fixes for the new interpreter
