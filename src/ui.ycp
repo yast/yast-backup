@@ -25,7 +25,7 @@ import "Popup";
 import "String";
 import "NetworkPopup";
 import "Nfs";
-import "Require";
+import "Package";
 import "Popup";
 
 include "backup/help_texts.ycp";
@@ -623,8 +623,8 @@ Install it?
 
 			if (inst == true)
 			{
-			    // install star - use Require module
-			    inst = Require::DoInstallAndRemove(["star"], []);
+			    // install star - use Package module
+			    inst = Package::DoInstall(["star"]);
 			}
 
 			// if star is still not installed start new UI cycle

@@ -23,8 +23,7 @@ import "Wizard";
 //import "Mode";
 import "Backup";
 import "Report";
-
-include "wizard/sequencer.ycp";
+import "Sequencer";
 import "Popup";
 
 include "backup/functions.ycp";
@@ -141,6 +140,8 @@ if (Backup::cron_mode != true)
 
     // create wizard dialog
     Wizard::CreateDialog();
+    // set icon
+    Wizard::SetDesktopIcon("backup");
 }
 
 Backup::ReadBackupProfiles();
@@ -179,7 +180,7 @@ if (Backup::cron_mode == true)
 }
 
 // start wizard sequencer
-WizardSequencer(aliases, sequence);
+Sequencer::Run(aliases, sequence);
 
 if (Backup::cron_mode != true)
 {
