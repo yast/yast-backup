@@ -446,7 +446,7 @@ global define map WriteProfile(list volumes) ``{
 
     string profilefile = directory + "autoinst.xml";
 
-    return $[ "result" : Profile::Write(profilefile), "profile" : profilefile ];
+    return $[ "result" : Profile::Save(profilefile), "profile" : profilefile ];
 }
 
 }
