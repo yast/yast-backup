@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Dec  4 09:20:43 CET 2001 - lslezak@suse.cz
+
+- added 3rd parameter in select() call
+- version 2.5.5
+
+-------------------------------------------------------------------
 Mon Dec  3 14:07:46 CET 2001 - lslezak@suse.cz
 
 - summary dialog fixes
