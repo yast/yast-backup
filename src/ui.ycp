@@ -142,7 +142,7 @@ global define symbol CronDialog() ``{
 			    `HBox(
 				`HSpacing(1),
 				// combo box label
-				`ComboBox(`id(`weekday), _("&Week Day"), items),
+				`ComboBox(`id(`weekday), _("Day of &Week"), items),
 				`HSpacing(2),
 				// integer field widget label
 				`IntField(`id(`day), _("&Day of Month"), 1, 31, current_settings["day"]:0),
@@ -1387,6 +1387,9 @@ global define symbol SearchingModifiedDialog() ``{
     // read list of available packages at the original installation sources
     Backup::ReadInstallablePackages();
 
+    // initialize list of completely backed up packages
+    Backup::complete_backup = [];
+
     y2milestone("Search script: %1", Backup::script_get_files + Backup::get_search_script_parameters());
     boolean started = SCR::Execute(.background.run_output, Backup::script_get_files + Backup::get_search_script_parameters());
     list script_out = [ ];
@@ -1415,6 +1418,7 @@ Backup will be aborted.
 
     // output strings from search script
     string id_package = "Package: ";
+    string id_complete_package = "Complete package: ";
     string id_file = "Size: ";
     string id_nopackage = "Nopackage:";
     string id_instprefixes = "Installed: ";
@@ -1449,7 +1453,7 @@ Backup will be aborted.
 	    }
 	    else
 	    {
-		if (substring(line, 0, size(id_package)) == id_package)
+		if (substring(line, 0, size(id_package)) == id_package || substring(line, 0, size(id_complete_package)) == id_complete_package)
 		{
 		    // store package's changed files
 		    if (size(package_files) > 0)
@@ -1464,7 +1468,14 @@ Backup will be aborted.
 			selected_pkg_num = selected_pkg_num + 1;
 		    }
 
-		    actual_package = substring(line, size(id_package));
+		    boolean complete = (substring(line, 0, size(id_complete_package)) == id_complete_package);
+		    actual_package = complete ? substring(line, size(id_complete_package)) : substring(line, size(id_package));
+
+		    if (complete == true)
+		    {
+			y2debug("Complete package: %1", actual_package);
+			Backup::complete_backup = add(Backup::complete_backup, actual_package);
+		    }
 		    package_num = package_num + 1;
 
 		    if (cron_mode != true)
@@ -2105,6 +2116,11 @@ global define symbol ArchivingDialog() ``{
 	num_stages = num_stages + 1;	// add NOPACKAGE archive step
     }
 
+    if (size(Backup::complete_backup) > 0)
+    {
+	num_stages = num_stages + 1;	// add complete list step
+    }
+
     // progress bar stage
     stages1 = add(stages1, _("Create package archives"));
     // progress bar stage
@@ -2258,7 +2274,8 @@ Backup will be aborted.
 			    {
 				y2milestone("vol_name: %1, nfsmount: %2, size(nfsmount):%3", vol_name, Backup::nfsmount, size(Backup::nfsmount));
 				string location = substring(vol_name, size(Backup::nfsmount));
-				vol_name = Backup::nfsserver + ":" + location;
+				vol_name = Backup::nfsserver + ":" + Backup::nfsexport + location;
+				y2internal("Volume name: %1", vol_name);
 			    }
 
 			    created_archive_files = add(created_archive_files, vol_name);

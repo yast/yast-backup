@@ -125,6 +125,7 @@ my @ext2_parts = ();
 my $verbose = '0';
 my $files_info = '';
 my $comment_file = '';
+my $complete_backup = '';
 my $multi_volume = undef;
 
 # parse command line options
@@ -132,7 +133,8 @@ GetOptions('archive-name=s' => \$archive_name,
     'archive-type=s' => \$archive_type, 'help' => \$help,
     'store-ptable' => \$store_pt, 'store-ext2=s' => \@ext2_parts,
     'verbose' => \$verbose, 'files-info=s' => \$files_info,
-    'comment-file=s'=> \$comment_file, 'multi-volume=i' => \$multi_volume
+    'comment-file=s'=> \$comment_file, 'multi-volume=i' => \$multi_volume,
+    'complete-backup=s' => \$complete_backup
 );
 
 
@@ -153,6 +155,7 @@ if ($help or $files_info eq '' or $archive_name eq '')
     print "  --store-ptable        Add partition tables information to archive\n";
     print "  --store-ext2 <device> Store Ext2 system area from device\n";
     print "  --files-info <file>         Data file from backup_search script\n";
+    print "  --complete-backup <file>	Read list of completly backed up packages from a file\n";
     print "  --comment-file <file> Use comment stored in file\n\n";
         
     exit 0;
@@ -233,7 +236,7 @@ open(OUT, '>', $tmp_dir."/files")
 print OUT "info/files\n";
 $files_num++;
 
-print OUT "info/packages_info\n";
+print OUT "info/packages_info.gz\n";
 $files_num++;
 
 
@@ -367,6 +370,17 @@ if (length($comment_file) > 0)
     }
 }
 
+# copy completely backed up packages
+if (length($complete_backup) > 0)
+{
+    system("cp $complete_backup $tmp_dir/complete_backup");
+
+    if ($? == 0)
+    {
+	print OUT "info/complete_backup\n";
+	$files_num++;
+    }
+}
 
 if ($verbose)
 {
@@ -610,6 +624,9 @@ if (defined $opened)
 }
 
 close(FILES_INFO);
+
+# compress file packages_info (avg. ratio is ~10:1)
+system("/usr/bin/gzip -9 $tmp_dir/packages_info");
 
 close(OUT);
 

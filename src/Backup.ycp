@@ -198,6 +198,7 @@ global string selected_profile = nil;   // name of the selected profile, nil for
 global integer undetected_volume_size = 1024*1024*1024;
 
 global list installable_packages = [];
+global list complete_backup = [];
 
 // cached detected mount points
 map detected_mpoints = nil;
@@ -411,6 +412,20 @@ global define boolean PostBackup() ``{
 global define string get_archive_script_parameters(string file_list, string file_comment) ``{
     string archive_options = " --verbose --files-info " + file_list + " --comment-file " + file_comment;
 
+    if (size(complete_backup) > 0)
+    {
+	// store list of completely backed up files into a file
+	string complete_string = mergestring(complete_backup, "\n");
+	string tmpdir = SCR::Read(.target.tmpdir);
+
+	SCR::Write(.target.string, tmpdir + "complete_backup", complete_string);
+	archive_options = archive_options + " --complete-backup " + tmpdir + "complete_backup";
+    }
+    else
+    {
+	y2debug("complete_backup is empty");
+    }
+
     y2debug("nfsmount: %1, archive_name: %2", nfsmount, archive_name);
 
     archive_options = archive_options + " --archive-name " + ((target_type == `file) ? archive_name :
@@ -481,7 +496,7 @@ global define string get_archive_script_parameters(string file_list, string file
 	}
     }
 
-    y2debug("Archive script options: %1", archive_options);
+    y2milestone("Archive script options: %1", archive_options);
 
     return archive_options;
 }
