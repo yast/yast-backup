@@ -76,6 +76,7 @@ map profilewritten = $[];	// result of writing profile
 
 boolean cron_mode = false;
 string cron_profile = "";
+map remove_result = $[];
 
 if (Mode::test == true)
 {
@@ -259,6 +260,11 @@ else
 	Report::DisplayMessages(false, 0);
 	Report::DisplayWarnings(false, 0);
 	Report::DisplayErrors(false, 0);
+
+	map sel_profile = eval(Backup::backup_profiles[cron_profile]:$[]);
+
+	// check existing archive, remove old archives
+	remove_result = RemoveOldArchives(Backup::archive_name, sel_profile[`cron_settings, "old"]:100000, Backup::multi_volume);
     }
 
     // start wizard sequencer

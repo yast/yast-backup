@@ -568,6 +568,13 @@ global define string GetBaseName(string file)
     return result;
 }
 
+/**
+ * Send mail to specified user
+ * @param user Target email address
+ * @param subject Subject string
+ * @param message Message body
+ * @return boolean True on success
+ */
 global define boolean SendMail(string user, string subject, string message) ``{
     // check user
     if (user == "" || user == nil)
@@ -575,6 +582,7 @@ global define boolean SendMail(string user, string subject, string message) ``{
 	return false;
     }
 
+    // get temporary directory
     string d = SCR::Read(.target.tmpdir);
     if (d == "" || d == nil)
     {
@@ -584,16 +592,22 @@ global define boolean SendMail(string user, string subject, string message) ``{
 
     string mail_file = d + "/mail";
 
-    // write mail body
+    // write mail body to the temporary file
     if (SCR::Write(.target.string, mail_file, body) == false)
     {
 	return false;
     }
 
-    // send mail
-    return (SCR::Execute(.target.bash, "/bin/cat " + mail_file + " | /usr/bin/mail " + user + " -s '" + subject + "'") == 0);
+    // send mail - set UTF-8 charset for message text
+    return (SCR::Execute(.target.bash, "export charset=UTF-8; export ttycharset=UTF-8; /bin/cat " + mail_file + " | /usr/bin/mail " + user + " -s '" + subject + "'") == 0);
 }
 
+/**
+ * Create string from character ch with the same lenght as input
+ * @param input Input string
+ * @param ch String used in output
+ * @return string String containg size(input) character
+ */
 global define string CreateUnderLine(string input, string ch) ``{
     integer len = size(input);
     string ret = "";
@@ -607,13 +621,18 @@ global define string CreateUnderLine(string input, string ch) ``{
     return ret;
 }
 
-global define boolean SendSummary() ``{
-    // e-mail - subject
-    string subject = _("YaST2 Automatic Backup");
+/**
+ * Send summary mail of the backup process to root.
+ * @param remove_result Result of removing/renaming of the old archives
+ * @return boolean True on success
+ */
+global define boolean SendSummary(map remove_result) ``{
+    // e-mail subject - %1 is profile name
+    string subject = sformat(_("YaST2 Automatic Backup (%1)"), cron_profile);
 
     // get all warnings and errors from Report module
     string reported = Report::GetMessages((Report::NumWarnings() > 0), (Report::NumErrors() > 0), false);
-    // TODO: remove richtext tags
+    // TODO: remove richtext tags from Report:: result
 
     if (Report::NumErrors() > 0)
     {
@@ -621,14 +640,48 @@ global define boolean SendSummary() ``{
 	subject = subject + _(" - FAILED");
     }
 
+    y2debug("remove_result: %1", remove_result);
+
+    string removed = "";
+    if (size(remove_result["removed"]:[]) > 0)
+    {
+	// header in email body followed by list of files
+	removed = _("Removed old archives:") + br;
+
+	foreach(string f, remove_result["removed"]:[], ``{
+		removed = removed + f + br;
+	    }
+	);
+    }
+
+    string renamed = "";
+    if (size(remove_result["renamed"]:$[]) > 0)
+    {
+	// header in email body followed by list of files
+	renamed = _("Renamed old archives:") + br;
+
+	foreach(string from, string to, remove_result["renamed"]:$[], ``{
+		renamed = renamed + from + " -> " + to + br;
+	    }
+	);
+    }
+
+    // header in email body
+    string oldarch = _("Changed existing archives:");
+    string ren_header = (size(renamed) > 0 || size(removed) > 0) ? oldarch + br + CreateUnderLine(oldarch, "=") : "";
+
+    // header in email body
     string summary_heading = _("Summary:");
+    // header in email body
     string detail_heading = _("Details:");
 
-    string body = sformat(_("BACKUP REPORT - Profile '%1'"), cron_profile) + br + br + br
+    // header in email body
+    string body = sformat(_("YAST2 BACKUP REPORT - Profile '%1'"), cron_profile) + br + br + br
+	// header in email body followed by errors or warnings
 	+ ((size(reported) > 0) ? _("Some problems occured during automatic backup:") + br + reported + br + br : "")
-	+ summary_heading + br + CreateUnderLine(summary_heading) + br + br
-	+ backup_result + br + br + detail_heading + br + CreateUnderLine(detail_heading)
-	+ br + br + backup_details;
+	+ summary_heading + br + CreateUnderLine(summary_heading, "=") + br + br + backup_result + br
+	+ ((size(ren_header) > 0) ? ren_header + br + br + renamed + br + br + removed + br + br : "")
+	+ detail_heading + br + CreateUnderLine(detail_heading, "=") + br + br + backup_details;
 
     if (SendMail("root", subject, body) == false)
     {
@@ -639,7 +692,45 @@ global define boolean SendSummary() ``{
     return true;
 }
 
-global define boolean RemoveOldArchives(string name, integer max) ``{
+/**
+ * Convert number of second since 1.1.1970 to string. Result has format YYYYMMDDHHMMSS
+ * @param sec Number of seconds
+ * @return string String representation of the time, returns input value (sec) if an error occured
+ */
+global define string SecondsToDateString(integer sec) ``{
+    // convert seconds to time string - use localtime function in perl
+    map result = SCR::Execute(.target.bash_output, "/usr/bin/perl -e '($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(" + sformat("%1", sec) + ");
+$mon++;
+$year += 1900;
+printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
+
+    string ret  = (result["exit"]:-1 == 0) ? result["stdout"]:sformat("%1", sec) : sformat("%1", sec);
+    y2debug("time string: %1", ret);
+
+    return ret;
+}
+
+/**
+ * Remove and/or rename old existing archives
+ * @param name Archive name
+ * @param max Maximum count of existing archives
+ * @param multivolume Is archive archive multivolume?
+ * @return map result
+ */
+global define map RemoveOldArchives(string name, integer max, boolean multivolume) ``{
+    return (multivolume == true) ? RemoveOldMultiArchives(name, max)
+	: RemoveOldSingleArchives(name, max);
+}
+
+/**
+ * Remove and/or rename old existing single archives
+ * @param name Archive name
+ * @param max Maximum count of existing archives
+ * @return map result
+ */
+global define map RemoveOldSingleArchives(string name, integer max) ``{
+    list removed = [];
+    map renamed = $[];
 
     if (name == "" || name == nil)
     {
@@ -652,6 +743,7 @@ global define boolean RemoveOldArchives(string name, integer max) ``{
     if (sz < 0)
     {
 	// file doesn't exist, success
+	y2milestone("Archive doesn't exist");
 	return true;
     }
 
@@ -665,38 +757,194 @@ global define boolean RemoveOldArchives(string name, integer max) ``{
 	return true;
     }
 
-    string command = "/bin/ls -1 -t " + dir + "/*-" + fname;
-
+    string command = "/bin/ls -1 -t " + dir + "/*-" + fname + " 2> /dev/null";
     map result = SCR::Execute(.target.bash_output, command);
-    if (result["exit"]:-1 != 0)
-    {
-	// error
-    }
-
     list(string) files = splitstring(result["stdout"]:"", "\n");
 
-    // use regexp
-    files = filter(string file, files, ``(regexpmatch(file, d + "/[0-9]+-" + fname)));
+    list mv_dates = [];
+
+    // filter files with date - use regexp
+    files = filter(string file, files, ``(regexpmatch(file, "^" + dir + "/[0-9]{14}-" + fname + "$")));
+
+    y2milestone("Old archives: %1", files);
 
     if (size(files) >= max && max >= 0)
     {
 	// remove the old archives
 	while(size(files) >= max)
 	{
-	    command = "/bin/rm -f " + files[size(files) - 1]:"__DUMMY__";
+	    string oldarchive = files[size(files) - 1]:"__DUMMY__";
+
+	    // remove old archive
+	    command = "/bin/rm -f " + oldarchive;
+	    y2milestone("Removing old archive: %1", oldarchive);
 	    result = SCR::Execute(.target.bash_output, command);
+	    removed = add(removed, oldarchive);
+
+	    // remove old XML profile
+	    string oldXML = dir + "/" + GetBaseName(oldarchive) + ".xml";
+	    command = "/bin/rm -f " + oldXML;
+	    result = SCR::Execute(.target.bash_output, command);
+	    removed = add(removed, oldXML);
+
 	    files = remove(files, size(files) - 1);
 	}
     }
 
     map stat = SCR::Read(.target.stat, name);
     integer ctime = stat["ctime"]:0;
+    string ctime_str = SecondsToDateString(ctime);
 
     // rename existing archive
-    command = "/bin/mv -f name " + dir + "/" + ctime + "fname";
+    command = "/bin/mv -f " + name + " " + dir + "/" + ctime_str + "-" + fname;
     result = SCR::Execute(.target.bash_output, command);
+    renamed[name] = dir + "/" + ctime_str + "-" + fname;
 
-    return true;
+    // rename autoinstallation profile
+    string oldXML = dir + "/" + GetBaseName(name) + ".xml";
+    string newXML = dir + "/" + ctime_str + "-" + GetBaseName(fname) + ".xml";
+    command = "/bin/mv -f " + oldXML + " " + newXML;
+    result = SCR::Execute(.target.bash_output, command);
+    renamed[oldXML] = newXML;
+
+    return $[ "removed" : removed, "renamed" : renamed ];
+}
+
+
+/**
+ * Remove and/or rename old existing multivolume archives
+ * @param name Archive name
+ * @param max Maximum count of existing archives
+ * @return map result
+ */
+global define map RemoveOldMultiArchives(string name, integer max) ``{
+    list removed = [];
+    map renamed = $[];
+
+    if (name == "" || name == nil)
+    {
+	return true;
+    }
+
+    // check wheter older archives exist
+    list parts = splitstring(name, "/");
+    string fname = parts[size(parts) - 1]:"";
+    string dir = mergestring(remove(parts, size(parts) - 1), "/");
+
+    if (size(fname) == 0)
+    {
+	return true;
+    }
+
+    // check whether first archive already exists
+    integer sz = SCR::Read(.target.size, dir + "/" + "01_" + fname);
+
+    if (sz < 0)
+    {
+	// file doesn't exist, success
+	y2milestone("First multivolume archive doesn't exist");
+	return true;
+    }
+    else
+    {
+	y2milestone("First multivolume archive already exists");
+    }
+
+    string command = "/bin/ls -1 -t " + dir + "/*-*_" + fname + " 2> /dev/null";
+    map result = SCR::Execute(.target.bash_output, command);
+    list(string) files = splitstring(result["stdout"]:"", "\n");
+
+    list mv_dates = [];
+
+    // filter files with date - use regexp
+    list multi = [];
+    foreach(string file, files, ``{
+	    if (regexpmatch(file, "^" + dir + "/[0-9]{14}-[0-9][0-9]+_" + fname + "$"))
+	    {
+		multi = add(multi, file);
+
+		string date = regexpsub(file,  "^" + dir + "/([0-9]{14})-[0-9][0-9]+_" + fname + "$", "\\1");
+
+		if (!contains(mv_dates, date))
+		{
+		    mv_dates = add(mv_dates, date);
+		}
+	    }
+	}
+    );
+    files = multi;
+
+    y2milestone("Old archives: %1", files);
+    y2milestone("Old archive dates: %1", mv_dates);
+
+    if (size(mv_dates) >= max && max >= 0)
+    {
+	// remove the old archives
+	while(size(mv_dates) >= max)
+	{
+	    string oldarchivedate = mv_dates[size(mv_dates) - 1]:"__DUMMY__";
+
+	    y2milestone("removing archives with date %1", oldarchivedate);
+
+	    foreach(string fn, files,
+		``{
+		    if (regexpmatch(fn, "^" + dir + "/" + oldarchivedate + "-[0-9]+_" + fname + "$"))
+		    {
+			// remove old archive
+			command = "/bin/rm -f " + fn;
+			y2milestone("Removing old volume: %1", fn);
+			removed = add(removed, fn);
+			SCR::Execute(.target.bash_output, command);
+		    }
+		}
+	    );
+
+	    // remove old XML profile
+	    string oldXML = dir + "/" + oldarchivedate + "-" + GetBaseName(fname) + ".xml";
+	    command = "/bin/rm -f " + oldXML;
+	    removed = add(removed, oldXML);
+	    result = SCR::Execute(.target.bash_output, command);
+
+	    mv_dates = remove(mv_dates, size(mv_dates) - 1);
+	}
+    }
+
+    // get creation time of the first part of the archive
+    map stat = SCR::Read(.target.stat, dir + "/" + "01_" + fname);
+    integer ctime = stat["ctime"]:0;
+    string ctime_str = SecondsToDateString(ctime);
+
+    command = "/bin/ls -1 -t " + dir + "/*_" + fname + " 2> /dev/null";
+    result = SCR::Execute(.target.bash_output, command);
+    files = splitstring(result["stdout"]:"", "\n");
+    files = filter(string file, files, ``(regexpmatch(file, "^" + dir + "/[0-9]+_" + fname + "$")));
+    y2milestone("Existing volumes: %1", files);
+
+    foreach(string volume, files, ``{
+	list vol_parts = splitstring(volume, "/");
+	string vol_fname = vol_parts[size(vol_parts) - 1]:"";
+	string vol_dir = mergestring(remove(vol_parts, size(vol_parts) - 1), "/");
+
+        // rename existing archive
+	string from =  vol_dir + "/" + vol_fname;
+	string to = vol_dir + "/" + ctime_str + "-" + vol_fname;
+        command = "/bin/mv -f " + from + " " + to;
+	result = SCR::Execute(.target.bash_output, command);
+
+	renamed[from] = to;
+
+	y2milestone("renamed volume %1", volume);
+	}
+    );
+
+    // rename autoinstallation profile
+    string oldXML = dir + "/" + GetBaseName(name) + ".xml";
+    string newXML = dir + "/" + ctime_str + "-" + GetBaseName(fname) + ".xml";
+    command = "/bin/mv -f " + oldXML + " " + newXML;
+    result = SCR::Execute(.target.bash_output, command);
+    renamed[oldXML] = newXML;
+
+    return $[ "removed" : removed, "renamed" : renamed ];
 }
 
 }

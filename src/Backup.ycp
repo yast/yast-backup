@@ -966,24 +966,29 @@ global define string CreateCronDescription(string profilename) ``{
 	integer weekday = input["weekday"]:0;
 	symbol every = input["every"]:`unknown;
 
-	string minute_str = sformat("%1", minute);
-	// 2 digit minutes
-	if (minute < 10)
-	{
-	    minute_str = "0" + minute_str;
-	}
+	// hour/minutes time format - set according your local used format
+	// usually used conversion specificators:
+	// %H - hour (0..23), %I - hour (0..12)
+	// %M - minute (0..59), %p - `AM' or `PM'
+	// (see man date for more details)
+	string timeformat = _("%I:%M %p");
+
+	string bashcommand = sformat("/bin/date --date '%1:%2' '+%3'", hour, minute, timeformat);
+	// convert hour and minutes to localized time string - use date utility
+	map result = SCR::Execute(.target.bash_output, bashcommand);
+	string ltime  = mergestring(splitstring(result["stdout"]:"", "\n"), "");
 
 	if (every == `day)
 	{
-	    ret = sformat(_("Backup daily (at %1:%2)"), hour, minute_str);
+	    ret = sformat(_("Backup daily (at %1)"), ltime);
 	}
 	else if (every == `week)
 	{
-	    ret = sformat(_("Backup weekly (%1 at %2:%3)"), daynames[weekday]:"?", hour, minute_str);
+	    ret = sformat(_("Backup weekly (%1 at %2)"), daynames[weekday]:"?", ltime);
 	}
 	else if (every == `month)
 	{
-	    ret = sformat(_("Backup monthly (%1 day at %2:%3)"), ordinal_numbers[day]:"?", hour, minute_str);
+	    ret = sformat(_("Backup monthly (%1 day at %2)"), ordinal_numbers[day]:"?", ltime);
 	}
     }
 

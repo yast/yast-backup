@@ -213,16 +213,20 @@ global define string backup_help_summary() ``{
 
 global define string backup_help_cron_dialog() ``{
 
+    // For translators: help text in the automatic backup dialog (1/3)
     return _("<P><B><BIG>Automatic backup</BIG></B><BR>Selected profile can be started automatically at the background without any user interaction.</P>")
 
-    + _("<P>To start backup automatically with the selected profile check option <B>Start backup automatically</B> and set how often and when will be backup started.</P>")
+    // For translators: help text in the automatic backup dialog (2/3)
+    + _("<P>To start backup automatically with the selected profile check option <B>Start backup automatically</B> and set how often and when will be backup started. Use 24-hour clock format for hour value.</P>")
 
-    + _("<P>Backup archive from previous run will be renamed. If number of the old archives is greates that set value then the oldest archives will be deleted.</P>");
+    // For translators: help text in the automatic backup dialog (3/3)
+    + _("<P>Previous backup archive if it exists will be renamed - date in the form YYYYMMDDHHMMSS will be prepended to the file name. If number of the old archives is greates that predefined value then the oldest archives will be deleted.</P>");
 
 }
 
 /**
  * Help text displayed in profile management dialog
+ * @return Translated help text
  */
 
 global define string profile_help() ``{
