@@ -18,6 +18,7 @@
 {
 
 module	"Backup";
+import "AIClone";
 
 textdomain "backup";
 
@@ -313,6 +314,115 @@ global define void ExcludeNodevFS() ``{
     );
 
     fs_exclude = toset(fs_exclude);
+}
+
+
+/**
+ * Write autoinstallation profile to file autoinst.xml to the same directory as archive
+ * @return map map $[ "result" : boolean (true on success), "profile" : string (profile file name) ]
+ */
+
+global define map WriteProfile(list volumes) ``{
+
+    string archive = archive_name;
+    integer pos = findlastof(archive, "/");
+    string dir = "";
+    string file = archive;
+
+    if (pos != nil && pos > 0)
+    {
+	dir = substring(archive, 0, pos) + "/";
+	file = substring(archive, pos + 1);
+    }
+
+    string directory = dir;
+
+    y2debug("dir: %1, file: %2", dir, file);
+
+    // create profile with with currently available resources (partitioning, software etc.)
+    AIClone::constructProfile();
+
+    // add backup information to the profile
+    map configure = AIClone::Profile["configure"]:$[];
+
+    string prefix = "file://";
+
+    // change prefix according to volume size or archive destination
+    // check if file is written to NFS file system
+    list fs = SCR::Read(.proc.mounts);
+
+    fs = filter(map info, fs, ``{return (lookup(info, "vfstype", "") == "nfs");});
+
+    foreach(map info, fs, ``{
+	    string mountpoint = lookup(info, "file", "");
+	    string spec = lookup(info, "spec", "");
+
+	    string server = substring(spec, 0, findfirstof(spec, ":"));
+	    string remdir = substring(spec, findfirstof(spec, ":") + 1);
+
+	    if (mountpoint != "" && spec != "")
+	    {
+		if (substring(archive, 0, size(mountpoint)) == mountpoint)
+		{
+		    y2milestone("NFS server: %1, directory: %2", server, remdir);
+
+		    prefix = "nfs://";
+		    dir = server + ":" + remdir + "/";
+		}
+	    }
+	}
+    );
+
+    // set prefix according to volume size
+    if (prefix == "" && multi_volume == true)
+    {
+	if (volume_size == `fd144 || volume_size == `fd12)
+	{
+	    prefix = "fd://";
+	    dir = "/";
+	}
+	else if (volume_size == `cd700 || volume_size == `cd650)
+	{
+	    prefix = "cd://";
+	    dir = "/";
+	}
+    }
+
+    y2debug("backup write profile: prefix=%1, dir=%2", prefix, dir);
+
+    list volumestrings = [];
+
+    if (size(volumes) > 0)
+    {
+	foreach(string volfile, volumes, ``{
+		string f = volfile;
+		integer pos = findlastof(volfile, "/");
+		if (pos != nil && pos > 0)
+		{
+		    f = substring(volfile, pos + 1);
+		}
+
+		volumestrings = add(volumestrings, prefix + dir + f);
+	    }
+	);
+    }
+    else
+    {
+	volumestrings = [ prefix + dir + file ];
+    }
+
+    map restore = $[ "archives" : volumestrings ];
+    configure["restore"] = restore;
+    AIClone::Profile["configure"] = configure;
+
+    if (directory == "")
+    {
+	directory = "/";
+    }
+
+    string profilefile = directory + "autoinst.xml";
+
+    return $[ "result" : AIClone::writeProfile(profilefile), "profile" : profilefile ];
 }
 
 }
