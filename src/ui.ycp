@@ -25,6 +25,7 @@ import "Popup";
 import "String";
 import "NetworkPopup";
 import "Nfs";
+import "Require";
 
 import "Popup";
 include "ui/file_popups.ycp";
@@ -146,7 +147,7 @@ global define symbol CronDialog() ``{
 				`ComboBox(`id(`weekday), _("Day of &Week"), items),
 				`HSpacing(2),
 				// integer field widget label
-				`IntField(`id(`day), _("&Day of Month"), 1, 31, current_settings["day"]:0),
+				`IntField(`id(`day), _("&Day of Month"), 1, 31, current_settings["day"]:1),
 				`HStretch()
 			    ),
 			    `VSpacing(0.45),
@@ -553,10 +554,8 @@ Install it?
 
 			if (inst == true)
 			{
-			    // install star - use require.ycp function
-			    include "require.ycp";
-
-			    inst = DoInstallAndRemove(["star"], []);
+			    // install star - use Require module
+			    inst = Require::DoInstallAndRemove(["star"], []);
 			}
 
 			// if star is still not installed start new UI cycle
