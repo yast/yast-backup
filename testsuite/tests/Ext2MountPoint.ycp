@@ -1,6 +1,6 @@
 // Backup module - testsuite
 //
-// GetMountedExt2Filesystems function tests
+// Ext2MountPoint function tests
 //
 // $Id$
 //
@@ -17,13 +17,21 @@ $["file":"/proc", "freq":0, "mntops":"rw", "passno":0, "spec":"proc", "vfstype":
 $["file":"/dev/pts", "freq":0, "mntops":"rw", "passno":0, "spec":"devpts", "vfstype":"devpts"],
 $["file":"/boot", "freq":0, "mntops":"rw", "passno":0, "spec":"/dev/hda1", "vfstype":"ext2"],
 $["file":"/local", "freq":0, "mntops":"rw", "passno":0, "spec":"/dev/hda4", "vfstype":"ext2"]
+]],
+
+"etc" : $[ "fstab" :
+[
+$["file":"/media/cdrom", "freq":0, "mntops":"ro,noauto,user,exec", "passno":0, "spec":"/dev/cdrom", "vfstype":"auto"],
+$["file":"/unmounted", "freq":0, "mntops":"defaults", "passno":0, "spec":"/dev/hdb1", "vfstype":"ext2"],
 ]
 
 ]];
 
 
-TEST( ``(GetMountedExt2Filesystems()), [ $[], $[], $[] ], nil );
-TEST( ``(GetMountedExt2Filesystems()), [ READ_mounts, $[], $[] ], nil );
+TEST( ``(Ext2MountPoint("/dev/hda1")), [ $[], $[], $[] ], nil );
+TEST( ``(Ext2MountPoint("/dev/hda1")), [ READ_mounts, $[], $[] ], nil );
+TEST( ``(Ext2MountPoint("/dev/hdb1")), [ READ_mounts, $[], $[] ], nil );
+TEST( ``(Ext2MountPoint("/dev/hdd5")), [ READ_mounts, $[], $[] ], nil );
 
 }
 

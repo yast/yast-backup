@@ -187,6 +187,7 @@ global define symbol TarOptionsDialog() ``{
 
     // replace 'Next' buton with 'Ok'
     Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
+    UI::SetFocus(`id(`ok));
 
     SetMultiWidgetsState();
 
@@ -218,9 +219,10 @@ global define symbol TarOptionsDialog() ``{
 
 	if (ret == `ok)
 	{
-	    if (UI::QueryWidget(`id(`multi_volume), `Value) == true && UI::QueryWidget(`id(`vol), `Value) == `user_defined && tofloat(UI::QueryWidget(`id(`user_size), `Value)) <= 0)
+	    if (UI::QueryWidget(`id(`multi_volume), `Value) == true && UI::QueryWidget(`id(`vol), `Value) == `user_defined &&
+		    (tofloat(UI::QueryWidget(`id(`user_size), `Value)) * tofloat(Backup::GetCapacity(Backup::units_description, UI::QueryWidget(`id(`user_unit), `Value))) / 1024.0) < 2.0)
 	    {
-		UI::WarningPopup(_("Bad volume size"));
+		UI::WarningPopup(_("Volume size have to be at least 2048 bytes."));
 	    }
 	    else
 	    {
@@ -394,22 +396,29 @@ global define symbol ExcludeDialog() ``{
 		{
 		    string txt = lookup(edited, "text", "");
 
-                    if (txt != curr && !contains(Backup::dir_list, `item(`id(txt), txt)))
-                    {
-                        UI::ChangeWidget(`id(`dirs), `Item(curr, 0), txt);
+                    if (txt != curr)
+		    {
+			if (contains(Backup::dir_list, `item(`id(txt), txt)))
+			{
+			    UI::ErrorPopup(sformat(_("Directory %1 is already in the list."), txt));
+			}
+			else
+			{
+			    UI::ChangeWidget(`id(`dirs), `Item(curr, 0), txt);
 
-                        // refresh dir_list content
-                        Backup::dir_list = maplist(`i, Backup::dir_list, ``{
-                            if (select(select(i, 0, ""), 0, "") == curr)
-                            {
-                                return `item(`id(txt), txt);
-                            }
-                            else
-                            {
-                                return i;
-                            }
-                        });
-                    }
+			    // refresh dir_list content
+			    Backup::dir_list = maplist(`i, Backup::dir_list, ``{
+				if (select(select(i, 0, ""), 0, "") == curr)
+				{
+				    return `item(`id(txt), txt);
+				}
+				else
+				{
+				    return i;
+				}
+			    });
+			}
+		    }
 		}
 	    }
 
@@ -429,12 +438,19 @@ global define symbol ExcludeDialog() ``{
                 string new_dir = lookup(result, "text", nil);
 
                 // add new partition only if it's not empty a it isn't already in list
-                if (new_dir != "" && new_dir != nil && !contains(Backup::dir_list, `item(`id(new_dir), new_dir)))
-                {
-                    Backup::dir_list = add(Backup::dir_list, `item(`id(new_dir), new_dir));
+                if (new_dir != "" && new_dir != nil)
+		{
+		    if (contains(Backup::dir_list, `item(`id(new_dir), new_dir)))
+		    {
+			UI::ErrorPopup(sformat(_("Directory %1 is already in the list."), new_dir));
+		    }
+		    else
+		    {
+			Backup::dir_list = add(Backup::dir_list, `item(`id(new_dir), new_dir));
 
-                    UI::ChangeWidget(`id(`dirs), `Items, Backup::dir_list);
-                }
+			UI::ChangeWidget(`id(`dirs), `Items, Backup::dir_list);
+		    }
+		}
             }
 	}
 
@@ -487,6 +503,7 @@ global define symbol ExcludeFilesystemDialog() ``{
 
     // replace 'Next' buton with 'Ok'
     Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
+    UI::SetFocus(`id(`ok));
 
     symbol ret = nil;
 
@@ -542,8 +559,8 @@ global define symbol SystemBackupDialog() ``{
     if (Backup::detected_ext2 == nil)
     {
 	Wizard::SetContents("", `Label(_("Detecting mounted ext2 filesystems...")), "", false, false);
-	Backup::detected_ext2 = GetMountedExt2Filesystems();
-	Backup::ext2_backup = AddId(Backup::detected_ext2);
+	Backup::detected_ext2 = Ext2Filesystems();
+	Backup::ext2_backup = AddIdExt2(Backup::detected_ext2);
     }
 
     Wizard::SetContents( _("System area backup"),
@@ -562,15 +579,14 @@ global define symbol SystemBackupDialog() ``{
 	        `RadioButtonGroup(`id(`rbg),
 	            `VBox(
 		        `VSpacing(0.3),
-			`Left(`RadioButton(`id(`allmounted), `opt(`notify), _("All &mounted"), Backup::backup_all_ext2)),
-			`VSpacing(0.3),
 			`Left(`RadioButton(`id(`none), `opt(`notify), _("N&one"), Backup::backup_none_ext2)),
 			`VSpacing(0.3),
-
+			`Left(`RadioButton(`id(`allmounted), `opt(`notify), _("All &mounted"), Backup::backup_all_ext2)),
+			`VSpacing(0.3),
 			`Left(`RadioButton(`id(`selected), `opt(`notify), _("&Selected:"), Backup::backup_selected_ext2)),
 			`HBox(
 			    `HSpacing(3.0),
-			    `Table(`id(`par), `header(_("Ext2 partitions")), Backup::ext2_backup),
+			    `Table(`id(`par), `header(_("Ext2 partition"), _("Mount point")), Backup::ext2_backup),
 			    `HSpacing(2.0)
 			),
 
@@ -596,7 +612,7 @@ global define symbol SystemBackupDialog() ``{
 
     symbol ret = nil;
 
-    while (ret != `next && ret != `back && ret != `abort && ret != `expert)
+    while (ret != `next && ret != `back && ret != `abort)
     {
 	ret = UI::UserInput();
 
@@ -611,22 +627,33 @@ global define symbol SystemBackupDialog() ``{
 		if (lookup(edited, "clicked", nil) == `ok)
 		{
 		    string txt = lookup(edited, "text", "");
+		    string dir = Ext2MountPoint(txt);
 
-		    if (txt != curr && !contains(Backup::ext2_backup, `item(`id(txt), txt)))
+		    if (txt != curr)
 		    {
-			UI::ChangeWidget(`id(`par), `Item(curr, 0), txt);
+			if (contains(Backup::ext2_backup, `item(`id(txt), txt, dir)))
+			{
+			    UI::ErrorPopup(sformat(_("Partition %1 is already in the list."), txt));
+			}
+			else
+			{
+			    // refresh ext2_backup content
+			    Backup::ext2_backup = maplist(`i, Backup::ext2_backup, ``{
+				if (select(select(i, 0, []), 0, nil) == curr)
+				{
+				    return `item(`id(txt), txt, dir);
+				}
+				else
+				{
+				    return i;
+				}
+			    });
 
-			// refresh ext2_backup content
-			Backup::ext2_backup = maplist(`i, Backup::ext2_backup, ``{
-			    if (select(select(i, 0, []), 0, nil) == curr)
-			    {
-				return `item(`id(txt), txt);
-			    }
-			    else
-			    {
-				return i;
-			    }
-			});
+			    // refresh table content
+			    UI::ChangeWidget(`id(`par), `Items, Backup::ext2_backup);
+
+			    y2debug("ext2: %1", Backup::ext2_backup);
+			}
 		    }
 		}
 	    }
@@ -644,15 +671,24 @@ global define symbol SystemBackupDialog() ``{
 
 	    if (lookup(result, "clicked", nil) == `ok)
 	    {
-		integer sz = size(ext2_backup);
+		integer sz = size(Backup::ext2_backup);
 		string new_par = lookup(result, "text", nil);
+		string dir = Ext2MountPoint(new_par);
 
 		// add new partition only if it's not empty a it isn't already in list
-		if (new_par != "" && new_par != nil && !contains(Backup::ext2_backup, `item(`id(new_par), new_par)))
+		if (new_par != "" && new_par != nil)
 		{
-		    Backup::ext2_backup = add(Backup::ext2_backup, `item(`id(new_par), new_par));
+		    if (contains(Backup::ext2_backup, `item(`id(new_par), new_par, dir)))
+		    {
+			UI::ErrorPopup(sformat(_("Partition %1 is already in the list."), new_par));
+		    }
+		    else
+		    {
+			Backup::ext2_backup = add(Backup::ext2_backup, `item(`id(new_par), new_par, dir));
+			UI::ChangeWidget(`id(`par), `Items, Backup::ext2_backup);
 
-		    UI::ChangeWidget(`id(`par), `Items, Backup::ext2_backup);
+			y2debug("ext2: %1", Backup::ext2_backup);
+		    }
 		}
 	    }
 	}
@@ -713,6 +749,7 @@ global define symbol SearchingModifiedDialog() ``{
     string line = "";
     integer total_packages = 0;
 
+    // output strings from search script
     string id_package = "Package: ";
     string id_file = "Size: ";
     string id_nopackage = "Nopackage:";
@@ -899,8 +936,6 @@ global define symbol SearchingModifiedDialog() ``{
 	    "changed_files" : package_files,
 	    "install_prefixes" : actual_instprefixes
 	];
-
-//	backup_files = add(backup_files, actual_package, package_info);
 
 	Backup::backup_files = add(Backup::backup_files, actual_package, package_info);
 	selected_pkg_num = selected_pkg_num + 1;
@@ -1745,6 +1780,7 @@ global define symbol SummaryDialog() ``{
     }
 
     Wizard::ReplaceNextButton(`PushButton(`id(`finish), `opt(`default), FinishButtonLabel()));
+    UI::SetFocus(`id(`finish));
 
     symbol ret = UI::UserInput();
 

@@ -1,0 +1,35 @@
+// Backup module - testsuite
+//
+// Ext2Filesystems function tests
+//
+// $Id$
+//
+
+{
+
+include "backup/functions.ycp";
+include "testsuite.ycp";
+
+map READ_mounts = $[ "proc" : $[ "mounts" :
+[
+$["file":"/", "freq":0, "mntops":"rw", "passno":0,"spec":"/dev/root", "vfstype":"reiserfs"],
+$["file":"/proc", "freq":0, "mntops":"rw", "passno":0, "spec":"proc", "vfstype":"proc"],
+$["file":"/dev/pts", "freq":0, "mntops":"rw", "passno":0, "spec":"devpts", "vfstype":"devpts"],
+$["file":"/boot", "freq":0, "mntops":"rw", "passno":0, "spec":"/dev/hda1", "vfstype":"ext2"],
+$["file":"/local", "freq":0, "mntops":"rw", "passno":0, "spec":"/dev/hda4", "vfstype":"ext2"]
+]],
+
+"etc" : $[ "fstab" :
+[
+$["file":"/media/cdrom", "freq":0, "mntops":"ro,noauto,user,exec", "passno":0, "spec":"/dev/cdrom", "vfstype":"auto"],
+$["file":"/unmountedk", "freq":0, "mntops":"defaults", "passno":0, "spec":"/dev/hdb1", "vfstype":"ext2"],
+]
+
+]];
+
+
+TEST( ``(Ext2Filesystems()), [ $[], $[], $[] ], nil );
+TEST( ``(Ext2Filesystems()), [ READ_mounts, $[], $[] ], nil );
+
+}
+

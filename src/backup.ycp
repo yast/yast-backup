@@ -145,7 +145,7 @@ Wizard::CreateDialog();
 WizardSequencer(aliases, sequence);
 
 // close dialog
-UI::CloseDialog();
+Wizard::CloseDialog();
 
 y2milestone(" *** Backup module finished *** ");
 

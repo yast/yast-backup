@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Jan 25 16:29:25 CET 2002 - lslezak@suse.cz
+
+- better check of user defined volume size
+- display device mount point in Ext2 system backup dialog
+- testsuite changes
+- version 2.5.10
+
+-------------------------------------------------------------------
 Mon Jan 14 13:51:07 CET 2002 - lslezak@suse.cz
 
 - help text paragraph parts joined to one string
