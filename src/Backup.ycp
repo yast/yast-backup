@@ -98,6 +98,7 @@ global boolean default_search = true;			// search files which do not belong to a
 global boolean default_system = false;			// backup system areas
 global boolean default_display = false;			// display files before creating archive
 global boolean default_do_md5_test = true;
+global boolean default_perms = true;			// store RPM file if owner/permissions were changed
 
 global list default_default_dir = [ "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache" ];		// default excluded directoried from search
 global list default_dir_list = nil;			// selected directoried to exclude
@@ -121,6 +122,17 @@ global map default_selected_files = nil;	// selected files to backup
 global list default_unselected_files = [ ];	// files, which user explicitly unselected
 global list default_selected_directories = [];	// default directories to backup
 
+global boolean default_LVMsnapshot = true;
+global boolean default_testonly = false;
+global boolean default_autoprofile = true;
+global boolean default_systembackup = true;
+global symbol default_target_type = `file;
+global string default_target_device = nil;
+global string default_temporary_dir = "/var/lib/YaST2/backup/tmp";
+
+global string default_nfsserver = "";
+global string default_nfsexport = "";
+
 // global variables initialized to default values:
 global string archive_name = eval( default_archive_name );		// archive file name
 global string description = eval( default_description );		// user comment
@@ -132,11 +144,16 @@ global string user_volume_size = eval( default_user_volume_size );
 global symbol user_volume_unit = eval( default_user_volume_unit );
 
 global integer user_vol_size = 0;
+global string temporary_dir = default_temporary_dir;
 
 global boolean search = eval( default_search );			// search files which do not belong to any package
 global boolean system = eval( default_system );			// backup system areas
 global boolean display = eval( default_display );		// display files before creating archive
 global boolean do_md5_test = eval( default_do_md5_test );
+global boolean perms = eval( default_perms );
+
+global symbol target_type = default_target_type;
+global string target_device = default_target_device;
 
 global list default_dir = eval( default_default_dir ); 		// default excluded directoried from search
 global list dir_list = eval( default_dir_list );		// selected directoried to exclude
@@ -153,6 +170,13 @@ global boolean backup_all_ext2 = eval( default_backup_all_ext2 );		// backup all
 global boolean backup_none_ext2 = eval( default_backup_none_ext2 );		// backup none ext2 partitions
 global boolean backup_selected_ext2 = eval( default_backup_selected_ext2 );	// backup selected ext2 partitions
 
+global boolean LVMsnapshot = default_LVMsnapshot;
+global boolean testonly = default_testonly;
+global boolean autoprofile = default_autoprofile;
+global boolean systembackup = default_systembackup;
+
+global string nfsserver = default_nfsserver;
+global string nfsexport = default_nfsexport;
 
 global map backup_files = eval( default_backup_files );		// all found files to backup
 global map selected_files = eval( default_selected_files );	// selected files to backup
@@ -913,7 +937,14 @@ global define void StoreSettingsToBackupProfile( string profile_name ) ``{
 	`backup_selected_ext2	: backup_selected_ext2,
 	`unselected_files 	: unselected_files,
 	`all_entered_dirs	: all_entered_dirs,
-	`selected_directories	: selected_directories
+	`selected_directories	: selected_directories,
+	`LVMsnapshot		: LVMsnapshot,
+	`testonly		: testonly,
+	`autoprofile		: autoprofile,
+	`systembackup		: systembackup,
+	`perms			: perms,
+	`target_type		: target_type,
+	`target_device		: target_device
     ] ;
 
     // add the new profile
@@ -959,6 +990,13 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
     unselected_files =	profile[ `unselected_files ]:	default_unselected_files;
     all_entered_dirs =	profile[ `all_entered_dirs ]:	default_all_entered_dirs;
     selected_directories = profile[ `selected_directories ]:	default_selected_directories;
+    LVMsnapshot =	profile[ `LVMsnapshot ]:	default_LVMsnapshot;
+    testonly =		profile[ `testonly ]:		default_testonly;
+    autoprofile =	profile[ `autoprofile ]:	default_autoprofile;
+    systembackup =	profile[ `systembackup ]:	default_systembackup;
+    perms =		profile[ `perms ]:		default_perms;
+    target_type =	profile[ `target_type ]:	default_target_type;
+    target_device =	profile[ `target_device ]:	default_target_device;
 
     selected_files = default_selected_files;
     backup_files = default_backup_files;
@@ -998,6 +1036,14 @@ global define void RestoreDefaultSettings() ``{
     unselected_files = eval( default_unselected_files );
     all_entered_dirs =	eval( default_all_entered_dirs );
     selected_directories = eval( default_selected_directories );
+    LVMsnapshot = default_LVMsnapshot;
+    testonly = default_testonly;
+    autoprofile = default_autoprofile;
+    systembackup = default_systembackup;
+    perms = default_perms;
+    nfsserver = default_nfsserver;
+    nfsexport = default_nfsexport;
+    target_type = default_target_type;
 
     selected_files = eval( default_selected_files );
     backup_files = eval( default_backup_files );

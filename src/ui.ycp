@@ -2946,9 +2946,23 @@ global define symbol Test_PartitionSelection() ``{
 	else if (ret == `expert)
 	{
 	    // show exclude pattern dialog
-	    Test_ExcludePatternOption();
+	    map excl = Test_ExcludePatternOption();
+
+	    if (excl["input"]:nil == `ok)
+	    {
+	    }
+	}
+	else if (ret == `next)
+	{
+	    // check if at least one mount point or directory is selected
+	    if (size(Backup::selected_directories) == 0)
+	    {
+		Popup::Message(_("Select at least one directory to backup."));
+		ret = nil;
+	    }
 	}
     }
+
 
     return ret;
 }
@@ -2961,7 +2975,7 @@ global define map DirPopup(string label, string dir) ``{
 	    `VSpacing(0.5),
 		`HBox(
 		    `HSpacing(1.0),
-		    `TextEntry(`id(`dir), _("&Directory:"), dir),
+		    `TextEntry(`id(`dir), label, dir),
 		    `HSpacing(1),
 		    `VBox(
 			`Label(""),
@@ -2977,6 +2991,8 @@ global define map DirPopup(string label, string dir) ``{
 	    `VSpacing(0.3)
 	)
     );
+
+    UI::SetFocus(`id(`ok));
 
     symbol input = UI::UserInput();
 
@@ -3017,7 +3033,7 @@ global define symbol Test_LocationSelection() ``{
 //		`VBox(
 		    `HBox(
 			`HSpacing(0.5),
-			`TextEntry(`id(`filename), _("Archive file na&me:"), ""),
+			`TextEntry(`id(`filename), _("Archive file na&me:"), Backup::archive_name),
 			`HSpacing(0.5)
 		    ),
 //		    `VSpacing(0.49)
@@ -3031,14 +3047,14 @@ global define symbol Test_LocationSelection() ``{
 			    `VBox(
 				`VSpacing(0.49),
 				// radio button label
-				`Left(`RadioButton(`id(`file),  `opt(`notify), _("&Local file"), true)),
+				`Left(`RadioButton(`id(`file),  `opt(`notify), _("&Local file"), Backup::target_type == `file)),
 				`VSpacing(0.49),
 				// radio button label
-				`Left(`RadioButton(`id(`nfs), `opt(`notify), _("Network (N&FS)"), false)),
+				`Left(`RadioButton(`id(`nfs), `opt(`notify), _("Network (N&FS)"), Backup::target_type == `nfs)),
 				`HBox(
 				    `HSpacing(2),
 				    // text entry label
-				    `TextEntry(`id(`nfsserver), _("I&P adress or name of NFS server:"), ""),
+				    `TextEntry(`id(`nfsserver), _("I&P adress or name of NFS server:"), Backup::nfsserver),
 				    `HSpacing(1),
 				    // push button label
 				    `VBox(
@@ -3049,7 +3065,7 @@ global define symbol Test_LocationSelection() ``{
 				`HBox(
 				    `HSpacing(2),
 				    // text entry label
-				    `TextEntry(`id(`nfsexport), _("&Remote directory:"), ""),
+				    `TextEntry(`id(`nfsexport), _("&Remote directory:"), Backup::nfsexport),
 				    `HSpacing(1),
 				    // push button label
 				    `VBox(
@@ -3058,12 +3074,12 @@ global define symbol Test_LocationSelection() ``{
 				    )
 				),
 				`VSpacing(0.49),
-				// r:adio button label
-				`Left(`RadioButton(`id(`removable), `opt(`notify), _("Rem&ovable device"), false)),
+				// radio button label
+				`Left(`RadioButton(`id(`removable), `opt(`notify), _("Rem&ovable device"), Backup::target_type == `removable)),
 				`HBox(
 				    `HSpacing(2),
 				    // combo box label
-				    `Left(`ComboBox(`id(`device), `opt(`notify), _("&Device"), CreateRemovableList(removable) ))
+				    `Left(`ComboBox(`id(`device), `opt(`notify), _("&Device"), CreateRemovableList(removable, Backup::target_device) ))
 				),
 				`VSpacing(0.49)
 			    )
@@ -3119,7 +3135,17 @@ global define symbol Test_LocationSelection() ``{
 	}
 	else if (s == `expert)
 	{
-	    Test_LocationExpertOptions();
+	    map res = DirPopup(_("Temporary directory"), Backup::temporary_dir);
+
+	    if (res["input"]:nil == `ok)
+	    {
+		string d = res["dir"]:nil;
+
+		if (size(d) > 0)
+		{
+		    Backup::temporary_dir = d;
+		}
+	    }
 	}
 	else if (s == `device || s == `removable)
 	{
@@ -3142,6 +3168,7 @@ global define symbol Test_LocationSelection() ``{
 		    UI::ChangeWidget(`id(`vol_sz), `Value, symbol2string(new_vol, user_vol));
 		}
 	    }
+	    Backup::target_device = sel_dev;
 
 	    y2milestone("%1", sel_dev);
 	}
@@ -3153,11 +3180,12 @@ global define symbol Test_LocationSelection() ``{
 	// select NFS server
 	else if (s == `selecthost)
 	{
-	    string srv = NetworkPopup::NFSServer("");
+	    string srv = NetworkPopup::NFSServer(Backup::nfsserver);
 
 	    if (srv != nil)
 	    {
 		 UI::ChangeWidget(`id(`nfsserver), `Value, srv);
+		 Backup::nfsserver = srv;
 	    }
 	}
 	// select NFS export
@@ -3167,11 +3195,12 @@ global define symbol Test_LocationSelection() ``{
 
 	    if (size(server) > 0)
 	    {
-		string exp = NetworkPopup::NFSExport(server, "");
+		string exp = NetworkPopup::NFSExport(server, Backup::nfsexport);
 
 		if (exp != nil)
 		{
 		    UI::ChangeWidget(`id(`nfsexport), `Value, exp);
+		    Backup::nfsexport = exp;
 		}
 	    }
 	    else
@@ -3194,6 +3223,27 @@ Enter the file name to use.
 	    }
 	}
     }
+
+    Backup::archive_name = UI::QueryWidget(`id(`filename), `Value);
+
+    Backup::nfsserver = UI::QueryWidget(`id(`nfsserver), `Value);
+    Backup::nfsexport = UI::QueryWidget(`id(`nfsexport), `Value);
+
+    if (UI::QueryWidget(`id(`file), `Value) == true)
+    {
+	Backup::target_type = `file;
+    }
+    else if (UI::QueryWidget(`id(`nfs), `Value) == true)
+    {
+	Backup::target_type = `nfs;
+    }
+    else if (UI::QueryWidget(`id(`removable), `Value) == true)
+    {
+	Backup::target_type = `removable;
+    }
+
+    Backup::volume_size = sel_vol;
+    Backup::user_vol_size = user_vol;
 
     Wizard::RestoreNextButton();
 
@@ -3344,6 +3394,8 @@ global define symbol Test_ExcludePatternOption() ``{
 	)
     );
 
+    UI::SetFocus(`id(`ok));
+
     symbol input = UI::UserInput();
     while (input != `ok && input != `cancel)
     {
@@ -3404,20 +3456,20 @@ global define symbol Test_BackupOptions() ``{
 			    `VSpacing(0.49),
 			    // radio button label
 			    `HBox(
-				`RadioButton(`id(`system), `opt(`notify), _("Exclude unmodified RPM files"), true),
+				`RadioButton(`id(`system), `opt(`notify), _("Exclude unmodified RPM files"), Backup::systembackup == true),
 				`HStretch(),
 				`PushButton(`id(`rpmopts), _("Options...")),
 				`HSpacing(2)
 			    ),
 			    `VSpacing(0.49),
 			    // radio button label
-			    `Left(`RadioButton(`id(`data), `opt(`notify), _("All files"), false)),
+			    `Left(`RadioButton(`id(`data), `opt(`notify), _("All files"), Backup::systembackup == false)),
 			    `VSpacing(0.49)
 			)
 		    )
 		)
 	    ),
-	    `VSpacing(1),
+/*	    `VSpacing(1),
 	    `Frame(_("Backup type"),
 		`HBox(
 		    `RadioButtonGroup(`id(`data), `opt(`notify),
@@ -3432,15 +3484,15 @@ global define symbol Test_BackupOptions() ``{
 			)
 		    )
 		)
-	    ),
+	    ),*/
 	    `VSpacing(1),
-	    `Left(`CheckBox(`id(`autoprofile), _("Create AutoYaST installation profile"), true)),
+//	    `Left(`CheckBox(`id(`autoprofile), _("Create AutoYaST installation profile"), Backup::autoprofile)),
+//	    `VSpacing(1),
+	    `Left(`CheckBox(`id(`lvm_snapshot), _("Use LVM snapshot if possible"), Backup::LVMsnapshot)),
 	    `VSpacing(1),
-	    `Left(`CheckBox(`id(`lvm_snapshot), _("Use LVM snapshot if possible"))),
-	    `VSpacing(1),
-	    `Left(`CheckBox(`id(`only_test), _("Only test, don't store backup archive file"))),
-	    `VSpacing(1),
-	    `PushButton(`id(`services), _("Stop services..."))
+	    `Left(`CheckBox(`id(`only_test), _("Only test, don't store backup archive file"), Backup::testonly)),
+	    `VSpacing(1)
+//	    `PushButton(`id(`services), _("Stop services..."))
         ),
         "help", true, true
     );
@@ -3448,8 +3500,16 @@ global define symbol Test_BackupOptions() ``{
     symbol s = nil;
     while (s != `next && s!= `abort && s != `back && s!= `services && s != `rpmopts)
     {
+	boolean en = UI::QueryWidget(`id(`system), `Value);
+	UI::ChangeWidget(`id(`rpmopts), `Enabled, en);
+	y2milestone("enable: %1", en);
+
 	s = UI::UserInput();
     }
+
+    Backup::LVMsnapshot = UI::QueryWidget(`id(`lvm_snapshot), `Value);
+    Backup::testonly = UI::QueryWidget(`id(`only_test), `Value);
+    Backup::systembackup = UI::QueryWidget(`id(`system), `Value);
 
     return s;
 }
@@ -3494,12 +3554,21 @@ global define symbol Test_RPMoptions() ``{
 	    `VBox(
 		`VSpacing(0.5),
 		// frame label
+		`Frame(_("AutoYaST options"),
+		    `VBox(
+			`VSpacing(0.3),
+			`CheckBox(`id(`autoprofile), `opt(`hstretch), _("Create AutoYaST installation profile"), Backup::autoprofile),
+			`VSpacing(0.5)
+		    )
+		),
+		`VSpacing(1.4),
+		// frame label
 		`Frame(_("RPM verification options"),
 		    `VBox(
 			`VSpacing(0.3),
-			`CheckBox(`id(`md5), `opt(`hstretch), _("&Use MD5 check sum test"), true),
+			`CheckBox(`id(`md5), `opt(`hstretch), _("&Use MD5 check sum test"), Backup::do_md5_test),
 			`VSpacing(0.5),
-			`CheckBox(`id(`perms), `opt(`hstretch), _("&Check owner and file permissions"), true),
+			`CheckBox(`id(`perms), `opt(`hstretch), _("&Check owner and file permissions"), Backup::perms),
 			`VSpacing(0.5)
 		    )
 		),
@@ -3508,7 +3577,7 @@ global define symbol Test_RPMoptions() ``{
 		`Frame(_("Not owned files"),
 		    `VBox(
 			`VSpacing(0.3),
-			`CheckBox(`id(`perms), `opt(`hstretch), _("&Backup files that do not belong to any package"), true),
+			`CheckBox(`id(`search), `opt(`hstretch), _("&Backup files that do not belong to any package"), Backup::search),
 			`VSpacing(0.5)
 		    )
 		),
@@ -3526,13 +3595,21 @@ global define symbol Test_RPMoptions() ``{
 	input = UI::UserInput();
     }
 
+    if (input == `next)
+    {
+	Backup::autoprofile = UI::QueryWidget(`id(`autoprofile), `Value);
+	Backup::do_md5_test = UI::QueryWidget(`id(`md5), `Value);
+	Backup::search = UI::QueryWidget(`id(`search), `Value);
+	Backup::perms = UI::QueryWidget(`id(`perms), `Value);
+    }
+
     Wizard::RestoreNextButton();
 
     return input;
 }
 
 
-global define list CreateRemovableList(map removable) ``{
+global define list CreateRemovableList(map removable, string selected) ``{
     list ret = [];
 
     // create item list
@@ -3543,7 +3620,7 @@ global define list CreateRemovableList(map removable) ``{
 		string type = descr["type"]:"";
 		string bus = descr["bus"]:"";
 
-		ret = add(ret, `item(`id(d), sformat("%1  (%2 %3 - %4)", model, bus, type, d)));
+		ret = add(ret, `item(`id(d), sformat("%1  (%2 %3 - %4)", model, bus, type, d), d == selected));
 	    }
 	);
     }
