@@ -88,6 +88,10 @@ define boolean InstallNeededPackages (list<string> packages) {
 	return false;
     }
 
+    if (Mode::test()) {
+	return true;
+    }
+
     if (!PackageSystem::CheckAndInstallPackagesInteractive (packages)) {
 	y2debug("star package wasn't installed");
 	return false;
