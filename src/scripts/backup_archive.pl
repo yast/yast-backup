@@ -10,7 +10,7 @@
 #    Ladislav Slezak <lslezak@suse.cz>
 #
 #  Description:
-#    This script creates backup archive as scpecified with command
+#    This script creates backup archive as specified with command
 #    line parameters.
 #
 # $Id$
@@ -22,6 +22,30 @@ use Getopt::Long;
 #use File::Temp qw/ tempfile tempdir /;  # not in perl 5.6.0
  
 use POSIX qw(tmpnam strftime);
+
+
+sub harddisks()
+{
+    my @disks = ();
+
+    open(PTS, "/proc/partitions")
+        or die "Can not open /proc/partitions file!\n";
+
+    while (my $line = <PTS>)
+    {
+	chomp($line);
+
+	if ($line =~ /^\s+\d+\s+\d+\s+\d+ ([ehsx])d(.)$/)
+	{
+	    push(@disks, "$1d$2");
+	}
+    }
+
+    close(PTS);
+
+    return @disks;
+}
+
 
 # command line options
 my $archive_name = '';
@@ -163,32 +187,43 @@ else
     }
 }
 
+my @disks = ();
+my @disks_results = ();
+
+
 # store partition table info
 if ($store_pt)
 {
     if ($verbose)
     {
-	print "Storing partition table: ";
+	print "Storing partition table\n";
     }
-    
-    system('/sbin/fdisk -l > '.$tmp_dir.'/partition_table 2> /dev/null');
 
-    if (-s  $tmp_dir.'/partition_table')
+    @disks = harddisks();
+
+    foreach my $disk (@disks)
     {
-	if ($verbose)
-	{
-	    print "Success\n";
-	}
+	my $stored = 0;
 	
-	print OUT "tmp/YaST2-backup/partition_table\n";
-	$files_num++;
-    }
-    else
-    {	
-	if ($verbose)
+	if (system("/sbin/fdisk -l /dev/$disk > $tmp_dir/partition_table_$disk.txt 2> /dev/null") >> 8 == 0)
 	{
-	    print "Failed\n";
+	    if (system("dd if=/dev/$disk of=$tmp_dir/partition_table_$disk bs=512 count=1") >> 8 == 0)
+	    {
+		print OUT "tmp/YaST2-backup/partition_table_$disk.txt\n";
+		print OUT "tmp/YaST2-backup/partition_table_$disk\n";
+		$files_num = $files_num + 2;
+
+		$stored = 1;
+
+		print "Stored partition: $disk\n";
+	    }
+	    else
+	    {
+		unlink("$tmp_dir/partition_table_$disk.txt");
+	    }
 	}
+
+	push(@disks_results, $stored);
     }
 }
 
@@ -240,12 +275,6 @@ if (length($comment_file) > 0)
     }
 }
 
-    
-if ($stored_pt)
-{
-    print OUT "tmp/YaST2-backup/partition_table\n";
-    $files_num++;
-}
 
 # TODO files info should be first file for faster unpacking (???)
 # ... seems NO, tar does not exit when selected file is unpacked
@@ -357,6 +386,19 @@ foreach my $part (@ext2_parts)
     $tr_dev_name =~ tr/\//_/;
 
     unlink($tmp_dir.'/e2image'.$tr_dev_name);
+}
+
+my $index = 0;
+
+foreach my $pt_result (@disks_results)
+{
+    if ($pt_result)
+    {
+	unlink($tmp_dir.'/partition_table_'.$disks[$index].'.txt');
+	unlink($tmp_dir.'/partition_table_'.$disks[$index]);
+    }
+    
+    $index++;
 }
 
 rmdir($tmp_dir);
