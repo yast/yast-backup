@@ -2960,7 +2960,7 @@ Replace the existing profile?
             `PushButton(`id(`manual),_("Backup &Manually...")),
             `VSpacing(1.5)
         ),
-        profile_help(), false, false
+        profile_help(), false, true
     );
 
     string sel_prof = (Backup::selected_profile == nil) ? (string)(select( Backup::BackupProfileNames(), 0, nil )) : Backup::selected_profile;

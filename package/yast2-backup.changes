@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Mar 23 16:24:57 CET 2004 - uml10@suse.cz
+
+- enable close button
+- removed autoyast2 from Requires and neededforbuild
+- version 2.9.13
+
+-------------------------------------------------------------------
 Wed Mar 17 08:19:13 CET 2004 - kkaempf@suse.de
 
 - needs yast2-update for RootPart module  
