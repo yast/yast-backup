@@ -16,7 +16,8 @@ clients_DATA =		\
 
 include_DATA =		\
 	functions.ycp	\
-	ui.ycp
+	ui.ycp		\
+	help_texts.ycp
 
 menu_DATA = menuentry_backup.ycp
 
