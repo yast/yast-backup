@@ -310,6 +310,8 @@ global define void ExcludeNodevFS() ``{
 
 global define map WriteProfile(list volumes) ``{
 
+    import "Profile";
+    
     string archive = archive_name;
     integer pos = findlastof(archive, "/");
     string dir = "";
@@ -327,10 +329,8 @@ global define map WriteProfile(list volumes) ``{
     y2debug("dir: %1, file: %2", dir, file);
 
     // create profile with with currently available resources (partitioning, software etc.)
-    AIClone::constructProfile([]);
-
-    // add backup information to the profile
-    map configure = AIClone::Profile["configure"]:$[];
+    AIClone::Process();
+  
 
     string prefix = "file://";
 
@@ -411,7 +411,7 @@ global define map WriteProfile(list volumes) ``{
 	map network_config = Lan::Export();
 
 	y2milestone("Storing network config to profile: %1", network_config);
-	configure["networking"] = network_config;
+	Profile::Flat["networking"] = network_config;
 	Progress::on();
     }
 
@@ -435,9 +435,8 @@ global define map WriteProfile(list volumes) ``{
 
     restore["selection"] = packages_sel;
 
-    configure["restore"] = restore;
-
-    AIClone::Profile["configure"] = configure;
+    Profile::Flat["restore"] = restore;
+    
 
 
     if (directory == "")
@@ -447,7 +446,7 @@ global define map WriteProfile(list volumes) ``{
 
     string profilefile = directory + "autoinst.xml";
 
-    return $[ "result" : AIClone::writeProfile(profilefile, []), "profile" : profilefile ];
+    return $[ "result" : Profile::Write(profilefile), "profile" : profilefile ];
 }
 
 }
