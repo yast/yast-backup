@@ -1020,9 +1020,9 @@ define string IsPossibleToCreateDirectoryOrExists (string directory) {
 		);
 		error_message = sformat(
 		    // Popup error message, %1 is a directory somewhere under %2, %2 is a directory - just tested for existency
-		    _("Cannot create backup archive in '%1',
+		    _("Cannot create backup archive in '%1'.
 '%2' is not a directory.
-Enter another one or remove '%2'.."),
+Enter another one or remove '%2'."),
 		    directory, tested_directory
 		);
 		break;
