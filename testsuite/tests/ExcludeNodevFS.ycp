@@ -9,7 +9,7 @@
 
 include "testsuite.ycp";
 
-map readmap = $[ "target" : $["string" : "", "size" : -1 ],
+map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : nil ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
     "probe" : $["has_smp" : false, "cdrom" : $["manual" : []]]  ];
 

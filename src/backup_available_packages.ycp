@@ -1,0 +1,36 @@
+{
+
+include "backup/functions.ycp";
+
+y2milestone(" *** backup_available_packages client started ***");
+
+// get list of packages on the installation source
+list(string) ipackages = sort(GetInstallPackages());
+
+y2debug("installable packages: %1", ipackages);
+y2debug("Arguments: %1", WFM::Args());
+
+if (is(WFM::Args(0), string))
+{
+    // convert list to string
+    string file_content = mergestring(ipackages, "\n");
+    string filename = WFM::Args(0);
+
+    if (size(filename) > 0)
+    {
+	// save string to the file
+	boolean res = SCR::Write(.target.string, filename, file_content);
+
+	if (!res)
+	{
+	    y2error("Cannot save package list to file %1", filename);
+	}
+    }
+}
+else
+{
+    y2error("Missing argument or it isn't string");
+}
+
+y2milestone(" *** backup_available_packages client finished ***");
+}

@@ -9,6 +9,8 @@ SUBDIRS = scripts
 yncludedir = @yncludedir@/backup
 
 client_DATA =		\
+	backup_save_profile.ycp		\
+	backup_available_packages.ycp	\
 	backup.ycp	
 
 ynclude_DATA =		\

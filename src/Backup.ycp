@@ -19,8 +19,6 @@
 
 module	"Backup";
 
-import "AutoinstClone";
-import "Profile";
 import "Progress";
 import "Report";
 
@@ -421,9 +419,6 @@ global define void ExcludeNodevFS() ``{
  */
 
 global define map WriteProfile(list volumes) ``{
-
-    import "Profile";
-
     string archive = archive_name;
     integer pos = findlastof(archive, "/");
     string dir = "";
@@ -507,14 +502,6 @@ global define map WriteProfile(list volumes) ``{
 
     map restore = $[ "archives" : volumestrings ];
 
-    // store network configuration - required if archive will be read from NFS
-    AutoinstClone::additional = ["lan"];
-
-    // create profile with with currently available resources (partitioning, software etc.)
-    y2milestone("Clonning system started...");
-    AutoinstClone::Process();
-    y2milestone("System clonned");
-
     // add default selection - select all packages to restore
     map packages_sel = $[];
 
@@ -533,18 +520,18 @@ global define map WriteProfile(list volumes) ``{
 	}
     );
 
-    restore["selection"] = packages_sel;
-
-    Profile::Flat["restore"] = restore;
-
     if (directory == "")
     {
 	directory = "/";
     }
 
+    // store profile to this file
     string profilefile = directory + GetBaseName(archive_name) + ".xml";
 
-    return $[ "result" : Profile::Save(profilefile), "profile" : profilefile ];
+    // create and save autoinstallation profile
+    boolean res = CloneSystem(profilefile, ["lan"], "restore", restore);
+
+    return $[ "result" : res, "profile" : profilefile ];
 }
 
 
@@ -700,10 +687,16 @@ global define void ReadCronSettings() ``{
 
     // reset cron setings
     foreach(string name, map opts, backup_profiles, ``{
-	    opts[`cron_settings, "cronfile"] = "";
-	    opts[`cron_settings, "cron_changed"] = false;
 
-	    backup_profiles[name] = eval(opts);
+	    map tmp = eval(opts);
+	    map cr = eval(opts[`cron_settings]:$[]);
+
+	    cr["cronfile"] = "";
+	    cr["cron_changed"] = false;
+
+	    tmp[`cron_settings] = eval(cr);
+
+	    backup_profiles[name] = eval(tmp);
 	}
     );
 

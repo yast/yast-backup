@@ -17,8 +17,10 @@
 {
 
 import "Label";
-
 import "Report";
+
+import "AutoinstClone";
+import "Profile";
 
 textdomain "backup";
 
@@ -945,6 +947,133 @@ global define map RemoveOldMultiArchives(string name, integer max) ``{
     renamed[oldXML] = newXML;
 
     return $[ "removed" : removed, "renamed" : renamed ];
+}
+
+
+global define list(string) GetInstallPackages() ``{
+    y2milestone("Reading packages available on the installation sources...");
+
+    Pkg::TargetInit("/", false);
+
+    // list of available enabled installation sources
+    list(integer) sources = Pkg::SourceStartCache(true);
+    y2debug("availables sources: %1", sources);
+
+    // list of installed products (last installed is first in the list)
+    list(map) installed_products = Pkg::TargetProducts();
+    y2debug("installed products: %1", installed_products);
+
+    // installation sources for installed products
+    list(integer) product_sources = [];
+
+    // user defined installation sources
+    list(integer) nonproduct_sources = [];
+
+    if (size(sources) > 0)
+    {
+	foreach(integer source_id, sources,
+	    ``{
+		map source_description = Pkg::SourceProduct(source_id);
+
+		y2debug("Source %1 description: %2", source_id, source_description);
+
+		// TODO: really compare whole maps? Have they same keys?
+		if (contains(installed_products, source_description))
+		{
+		    product_sources = add(product_sources, source_id);
+		}
+		else
+		{
+		    nonproduct_sources = add(nonproduct_sources, source_id);
+		}
+	    }
+	);
+    }
+    else
+    {
+	y2warning("No installation source configured");
+    }
+
+    y2debug("product sources: %1", product_sources);
+    y2debug("non product sources: %1", nonproduct_sources);
+
+    // TODO: use better solution than temporal disabling of the installation sources
+    //       probably Pkg::GetPackages(`installed, false) should be extened to
+    //       Pkg::GetPackages(`installed, false, source_id)
+
+    // temporaly disable non-product installation sources
+    if (size(nonproduct_sources) > 0)
+    {
+	foreach(integer source_id, nonproduct_sources,
+	    ``{
+		boolean res = Pkg::SourceSetEnabled(source_id, false);
+
+		if (res == false)
+		{
+		    y2error("Cannot disable installation source %1", source_id);
+		}
+	    }
+	);
+    }
+
+    // get all available packages at the product installation sources
+    list(string) installation_packages = Pkg::GetPackages(`available, false);
+
+    // reenable disabled non-product installation sources
+    if (size(nonproduct_sources) > 0)
+    {
+	foreach(integer source_id, nonproduct_sources,
+	    ``{
+		boolean res = Pkg::SourceSetEnabled(source_id, true);
+
+		if (res == false)
+		{
+		    y2error("Cannot enable installation source %1", source_id);
+		}
+	    }
+	);
+    }
+
+    // convert package description to rpm format
+    // ("pkg version release arch" -> "pkg-version-release")
+    installation_packages = maplist(string pkginfo, installation_packages,
+	``{
+	    list(string) parts = splitstring(pkginfo, " ");
+
+	    return sformat("%1-%2-%3", parts[0]:"", parts[1]:"", parts[2]:"");
+	}
+    );
+
+    y2debug("available packages: %1", installation_packages);
+
+    return installation_packages;
+}
+
+global define boolean CloneSystem(string filename, list additional, string extra_key, map extra_options) ``{
+    boolean ret = false;
+
+    if (size(filename) > 0)
+    {
+	if (size(additional) > 0)
+	{
+	    // clonne additional system parts
+	    AutoinstClone::additional = additional;
+	}
+
+	// create profile with with currently available resources (partitioning, software etc.)
+	y2milestone("Clonning system started...");
+	AutoinstClone::Process();
+	y2milestone("System clonned");
+
+	if (size(extra_options) > 0 && size(extra_key) > 0)
+	{
+	    Profile::Flat[extra_key] = extra_options;
+	}
+
+	return Profile::Save(filename);
+    }
+
+    return false;
 }
 
 }

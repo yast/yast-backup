@@ -26,7 +26,7 @@ use strict;
 sub ReadAllPackages();
 sub FsToDirs(@);
 sub ReadAllFiles(%%);
-sub VerifyPackages(@%);
+sub VerifyPackages(@%%);
 sub SearchDirectory($%%%);
 
 # command line options
@@ -39,6 +39,8 @@ my $output_progress = 0;
 my $output_files = 0;
 my $output_default = 0;
 my $no_md5 = 0;
+my $inst_src_packages = "";
+my %instalable_packages;
 
 my $widget_file = "";
 my $widget_index = 1;
@@ -51,7 +53,7 @@ GetOptions('search' => \$search_files, 'exclude-dir=s' => \@exclude_d,
     'exclude-fs=s' => \@exclude_fs,  'help' => \$help,
     'output-progress' => \$output_progress, 'output-files' => \$output_files,
     'output-default' => \$output_default, 'widget-file=s'=> \$widget_file,
-    'no-md5' => \$no_md5
+    'no-md5' => \$no_md5, 'inst-src-packages=s'=> \$inst_src_packages
 );
 
 if ($help)
@@ -71,6 +73,8 @@ if ($help)
     print "  --output-files     Display only names of files to backup\n";
     print "  --output-progress  Display data for frontend\n";
     print "  --output-default   Default output is in format accepted by 'backup_achive' script\n";
+    print "  --inst_src_packages <file>	File with list of available packages in the installation souorses.\n";
+
     exit 0;
 }
 
@@ -91,12 +95,42 @@ if ($widget_file ne "")
     print WIDGETFILE2 "[\n";
 }
 
-
 # convert array to hash
 foreach my $d (@exclude_d) {$exclude_dirs{$d} = 1;}
 
 # verify installed packages
 my @installed_packages = ReadAllPackages();
+
+# convert array to hash
+my %installed_packages_hash;
+foreach my $ip (@installed_packages) {$installed_packages_hash{$ip} = 1;}
+
+# get list of unavailable packages
+my %unavailable_pkgs = ();
+if ($inst_src_packages ne "")
+{
+    open(INST_SRC, $inst_src_packages);
+
+    while (my $ipkg = <INST_SRC>)
+    {
+	chomp($ipkg);
+	$instalable_packages{$ipkg} = 1;
+    }
+
+    close(INST_SRC);
+
+    # get packages which are unavailable (modified or non-SuSE)
+    foreach my $pk (@installed_packages)
+    {
+	if (!defined $instalable_packages{$pk})
+	{
+	    $unavailable_pkgs{$pk} = 1;
+	}
+    }
+}
+
+undef %instalable_packages;
+undef %installed_packages_hash;
 
 my %packages_files;
 my %package_files_inodes;
@@ -122,7 +156,7 @@ if (!$search_files)
     %packages_files = ();
 }
 
-VerifyPackages(\@installed_packages, \%dups);
+VerifyPackages(\@installed_packages, \%unavailable_pkgs, \%dups);
 
 if ($search_files)
 {
@@ -146,6 +180,8 @@ if ($widget_file ne "")
     print WIDGETFILE2 "\n]\n";
     close(WIDGETFILE2);
 }
+
+# End of main part
 ######################################################
 
 # return list of installed packages
@@ -174,10 +210,53 @@ sub ReadAllPackages()
     return @all_packages;
 }
 
-# verify each package in the list
-sub VerifyPackages(@%)
+sub PrintFoundFile($$$$$)
 {
-    my ($packages, $duplicates) = @_;
+    my ($file, $package, $widget_file, $widget_index, $output_files) = @_;
+
+    if (defined $file)
+    {
+	my @filestat = stat($file);
+
+	# escaping newline characters is needed because each file
+	# is reported on separate line
+	
+	$file =~ s/\\/\\\\/g;
+	$file =~ s/\n/\\n/g;
+
+	# reset file size for links and directories
+	if (-l $file || -d $file)
+	{
+	    $filestat[7] = 0;
+	}
+
+	if (!$output_files)
+	{
+	    print "Size: $filestat[7] $file\n";
+	}
+	else
+	{
+	    print "$file\n";
+	}
+
+	if ($widget_file ne "")
+	{
+	    if ($widget_index != 1)
+	    {
+		print WIDGETFILE ",\n";
+		print WIDGETFILE2 ",\n";
+	    }
+
+	    print WIDGETFILE "`item(`id($widget_index), \"X\", \"$file\", \"$package\")";
+	    print WIDGETFILE2 "`item(`id($widget_index), \" \", \"$file\", \"$package\")";
+	}
+    }
+}
+
+# verify each package in the list
+sub VerifyPackages(@%%)
+{
+    my ($packages, $unavail, $duplicates) = @_;
 
     foreach my $package (@$packages) {
 	if (!$output_files)
@@ -189,149 +268,136 @@ sub VerifyPackages(@%)
 	    print "\n";
 	}
 
-	my $md5_param = ($no_md5) ? "--nomd5" : "";
-
-	# verification of the package - do not check package dependencies, do not run verify scripts
-	open(RPMV, "export LC_ALL=C; rpm -V $package $md5_param --noscripts --nodeps |")
-	    or die "Verification of package $package failed.";
-
-	while (my $line = <RPMV>)
+	if (defined $$unavail{$package})
 	{
-	    chomp ($line);
+	    open(RPML, "rpm -ql $package |");
 
-	    # modified files have set flags Size or MTime
-
-	    my $file = undef;
-	    my $size = 0;
-	    my $mtime = 0;
-	    my $link = 0;
-	    my $md5_test = 0;
-
-    	    my $backup = 1;
-
-	    $link = ($line =~ /^....L.* (\/.*)/);
-
-	    if ($link)
+	    while (my $l = <RPML>)
 	    {
-		$file = $1;
-	    }
+		chomp($l);
 
-	    if ($no_md5)
-	    {
-		$size = ($line =~ /^S.* (\/.*)/);
-		if ($size)
+		if (-e $l)
 		{
-		    $file = $1;
-		}
-		
-		$mtime = ($line =~ /^\..{6}T.* (\/.*)/);
-		if ($mtime)
-		{
-		    $file = $1;
-		}
-
-
-		if ($size or $mtime)
-		{
-		    # check if Mtime changed file is in more than one package
-		    if ($mtime and !$size and $no_md5 and $$duplicates{$file})
-		    {
-			open(RPMQFILE, "rpm -qf $file |");
-			my @packages_list = ();
-
-			while (my $pkg = <RPMQFILE>)
-			{
-			    chomp($pkg);
-			    
-			    if ($pkg ne $package)
-			    {
-				push(@packages_list, $pkg);
-			    }
-			}
-			close(RPMQFILE);
-
-			foreach my $pack (@packages_list)
-			{
-			    # it is not possible to verify one file from package
-			    # so all files in package are verified
-			    # in this verification is not MD5 test excluded
-			    # TODO LATER: don't grep but cache results of all files from package
-			    open(RPMVRF, "rpm -V $pack --nodeps --noscripts | grep $file |");
-			    
-			    my $fl = <RPMVRF>;
-			    
-			    if (!defined $fl)
-			    {
-				$backup = 0;
-			    }
-			    else
-			    {
-				while (my $fl = <RPMVRF>)
-				{
-				    if (($fl !~ /^S.* \/./) and ($fl !~ /^\..{6}T.* \/.*/) and ($fl !~ /^..5.* \/.*/))
-				    {
-					$backup = 0;
-				    }
-				}
-			    }
-			    
-			    close(RPMVRF);
-			    
-			}
-		    }
-		}
-		
-	    }
-	    else
-	    {
-		$md5_test = ($line =~ /^..5.* (\/.*)/);
-		if ($md5_test)
-		{
-		    $file = $1;
-		}
-	    }
-
-	    if (defined $file and $backup)
-	    {
-		my @filestat = stat($file);
-
-
-                # escaping newline characters is needed because each file
-                # is reported on separate line
-		
-		$file =~ s/\\/\\\\/g;
-		$file =~ s/\n/\\n/g;
-
-		if ($link)
-		{
-		    $filestat[7] = 0;	# stat reports size of linked file not of symlink!
-		}
-
-		if (!$output_files)
-		{
-		    print "Size: $filestat[7] $file\n";
-		}
-		else
-		{
-		    print "$file\n";
-		}
-
-		if ($widget_file ne "")
-		{
-		    if ($widget_index != 1)
-		    {
-			print WIDGETFILE ",\n";
-			print WIDGETFILE2 ",\n";
-		    }
-
-		    print WIDGETFILE "`item(`id($widget_index), \"X\", \"$file\", \"$package\")";
-		    print WIDGETFILE2 "`item(`id($widget_index), \" \", \"$file\", \"$package\")";
+		    PrintFoundFile($l, $package, $widget_file, $widget_index, $output_files);
 		    $widget_index++;
 		}
 	    }
-	}
 
-	close(RPMV);
+	    close(RPML);
+	}
+	else
+	{
+	    my $md5_param = ($no_md5) ? "--nomd5" : "";
+
+	    # verification of the package - do not check package dependencies, do not run verify scripts
+	    open(RPMV, "export LC_ALL=C; rpm -V $package $md5_param --noscripts --nodeps |")
+		or die "Verification of package $package failed.";
+
+	    while (my $line = <RPMV>)
+	    {
+		chomp ($line);
+
+		# modified files have set flags Size or MTime
+
+		my $file = undef;
+		my $size = 0;
+		my $mtime = 0;
+		my $link = 0;
+		my $md5_test = 0;
+
+		my $backup = 1;
+		my $file_size = 0;
+
+		$link = ($line =~ /^....L.* (\/.*)/);
+
+		if ($link)
+		{
+		    $file = $1;
+		}
+
+		if ($no_md5)
+		{
+		    $size = ($line =~ /^S.* (\/.*)/);
+		    if ($size)
+		    {
+			$file = $1;
+		    }
+		    
+		    $mtime = ($line =~ /^\..{6}T.* (\/.*)/);
+		    if ($mtime)
+		    {
+			$file = $1;
+		    }
+
+
+		    if ($size or $mtime)
+		    {
+			# check if Mtime changed file is in more than one package
+			if ($mtime and !$size and $no_md5 and $$duplicates{$file})
+			{
+			    open(RPMQFILE, "rpm -qf $file |");
+			    my @packages_list = ();
+
+			    while (my $pkg = <RPMQFILE>)
+			    {
+				chomp($pkg);
+				
+				if ($pkg ne $package)
+				{
+				    push(@packages_list, $pkg);
+				}
+			    }
+			    close(RPMQFILE);
+
+			    foreach my $pack (@packages_list)
+			    {
+				# it is not possible to verify one file from package
+				# so all files in package are verified
+				# in this verification is not MD5 test excluded
+				# TODO LATER: don't grep but cache results of all files from package
+				open(RPMVRF, "rpm -V $pack --nodeps --noscripts | grep $file |");
+				
+				my $fl = <RPMVRF>;
+				
+				if (!defined $fl)
+				{
+				    $backup = 0;
+				}
+				else
+				{
+				    while (my $fl = <RPMVRF>)
+				    {
+					if (($fl !~ /^S.* \/./) and ($fl !~ /^\..{6}T.* \/.*/) and ($fl !~ /^..5.* \/.*/))
+					{
+					    $backup = 0;
+					}
+				    }
+				}
+				
+				close(RPMVRF);
+				
+			    }
+			}
+		    }
+		    
+		}
+		else
+		{
+		    $md5_test = ($line =~ /^..5.* (\/.*)/);
+		    if ($md5_test)
+		    {
+			$file = $1;
+		    }
+		}
+		if ($backup)
+		{
+		    PrintFoundFile($file, $package, $widget_file, $widget_index, $output_files);
+		    $widget_index++;
+		}
+	    }
+
+	    close(RPMV);
+	}
     }
 }
 
@@ -438,27 +504,8 @@ sub SearchDirectory($%%%)
 		{
 		    if (isinpackage($fullname) == 0)
 		    {
-			if (!$output_files)
-			{
-			    print "Size: 0 $fullname\n";
-			}
-			else
-			{
-			    print "$fullname\n";
-			}
-			
-			if ($widget_file ne "")
-			{
-			    if ($widget_index != 1)
-			    {
-				print WIDGETFILE ",\n";
-				print WIDGETFILE2 ",\n";
-			    }
-
-			    print WIDGETFILE "`item(`id($widget_index), \"X\", \"$fullname\", \"\")";
-			    print WIDGETFILE2 "`item(`id($widget_index), \" \", \"$fullname\", \"\")";
-			    $widget_index++;
-			}
+			PrintFoundFile($fullname, '', $widget_file, $widget_index, $output_files);
+			$widget_index++;
 		    }
 		}
 	    }
@@ -470,36 +517,10 @@ sub SearchDirectory($%%%)
 		    my @filestat = stat($fullname);
 
 		    # it seems that file is not owned by any package, but do another check - dev/inode number
-
 		    if (!defined $inodes->{$filestat[0].$filestat[1]})
 		    {
-			# escaping newline characters is needed because each file
-			# is reported on separate line
-
-			$fullname =~ s/\\/\\\\/g;
-			$fullname =~ s/\n/\\n/g;
-
-			if (!$output_files)
-			{
-			    print "Size: $filestat[7] $fullname\n";
-			}
-			else
-			{
-			    print "$fullname\n";
-			}
-
-			if ($widget_file ne "")
-			{
-			    if ($widget_index != 1)
-			    {
-				print WIDGETFILE ",\n";
-				print WIDGETFILE2 ",\n";
-			    }
-
-			    print WIDGETFILE "`item(`id($widget_index), \"X\", \"$fullname\", \"\")";
-			    print WIDGETFILE2 "`item(`id($widget_index), \" \", \"$fullname\", \"\")";
-			    $widget_index++;
-			}
+			PrintFoundFile($fullname, '', $widget_file, $widget_index, $output_files);
+			$widget_index++;
 		    }
 		}
 
@@ -516,28 +537,8 @@ sub SearchDirectory($%%%)
 	    # ignore sockets - they can't be archived
 	    elsif ($item ne "." and $item ne ".." and !$$files{$fullname} and !(-S $fullname))
 	    {
-		if (!$output_files)
-		{
-		    print "Size: 0 $fullname\n";
-		}
-		else
-		{
-		    print "$fullname\n";
-		}
-
-		
-		if ($widget_file ne "")
-		{
-		    if ($widget_index != 1)
-		    {
-			print WIDGETFILE ",\n";
-			print WIDGETFILE2 ",\n";
-		    }
-
-		    print WIDGETFILE "`item(`id($widget_index), \"X\", \"$fullname\", \"\")";
-		    print WIDGETFILE2 "`item(`id($widget_index), \" \", \"$fullname\", \"\")";
-		    $widget_index++;
-		}
+		PrintFoundFile($fullname, '', $widget_file, $widget_index, $output_files);
+		$widget_index++;
 	    }
 	}
     }
