@@ -6,7 +6,7 @@
 
 Summary:		Backup module for YaST2
 BuildArchitectures:	noarch
-Requires:		yast2 yast2-core autoyast2-installation perl util-linux fileutils e2fsprogs tar star bzip2 gzip yast2-network
+Requires:		yast2 yast2-core autoyast2-installation perl util-linux fileutils e2fsprogs tar bzip2 gzip yast2-network
 
 Provides:	yast2-module-backup
 Obsoletes:	yast2-module-backup

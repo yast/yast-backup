@@ -500,10 +500,14 @@ if (defined open(FILES, $files_info))
 		    if ($archive_type eq 'stgz' || $archive_type eq 'stbz2' || $archive_type eq 'star')
 		    {
 			# set exustar archive type, enable ACLs
-			$command = "/usr/bin/star -c -v -D list=$tmp_dir_root/$package_name -sparse -f $tmp_dir_root/tmp/$package_name-$date_str-0.tar -acl H=exustar";
+			$command = "/usr/bin/star -c -v -D list=$tmp_dir_root/$package_name -sparse -acl H=exustar -f $tmp_dir_root/tmp/$package_name-$date_str-0.star";
+			print OUT "$package_name-$date_str-0.star";
+		    }
+		    else
+		    {
+			print OUT "$package_name-$date_str-0.tar";
 		    }
 
-		    print OUT "$package_name-$date_str-0.tar";
 		    $files_num++;
 
 		    if ($archive_type eq 'tgz' || $archive_type eq 'stgz')
@@ -566,10 +570,14 @@ if (defined $opened)
 
     if ($archive_type eq 'stgz' || $archive_type eq 'stbz2' || $archive_type eq 'star')
     {
-	$command = "/usr/bin/star -c -v -D list=$tmp_dir_root/$package_name -sparse -f $tmp_dir_root/tmp/$package_name-$date_str-0.tar";
+	$command = "/usr/bin/star -c -v -D list=$tmp_dir_root/$package_name -sparse -acl H=exustar -f $tmp_dir_root/tmp/$package_name-$date_str-0.star";
+	print OUT "$package_name-$date_str-0.star";
+    }
+    else
+    {
+    	print OUT "$package_name-$date_str-0.tar";
     }
 
-    print OUT "$package_name-$date_str-0.tar";
     $files_num++;
 
     if ($archive_type eq 'tgz' || $archive_type eq 'stgz')
