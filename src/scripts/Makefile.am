@@ -4,10 +4,8 @@
 # $Id$
 #
 
-bindir = $(YAST2DIR)/bin
-
-bin_SCRIPTS =		\
+ybin_SCRIPTS =		\
 	backup_search.pl\
 	backup_archive.pl
 
-EXTRA_DIST = $(bin_SCRIPTS)
+EXTRA_DIST = $(ybin_SCRIPTS)
