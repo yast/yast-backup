@@ -106,6 +106,7 @@ global map selected_files = eval( default_selected_files );	// selected files to
 global list unselected_files = eval( default_unselected_files );	// files, which user explicitly unselected
 
 global boolean no_interactive = false; 	// whether the user should setup configuration manually
+global string selected_profile = nil;   // name of the selected profile, nil for no selected profile (default settings)
 // end of global settings
 
 // media description - capacity is maximum file size which fits
@@ -588,6 +589,8 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
     selected_files = default_selected_files;
     backup_files = default_backup_files;
     
+    selected_profile = profile_name;
+    
     return true;
 }
 
@@ -620,6 +623,8 @@ global define void RestoreDefaultSettings() ``{
     
     selected_files = eval( default_selected_files );
     backup_files = eval( default_backup_files );
+    
+    selected_profile = nil;
 }
 
 // helper function to extract the list of currently available profiles

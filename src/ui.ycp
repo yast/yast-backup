@@ -2220,6 +2220,26 @@ global define symbol SelectProfileDialog() ``{
 	),
 	profile_selection_help(), true, true
     );
+    
+    if (Backup::selected_profile != nil)
+    {
+	// select the original profile in the list
+        UI::ChangeWidget( `id(`profile), `CurrentItem, Backup::selected_profile );
+	
+	if (Backup::no_interactive)
+	{
+	    UI::ChangeWidget( `id(`rb), `CurrentButton, `use );
+	}
+	else 
+	{
+	    UI::ChangeWidget( `id(`rb), `CurrentButton, `edit );
+	}
+    }
+    else
+    {
+	// select the first profile in the list
+        UI::ChangeWidget( `id(`profile), `CurrentItem, select( Backup::BackupProfileNames(), 0, nil ) );
+    }
 
     symbol ret = UI::UserInput();
     
@@ -2263,7 +2283,7 @@ global define symbol ProfileDialog() ``{
 	    `SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames()  )
 	    ),
 	    `HBox(
-		`PushButton(`id(`add), UI::AddButtonLabel() + "..."),
+		`PushButton(`id(`add), _("&Save As New...")),
 		`PushButton(`id(`replace), _("Re&place")),
 		`PushButton(`id(`delete), UI::DeleteButtonLabel())
 	    ),
@@ -2271,6 +2291,17 @@ global define symbol ProfileDialog() ``{
 	),
 	profile_help(), true, true
     );
+    
+    if (Backup::selected_profile != nil )
+    {
+	// select the original profile in the list
+        UI::ChangeWidget( `id(`profile), `CurrentItem, Backup::selected_profile );
+    }
+    else
+    {
+	// select the first profile in the list
+        UI::ChangeWidget( `id(`profile), `CurrentItem, select( Backup::BackupProfileNames(), 0, nil ) );
+    }
 
     Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default), OKButtonLabel()));
 
@@ -2306,7 +2337,7 @@ global define symbol ProfileDialog() ``{
 	    UI::ReplaceWidget( `id(`selectionBox), 
 		`SelectionBox(`id(`profile), _("&Available Profiles:"), Backup::BackupProfileNames() ) );
 	}
-    } while( ret != `ok && ret != `cancel && ret != `abort );
+    } while( ret != `ok && ret != `cancel && ret != `abort && ret != `back );
     
     if( ret == `ok )
     {
