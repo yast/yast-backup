@@ -199,7 +199,7 @@ global define TarOptionsDialog() ``{
 
 	if (ret == `ok)
 	{
-	    if (UI::QueryWidget(`id(`multi_volume), `Value) == true && UI::QueryWidget(`id(`vol), `Value) == `user_defined && tointeger(UI::QueryWidget(`id(`user_size), `Value)) <= 0)
+	    if (UI::QueryWidget(`id(`multi_volume), `Value) == true && UI::QueryWidget(`id(`vol), `Value) == `user_defined && tofloat(UI::QueryWidget(`id(`user_size), `Value)) <= 0)
 	    {
 		UI::WarningPopup(_("Bad volume size"));
 	    }
@@ -246,16 +246,14 @@ global define TarOptionsDialog() ``{
 
 global define BackupDialog() ``{
 
-    UI::SetWizardContents( _("Backup settings"),
+    UI::SetWizardContents( _("Search settings"),
         `VBox(`VSpacing(0.5),
 	    `Frame( _("Backup options"),
 	        `VBox(
 		    `VSpacing(0.5),
-                    `Left(`CheckBox(`id(`search), `opt(`notify), _("Backup files which do not belong to any package"))),
+                    `Left(`CheckBox(`id(`search), `opt(`notify), _("Search files which do not belong to any package"))),
 		    `VSpacing(0.5),
-                    `Left(`CheckBox(`id(`system), _("Backup system areas"))),
-		    `VSpacing(0.5),
-                    `Left(`CheckBox(`id(`display), _("Display list of files before creating archive"))),
+                    `Left(`CheckBox(`id(`system), _("Backup hard disk system areas"))),
 		    `VSpacing(0.5)
 		)
 	    ),
@@ -272,6 +270,9 @@ global define BackupDialog() ``{
 		)
 	    ),
 
+	    `VSpacing(1.0),
+	    `Left(`CheckBox(`id(`display), _("Check list of files before creating archive"))),
+
 	    `VSpacing(1.0)
 	),
         backup_help_backup_setting(), true, true
@@ -282,6 +283,7 @@ global define BackupDialog() ``{
     UI::ChangeWidget(`id(`system), `Value, system);
     UI::ChangeWidget(`id(`display), `Value, display);
     UI::ChangeWidget(`id(`enh_check), `Value, enhanced_check_owner);
+    UI::ChangeWidget(`id(`enh_check), `Enabled, UI::QueryWidget(`id(`search), `Value));
     UI::ChangeWidget(`id(`multi_check), `Value, check_multiple_packages);
 
     symbol ret = nil;
@@ -348,7 +350,7 @@ global define ExcludeDialog() ``{
 	    `HBox(
                 `PushButton(`id(`addnew), _("Add...") ) ,
 		`PushButton(`id(`edit), _("Edit...") ) ,
-		`PushButton(`id(`delete), _("Delete") ) 
+		`PushButton(`id(`delete), _("Delete") )
 	    ),
 
 	    `VSpacing(1.0),
@@ -1249,11 +1251,15 @@ global define ArchivingDialog() ``{
     {
 	if (volume_size == `user_defined)
 	{
-	    integer vol_size = tointeger(user_volume_size);
+	    integer vol_size = tointeger( (tofloat(user_volume_size)) * (tofloat(GetCapacity(units_description, user_volume_unit))) );
 
 	    if (vol_size > 0)
 	    {
-		archive_options = archive_options + " --multi-volume " + (vol_size * GetCapacity(units_description, user_volume_unit));
+		archive_options = archive_options + " --multi-volume " + sformat("%1", vol_size);
+	    }
+	    else
+	    {
+		y2warning("Bad volume size: %1", user_volume_size);
 	    }
 	}
 	else
