@@ -17,9 +17,7 @@
 
 {
 
-/* TODO: check default values */
 /* TODO: check for configuration changes, avoid unnecessary searches */
-/* TODO: check exit statuses, result values... if error occured */
 
 y2milestone("Backup module started");
 
@@ -45,7 +43,8 @@ integer modified_size = 0;		// size
 integer nopkg_num = 0;			// number of found files which do not belong to any package
 integer nopkg_size = 0;			// size
 
-list list_of_installed_packages = [];	// names of all installed packages
+//list list_of_installed_packages = [];	// names of all installed packages
+boolean packages_list_stored = false;
 
 integer selected_files_num = 0;		// number of selected files to backup
 
