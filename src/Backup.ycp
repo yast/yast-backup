@@ -22,10 +22,14 @@ module	"Backup";
 import "AutoinstClone";
 import "Profile";
 import "Progress";
+import "Report";
 
 include "backup/functions.ycp";
 
 textdomain "backup";
+
+// maximum cron file index
+integer max_cron_index = 0;
 
 global string script_store_ext2_area = "/sbin/e2image";
 global string script_get_partition_table = "/sbin/fdisk -l";
@@ -552,6 +556,9 @@ global define map ReadCronSetting(string filename) ``{
     string filecontent = SCR::Read(.target.string, filename);
     list lines = splitstring(filecontent, "\n");
 
+    // filter out comments
+    lines = filter(string l, lines, ``(!regexpmatch(l, "^[ \t]*#")));
+
     string line = lines[0]:"";
 
     if (line == nil || line == "")
@@ -559,21 +566,40 @@ global define map ReadCronSetting(string filename) ``{
 	return ret;
     }
 
-    string regex = "^([0-9]*)[ \t]*([0-9]*)[ \t]([^ \t]*)[ \t]([^ \t]*)[ \t]([^ \t]*)[ \t]*[^ \t]*[ \t]*/usr/lib/YaST2/bin/backup_cron[ \t]*\"*([^\"]*)\"*";
+    string regex = "^([^ \t]*)[ \t]*([^ \t]*)[ \t]([^ \t]*)[ \t]([^ \t]*)[ \t]([^ \t]*)[ \t]*[^ \t]*[ \t]*/usr/lib/YaST2/bin/backup_cron[ \t]*\"*([^\"]*)\"*";
     symbol every = `none;
     map cronsettings = $[];
     string profilename = "";
 
+    // is cron setting supported (ranges, lists and steps are NOT supported)
+    boolean unknown_settings = false;
+    boolean bad_settings = false;
+
     if (regexpmatch(line, regex))
     {
-	integer minute = tointeger(regexpsub(line, regex, "\\1"));
-	integer hour = tointeger(regexpsub(line, regex, "\\2"));
+	string minute_str = regexpsub(line, regex, "\\1");
+	string hour_str = regexpsub(line, regex, "\\2");
+
+	y2milestone("minute_str: %1, hour_str: %2", minute_str, hour_str);
+
+	if (!regexpmatch(minute_str, "^[0-9]*$") || !regexpmatch(hour_str, "^[0-9]*$"))
+	{
+	    unknown_settings = true;
+	}
+
+	y2milestone("unknown_settings: %1", unknown_settings);
+	integer minute = tointeger(minute_str);
+	integer hour = tointeger(hour_str);
+
+	if (hour > 23 || hour < 0 || minute > 59 || minute < 0)
+	{
+	    bad_settings = true;
+	}
 
 	string day = regexpsub(line, regex, "\\3");
 	string month = regexpsub(line, regex, "\\4");
 	string weekday = regexpsub(line, regex, "\\5");
 
-	y2milestone("hour: %1", regexpsub(line, regex, "\\1"));
 	y2milestone("line: %1", line);
 	y2milestone("day: %1", day);
 
@@ -583,10 +609,10 @@ global define map ReadCronSetting(string filename) ``{
 	profilename = regexpsub(line, regex, "\\6");
 	y2milestone("profilename: %1", profilename);
 
-
 	if (month != "*")
 	{
 	    // error
+	    unknown_settings = true;
 	}
 
 	if (day == "*" && weekday == "*")
@@ -597,16 +623,56 @@ global define map ReadCronSetting(string filename) ``{
 	else if (day == "*")
 	{
 	    every = `week;
+
+	    if (!regexpmatch(weekday, "^[0-9]*$"))
+	    {
+		unknown_settings = true;
+	    }
+
 	    intweekday = tointeger(weekday);
+
+	    if (intweekday > 7 || intweekday < 0)
+	    {
+		bad_settings = true;
+	    }
 	}
 	else if (weekday == "*")
 	{
 	    every = `month;
+
+	    if (!regexpmatch(day, "^[0-9]*$"))
+	    {
+		unknown_settings = true;
+	    }
+
 	    intday = tointeger(day);
+
+	    if (intday > 31 || intday < 1)
+	    {
+		bad_settings = true;
+	    }
+	}
+	else
+	{
+	    unknown_settings = true;
 	}
 
 	cronsettings = $["auto":true, "day":intday, "hour":hour, "minute":minute, "weekday":intweekday, "every":every];
 	y2milestone("cronsettings: %1", cronsettings);
+    }
+    else
+    {
+	unknown_settings = true;
+    }
+
+    if (unknown_settings == true)
+    {
+	Report::Warning(sformat(_("Cron settings for profile '%1'\nin file '%2'\nis not fully supported."), profilename, filename));
+    }
+
+    if (bad_settings == true)
+    {
+	Report::Error(sformat(_("Some time values for profile '%1'\nin file '%2'\nare out of range."), profilename, filename));
     }
 
     return (every != `none) ? $["profilename":profilename, "cronsettings": cronsettings] : $[];
@@ -621,14 +687,32 @@ global define void ReadCronSettings() ``{
     string crondir = "/etc/cron.d";
     list files = SCR::Read(.target.dir, crondir);
 
+    // reset cron setings
+    foreach(string name, map opts, backup_profiles, ``{
+	    opts[`cron_settings, "cronfile"] = "";
+	    opts[`cron_settings, "cron_changed"] = false;
+
+	    backup_profiles[name] = eval(opts);
+	}
+    );
+
     if (size(files) > 0)
     {
 	// parse all /etc/cron.d/yast2-backup-* files
 	foreach(string file, files, ``{
 		if (regexpmatch(file, "yast2-backup-[0-9]*") == true)
 		{
+		    integer cron_index = tointeger(regexpsub(file, "yast2-backup-([0-9]*)", "\\1"));
+
+		    y2milestone("cron_index: %1", cron_index);
+		    if (cron_index > max_cron_index)
+		    {
+			max_cron_index = cron_index;
+		    }
+
 		    // parse cron file
 		    map cron = ReadCronSetting(crondir + "/" + file);
+		    y2milestone("parsed cron config: %1", cron);
 
 		    if (cron != $[] && cron != nil)
 		    {
@@ -640,10 +724,12 @@ global define void ReadCronSettings() ``{
 			{
 			    map profile = eval(backup_profiles[profilename]:$[]);
 
+			    cronsettings["cronfile"] = crondir + "/" + file;
+
 			    // merge maps - include old backup settings from read profile
 			    cronsettings = union(eval(profile[`cron_settings]:$[]), cronsettings);
 
-			    profile[`cron_settings] = cronsettings;
+			    profile[`cron_settings] = eval(cronsettings);
 			    backup_profiles[profilename] = eval(profile);
 			}
 		    }
@@ -651,6 +737,8 @@ global define void ReadCronSettings() ``{
 	    }
 	);
     }
+
+    y2milestone("max_cron_index: %1", max_cron_index);
 }
 
 
@@ -677,6 +765,7 @@ global define boolean ReadBackupProfiles() ``{
 	}
     );
 
+    // add cron settings
     ReadCronSettings();
 
     return ( backup_profiles != $[] ) ;
@@ -688,21 +777,43 @@ global define boolean ReadBackupProfiles() ``{
  */
 
 global define void WriteCronSettings() ``{
-    // remove all old cron files
-    SCR::Execute(.target.bash, "/bin/rm -f /etc/cron.d/yast2-backup-*");
+    y2milestone("backup_profiles: %1", backup_profiles);
 
-    integer idx = 0;
-    // create new cron files
+    // write cron files
     foreach(string name, map opts, backup_profiles, ``{
 	    // cron file content
 	    string setting = CreateCronSetting(name);
+	    string cron_file = opts[`cron_settings, "cronfile"]:"";
+
+	    y2milestone("name: %1", name);
+	    y2milestone("setting: %1", setting);
+	    y2milestone("cron_settings: %1", opts[`cron_settings]:"");
 
 	    if (setting != "" && setting != nil)
 	    {
-		SCR::Write(.target.string, sformat("/etc/cron.d/yast2-backup-%1", idx), setting);
-		y2milestone("Created file: /etc/cron.d/yast2-backup-%1", idx);
-		idx = idx + 1;
+		// is already cron file existing?
+		if (size(cron_file) == 0)
+		{
+		    // no, create new file
+		    max_cron_index = max_cron_index + 1;
+		    cron_file = sformat("/etc/cron.d/yast2-backup-%1", max_cron_index);
+
+		    // remember new cron file name
+		    backup_profiles[name, `cron_settings, "cronfile"] = cron_file;
+		}
+
+		SCR::Write(.target.string, cron_file, setting);
+		y2milestone("Created file: %1", cron_file);
 	    }
+	    else if (size(cron_file) > 0 && opts[`cron_settings, "auto"]:false == false)
+	    {
+		// remove existing cron file
+		SCR::Execute(.target.bash, "/bin/rm -f " + cron_file);
+		y2milestone("removed old cron file: %1", cron_file);
+	    }
+
+	    // mark saved value as unchanged
+	    backup_profiles[name, `cron_settings, "cron_changed"] = false;
 	}
     );
 }
@@ -714,16 +825,16 @@ global define void WriteCronSettings() ``{
  */
 
 global define boolean WriteBackupProfiles() ``{
+    // update cron setting
+    WriteCronSettings();
+
     if( !SCR::Write (.target.ycp, "/var/adm/YaST/backup/profiles", backup_profiles ) )
     {
 	y2error( "Unable to write profiles into a file" );
-	UI::ErrorPopup( _("Could not store profiles to disk.
+	Popup::Error( _("Could not store profiles to disk.
 The profile changes will be lost.") );
 	return false;
     }
-
-    // update cron setting
-    WriteCronSettings();
 
     return true;
 }
@@ -736,38 +847,38 @@ The profile changes will be lost.") );
  */
 
 global define void StoreSettingsToBackupProfile( string profile_name ) ``{
-    
+
     map new_profile = $[
-	`archive_name 		: archive_name, 
+	`archive_name 		: archive_name,
 	`description  		: description,
 	`archive_type 		: archive_type,
 	`multi_volume 		: multi_volume,
 	`volume_size  		: volume_size,
 	`user_volume_size 	: user_volume_size,
-	`user_volume_unit 	: user_volume_unit, 
-	`search 		: search, 
-	`system 		: system, 
-	`display 		: display, 
-	`do_md5_test 		: do_md5_test, 
-	`default_dir		: default_dir, 
-	`dir_list		: dir_list, 
-	`fs_exclude		: fs_exclude, 
+	`user_volume_unit 	: user_volume_unit,
+	`search 		: search,
+	`system 		: system,
+	`display 		: display,
+	`do_md5_test 		: do_md5_test,
+	`default_dir		: default_dir,
+	`dir_list		: dir_list,
+	`fs_exclude		: fs_exclude,
 	`detected_fs		: detected_fs,
-	`detected_ext2		: detected_ext2, 
+	`detected_ext2		: detected_ext2,
 	`ext2_backup		: ext2_backup,
 	`backup_pt		: backup_pt,
-	`backup_all_ext2	: backup_all_ext2, 
-	`backup_none_ext2	: backup_none_ext2, 
-	`backup_selected_ext2	: backup_selected_ext2, 
+	`backup_all_ext2	: backup_all_ext2,
+	`backup_none_ext2	: backup_none_ext2,
+	`backup_selected_ext2	: backup_selected_ext2,
 	`unselected_files 	: unselected_files
     ] ;
-    
+
     // add the new profile
-    backup_profiles = add( backup_profiles, profile_name, new_profile );    
+    backup_profiles = add( backup_profiles, profile_name, new_profile );
 }
 
 /**
- * Restore the global settings from a given backup profile. 
+ * Restore the global settings from a given backup profile.
  * @param profile_name name of a profile to be used
  * @return If the name of the profile cannot be found, return false, otherwise return true.
  */
@@ -775,7 +886,7 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
 
     // return false, is there is no such profile
     if( !haskey( backup_profiles, profile_name ) ) return false;
-    
+
     // get the profile data
     map profile = backup_profiles[profile_name]:nil;
 
@@ -818,7 +929,7 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
 global define void RestoreDefaultSettings() ``{
 
     // setup global settings according to defaults
-    archive_name = eval( default_archive_name ); 
+    archive_name = eval( default_archive_name );
     description = eval( default_description );
     archive_type = eval( default_archive_type );
     multi_volume = eval( default_multi_volume );
@@ -833,17 +944,17 @@ global define void RestoreDefaultSettings() ``{
     dir_list = eval( default_dir_list );
     fs_exclude = eval( default_fs_exclude );
     detected_fs = eval( default_detected_fs );
-    detected_ext2 = eval( default_detected_ext2 ); 
+    detected_ext2 = eval( default_detected_ext2 );
     ext2_backup = eval( default_ext2_backup );
     backup_pt = eval( default_backup_pt );
     backup_all_ext2 = eval( default_backup_all_ext2 );
     backup_none_ext2 = eval( default_backup_none_ext2 );
     backup_selected_ext2 = eval( default_backup_selected_ext2 );
     unselected_files = eval( default_unselected_files );
-    
+
     selected_files = eval( default_selected_files );
     backup_files = eval( default_backup_files );
-    
+
     selected_profile = nil;
 }
 
@@ -911,7 +1022,8 @@ global define string CreateCronSetting(string profilename) ``{
     map input = backup_profiles[profilename, `cron_settings]:$[];
     string ret = "";
 
-    if (input == nil || input == $[])
+    // return empty string if cron setting was not changed
+    if (input == nil || input == $[] || input["cron_changed"]:false == false)
     {
 	return ret;
     }
@@ -936,6 +1048,9 @@ global define string CreateCronSetting(string profilename) ``{
 	{
 	    ret = sformat("%1 %2 %3 * *  root  /usr/lib/YaST2/bin/backup_cron \"%4\"\n", minute, hour, day, profilename);
 	}
+
+	// add comment to the first line
+	ret = "# Please do not edit this file manually, use YaST2 backup module instead\n" + ret;
     }
 
     return ret;
@@ -978,16 +1093,24 @@ global define string CreateCronDescription(string profilename) ``{
 	map result = SCR::Execute(.target.bash_output, bashcommand);
 	string ltime  = mergestring(splitstring(result["stdout"]:"", "\n"), "");
 
-	if (every == `day)
+	if (ltime == "")
 	{
+	    // table item - specified time is invalid
+	    ret = _("-- Invalid time --");
+	}
+	else if (every == `day)
+	{
+	    // table item - start backup every day (%1 is time)
 	    ret = sformat(_("Backup daily (at %1)"), ltime);
 	}
 	else if (every == `week)
 	{
+	    // table item - start backup every week (%1 is day name, %2 is time)
 	    ret = sformat(_("Backup weekly (%1 at %2)"), daynames[weekday]:"?", ltime);
 	}
 	else if (every == `month)
 	{
+	    // table item - start backup once a month (%1 is day (ordinal number, e.g. 5th), %2 is time)
 	    ret = sformat(_("Backup monthly (%1 day at %2)"), ordinal_numbers[day]:"?", ltime);
 	}
     }

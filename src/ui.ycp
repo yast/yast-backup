@@ -22,7 +22,7 @@ import "Progress";
 import "Report";
 import "Label";
 
-include "ui/common_popups.ycp";
+import "Popup";
 include "ui/common_functions.ycp";
 include "ui/file_popups.ycp";
 
@@ -163,7 +163,7 @@ global define symbol CronDialog() ``{
     );
 
     // replace 'Next' buton with 'Ok'
-    Wizard::ReplaceNextButton(`PushButton(`id(`next), `opt(`default, `key_F10), OKButtonLabel()));
+    Wizard::ReplaceNextButton(`PushButton(`id(`next), `opt(`default, `key_F10), Label::OKButton()));
     UI::SetFocus(`id(`next));
 
     // set initial widget states
@@ -186,6 +186,15 @@ global define symbol CronDialog() ``{
 	// store setting to the selected profile
 	if (Backup::selected_profile != nil)
 	{
+	    boolean cron_changed = (current_settings["auto"]:nil != UI::QueryWidget(`id(`enabled), `Value) ||
+		current_settings["every"]:nil != UI::QueryWidget(`id(`time), `Value) ||
+		current_settings["weekday"]:nil != UI::QueryWidget(`id(`weekday), `Value) ||
+		current_settings["day"]:nil != UI::QueryWidget(`id(`day), `Value) ||
+		current_settings["hour"]:nil != UI::QueryWidget(`id(`hour), `Value) ||
+		current_settings["minute"]:nil != UI::QueryWidget(`id(`minute), `Value));
+
+	    y2milestone("cron_changed: %1", cron_changed);
+
 	    current_settings["auto"] = UI::QueryWidget(`id(`enabled), `Value);
 	    current_settings["every"] = UI::QueryWidget(`id(`time), `Value);
 
@@ -196,8 +205,10 @@ global define symbol CronDialog() ``{
 
 	    current_settings["old"] = UI::QueryWidget(`id(`old), `Value);
 
-	    current_profile[`cron_settings] = current_settings;
-	    Backup::backup_profiles[Backup::selected_profile] = current_profile;
+	    current_settings["cron_changed"] = cron_changed;
+
+	    current_profile[`cron_settings] = eval(current_settings);
+	    Backup::backup_profiles[Backup::selected_profile] = eval(current_profile);
 
 	    y2milestone("Profile: %1, New settings: %2", Backup::selected_profile, current_settings);
 	}
@@ -249,7 +260,7 @@ global define symbol ArchDialog() ``{
 	if (!Backup::multi_volume && SCR::Read(.target.size, Backup::archive_name) != -1)
 	{
 	    // For translators %1 is archive file name (e.g. /tmp/backup.tar)
-	    cont = UI::YesNoPopup(sformat(_("File %1 already exists.\nDo you wish to overwrite it?"), Backup::archive_name));
+	    cont = Popup::YesNo(sformat(_("File %1 already exists.\nDo you wish to overwrite it?"), Backup::archive_name));
 	}
 	else if (Backup::multi_volume)	// test if some volume part exists
 	{
@@ -285,7 +296,7 @@ global define symbol ArchDialog() ``{
 	    if (matched == true)
 	    {
 		// For translators %1 is volume file name (e.g. /tmp/01_backup.tar)
-		cont = UI::YesNoPopup(sformat(_("Existing file %1\ncan be part of new volume set and it can be rewritten.\nDo you wish to continue?"), dir + "/" + conflict_file));
+		cont = Popup::YesNo(sformat(_("Existing file %1\ncan be part of new volume set and it can be rewritten.\nDo you wish to continue?"), dir + "/" + conflict_file));
 	    }
 	    else
 	    {
@@ -379,7 +390,7 @@ global define symbol ArchDialog() ``{
     if (id_result["stdout"]:"" != "0\n" && root_warning_displayed == false)
     {
 	// warning popup message
-	UI::WarningPopup(_("You are not logged in as root.
+	Popup::Warning(_("You are not logged in as root.
 Some files can only be read by the user 'root'.
 Not all files will be backed up,
 so it will not be possible to restore
@@ -421,8 +432,8 @@ be backed up by root.
 		{
 		    if (SCR::Read(.target.size, "/usr/bin/star") < 0)
 		    {
-			// YesNoPopup message text - ask to install 'star' package
-			boolean inst = UI::YesNoPopup(_("Package 'star' is required for
+			// Popup::YesNo message text - ask to install 'star' package
+			boolean inst = Popup::YesNo(_("Package 'star' is required for
 the selected archive type.
 Install it?
 "));
@@ -447,19 +458,19 @@ Install it?
 		if (size(Backup::archive_name) == 0)
 		{
 		    // warning popup message
-		    UI::WarningPopup(_("An archive file name is required.
+		    Popup::Warning(_("An archive file name is required.
 Enter the file name to use.
 "));
 		}
 		else if (substring(Backup::archive_name, 0, 1) != "/" || SCR::Read(.target.dir, Backup::archive_name) != nil)
 		{
 		    // warning popup message
-		    UI::WarningPopup(_("Please enter archive file name with\nabsolute path (e.g. /tmp/backup.tar)"));
+		    Popup::Warning(_("Please enter archive file name with\nabsolute path (e.g. /tmp/backup.tar)"));
 		}
 		else if (!Backup::multi_volume && SCR::Read(.target.size, Backup::archive_name) != -1)
 		{
 		    // For translators %1 is archive file name (e.g. /tmp/backup.tar)
-		    cont = UI::YesNoPopup(sformat(_("File %1 already exists.\nDo you wish to overwrite it?"), Backup::archive_name));
+		    cont = Popup::YesNo(sformat(_("File %1 already exists.\nDo you wish to overwrite it?"), Backup::archive_name));
 		}
 		else if (Backup::multi_volume)	// test if some volume part exists
 		{
@@ -495,7 +506,7 @@ Enter the file name to use.
 		    if (matched == true)
 		    {
 			// For translators %1 is volume file name (e.g. /tmp/01_backup.tar)
-			cont = UI::YesNoPopup(sformat(_("Existing file %1\ncan be part of new volume set and it can be rewritten.\nDo you wish to continue?"), dir + "/" + conflict_file));
+			cont = Popup::YesNo(sformat(_("Existing file %1\ncan be part of new volume set and it can be rewritten.\nDo you wish to continue?"), dir + "/" + conflict_file));
 		    }
 		    else
 		    {
@@ -596,7 +607,7 @@ global define symbol TarOptionsDialog() ``{
     );
 
     // replace 'Next' buton with 'Ok'
-    Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default, `key_F10), OKButtonLabel()));
+    Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default, `key_F10), Label::OKButton()));
     UI::SetFocus(`id(`ok));
 
     // allow only digits in the text entry
@@ -636,7 +647,7 @@ global define symbol TarOptionsDialog() ``{
 		    (tofloat(UI::QueryWidget(`id(`user_size), `Value)) * tofloat(Backup::GetCapacity(Backup::units_description, UI::QueryWidget(`id(`user_unit), `Value))) / 1024.0) < 10.0)
 	    {
 		// warning popup message
-		UI::WarningPopup(_("Volume size must be at least 10240 bytes."));
+		Popup::Warning(_("Volume size must be at least 10240 bytes."));
 	    }
 	    else
 	    {
@@ -844,7 +855,7 @@ global define symbol ExcludeDialog() ``{
 			if (contains(Backup::dir_list, `item(`id(txt), txt)))
 			{
 			    // error popup message
-			    UI::ErrorPopup(sformat(_("Directory %1 is already in the list."), txt));
+			    Popup::Error(sformat(_("Directory %1 is already in the list."), txt));
 			}
 			else
 			{
@@ -888,7 +899,7 @@ global define symbol ExcludeDialog() ``{
 		    if (contains(Backup::dir_list, `item(`id(new_dir), new_dir)))
 		    {
 			// error poup message - %1 is a directory name
-			UI::ErrorPopup(sformat(_("Directory %1 is already in the list."), new_dir));
+			Popup::Error(sformat(_("Directory %1 is already in the list."), new_dir));
 		    }
 		    else
 		    {
@@ -948,7 +959,7 @@ global define symbol ExcludeFilesystemDialog() ``{
     );
 
     // replace 'Next' buton with 'Ok'
-    Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default, `key_F10), OKButtonLabel()));
+    Wizard::ReplaceNextButton(`PushButton(`id(`ok), `opt(`default, `key_F10), Label::OKButton()));
     UI::SetFocus(`id(`ok));
 
     symbol ret = nil;
@@ -1093,7 +1104,7 @@ global define symbol SystemBackupDialog() ``{
 			if (contains(Backup::ext2_backup, `item(`id(txt), txt, dir)))
 			{
 			    // error popup message, %1 is partition name (e.g. /dev/hda1)
-			    UI::ErrorPopup(sformat(_("Partition %1 is already in the list."), txt));
+			    Popup::Error(sformat(_("Partition %1 is already in the list."), txt));
 			}
 			else
 			{
@@ -1142,7 +1153,7 @@ global define symbol SystemBackupDialog() ``{
 		    if (contains(Backup::ext2_backup, `item(`id(new_par), new_par, dir)))
 		    {
 			// error popup message, %1 is partition name (e.g. /dev/hda1)
-			UI::ErrorPopup(sformat(_("Partition %1 is already in the list."), new_par));
+			Popup::Error(sformat(_("Partition %1 is already in the list."), new_par));
 		    }
 		    else
 		    {
@@ -2534,7 +2545,7 @@ global define symbol SummaryDialog() ``{
 	UI::ChangeWidget(`id(`details), `Enabled, false);
     }
 
-    Wizard::ReplaceNextButton(`PushButton(`id(`finish), `opt(`default), OKButtonLabel()));
+    Wizard::ReplaceNextButton(`PushButton(`id(`finish), `opt(`default), Label::OKButton()));
     UI::SetFocus(`id(`finish));
 
     symbol ret = UI::UserInput();
@@ -2544,7 +2555,7 @@ global define symbol SummaryDialog() ``{
 	if (ret == `details)
 	{
 	    // popup dialog header
-	    UI::LongTextPopup(_("Backup summary details:"), `RichText(backup_details), 70, 15);
+	    Popup::LongText(_("Backup summary details:"), `RichText(backup_details), 70, 15);
 	}
 	else if (ret == `abort || ret == `cancel)
 	{
@@ -2582,7 +2593,7 @@ global define symbol SummaryDialog() ``{
  */
 global define symbol SelectProfileDialog() ``{
 
-    Wizard::ReplaceNextButton (`PushButton(`id(`finish), CloseButtonLabel()));
+    Wizard::ReplaceNextButton (`PushButton(`id(`finish), Label::CloseButton()));
     Wizard::ReplaceBackButton( `Empty() );
 
     string tableheader1 = _("Name");
@@ -2599,10 +2610,10 @@ global define symbol SelectProfileDialog() ``{
                 `PushButton(`id(`start), _("&Start backup")),
                 `MenuButton(_("Profile mana&gement"),
                     [
-                        `item(`id(`add), AddButtonLabel()+"..."),
+                        `item(`id(`add), Label::AddButton()+"..."),
                         `item(`id(`clone), _("&Duplicate...")),
-                        `item(`id(`edit), EditButtonLabel()+"..."),
-                        `item(`id(`delete), DeleteButtonLabel()),
+                        `item(`id(`edit), Label::EditButton()+"..."),
+                        `item(`id(`delete), Label::DeleteButton()),
 			`item(`id(`cron), tableheader3 + "...")
                     ])
             ),
@@ -2664,7 +2675,7 @@ global define symbol SelectProfileDialog() ``{
 	else if( ret == `delete )
 	{
 	    // remove the selected profile
-	    if ( UI::YesNoPopup ( _("Remove the selected profile?") ) )
+	    if ( Popup::YesNo ( _("Remove the selected profile?") ) )
 	    {
 		Backup::RemoveBackupProfile( UI::QueryWidget(`id(`profile), `CurrentItem ) );
 		UI::ReplaceWidget( `id(`selectionBox),
@@ -2742,7 +2753,7 @@ global define string AskNewProfileName() ``{
     while( lookup( new_name, "clicked", nil ) == `ok && Backup::backup_profiles[ new_name["text"]:nil ]:nil != nil  )
     {
 	// Translators: error popup, %1 is profile name
-	if( ! UI::YesNoPopup(sformat(_("A profile '%1' already exists.
+	if( ! Popup::YesNo(sformat(_("A profile '%1' already exists.
 Do you want to replace the existing profile?"), new_name["text"]:"")) ) {
 	    new_name = ShowEditDialog(_("Enter a name for the new profile."), "");
 	}
