@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Aug 26 16:33:10 CEST 2002 - lslezak@suse.cz
+
+- preselect all packages to restore in autoyast profile
+- added hwinfo to neededforbuild
+- version 2.6.5
+
+-------------------------------------------------------------------
 Mon Aug 19 16:56:00 CEST 2002 - lslezak@suse.cz
 
 - store lan settings to autoyast profile if archive is

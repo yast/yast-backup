@@ -1546,7 +1546,7 @@ Backup will be aborted.
 
     y2milestone("Creating archive...");
 
-    while(SCR::Read(.background.output_open) || (SCR::Read(.background.newlines) > 0))
+    while(SCR::Read(.background.output_open) == true || (SCR::Read(.background.newlines) > 0))
     {
 	script_out = SCR::Read(.background.newout);
 
