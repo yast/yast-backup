@@ -1,0 +1,5 @@
+Dump	[]
+Dump	[]
+Dump	[`item (`id (1), "[ ]", "/etc/fstab", ""), `item (`id (2), "[ ]", "/etc/passwd", ""), `item (`id (3), "[ ]", "/etc/inittab", "aaa_base-2001.5.22-0"), `item (`id (4), "[ ]", "/etc/modules.conf", "aaa_base-2001.5.22-0")]
+Dump	[`item (`id (1), "[ ]", "/etc/fstab", ""), `item (`id (2), "[ ]", "/etc/passwd", ""), `item (`id (3), "[ ]", "/etc/inittab", "aaa_base-2001.5.22-0"), `item (`id (4), "[x]", "/etc/modules.conf", "aaa_base-2001.5.22-0")]
+Dump	[`item (`id (1), "[x]", "/etc/fstab", ""), `item (`id (2), "[x]", "/etc/passwd", ""), `item (`id (3), "[x]", "/etc/inittab", "aaa_base-2001.5.22-0"), `item (`id (4), "[x]", "/etc/modules.conf", "aaa_base-2001.5.22-0")]

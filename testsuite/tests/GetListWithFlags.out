@@ -1,0 +1,5 @@
+Dump	[]
+Dump	[]
+Dump	[]
+Dump	[`item (`id ("/dev"), "/dev", false)]
+Dump	[`item (`id ("/dev"), "/dev", false), `item (`id ("/etc"), "/etc", true)]

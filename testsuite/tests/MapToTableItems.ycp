@@ -1,0 +1,38 @@
+// Backup module - testsuite
+//
+// MapToTableItems function tests
+//
+// $Id$
+//
+
+{
+
+include "backup/functions.ycp";
+include "testsuite.ycp";
+
+// used global variables
+string nocheckmark = "[ ]";
+string checkmark = "[x]";
+map backup_files = nil;
+map selected_files = $["aaa_base-2001.5.22-0" : $["changed_files" : ["/etc/modules.conf"]]];
+
+DUMP( MapToTableItems(nil) );
+
+backup_files = $[];
+DUMP( MapToTableItems(true) );
+
+backup_files = $[
+  "pkg1": $["changed_files" : []],
+  "pkg2" : $["changed_files" : nil],
+  "aaa_base-2001.5.22-0" : $["changed_files" : ["/etc/inittab", "/etc/modules.conf"]],
+  "" : $["changed_files" : ["/etc/fstab", "/etc/passwd"]],
+  "pkg3" : nil
+];
+DUMP( MapToTableItems(false) );
+
+DUMP( MapToTableItems(nil) );
+
+DUMP( MapToTableItems(true) );
+
+}
+

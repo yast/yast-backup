@@ -1,0 +1,19 @@
+// Backup module - testsuite
+//
+// AddId function tests
+//
+// $Id$
+//
+
+{
+
+include "backup/functions.ycp";
+include "testsuite.ycp";
+
+DUMP( AddId(nil) );
+DUMP( AddId([]) );
+DUMP( AddId(["/dev"]) );
+DUMP( AddId(["/dev", "/proc"]) );
+
+}
+

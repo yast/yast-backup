@@ -1,0 +1,4 @@
+Read	.proc.mounts nil
+Return	[]
+Read	.proc.mounts [$["file":"/", "freq":0, "mntops":"rw", "passno":0, "spec":"/dev/root", "vfstype":"reiserfs"], $["file":"/proc", "freq":0, "mntops":"rw", "passno":0, "spec":"proc", "vfstype":"proc"], $["file":"/dev/pts", "freq":0, "mntops":"rw", "passno":0, "spec":"devpts", "vfstype":"devpts"], $["file":"/boot", "freq":0, "mntops":"rw", "passno":0, "spec":"/dev/hda1", "vfstype":"ext2"], $["file":"/local", "freq":0, "mntops":"rw", "passno":0, "spec":"/dev/hda4", "vfstype":"ext2"]]
+Return	["/dev/hda1", "/dev/hda4"]

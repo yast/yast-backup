@@ -1,0 +1,19 @@
+// Backup module - testsuite
+//
+// AddIdBool function tests
+//
+// $Id$
+//
+
+{
+
+include "backup/functions.ycp";
+include "testsuite.ycp";
+
+DUMP( AddIdBool(nil, nil) );
+DUMP( AddIdBool([], true) );
+DUMP( AddIdBool([ `item(`id("ext2"), "ext2", true)], false) );
+DUMP( AddIdBool(["abcd"], true) );
+
+}
+

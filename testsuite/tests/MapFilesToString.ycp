@@ -1,0 +1,35 @@
+// Backup module - testsuite
+//
+// MapFilesToString function tests
+//
+// $Id$
+//
+
+{
+
+include "backup/functions.ycp";
+include "testsuite.ycp";
+
+// used global variables
+map backup_files = nil;
+map selected_files = $["aaa_base-2001.5.22-0" : $["changed_files" : ["/etc/modules.conf"], /*"install_prefixes" : "(none)"*/]];
+
+DUMP( [ MapFilesToString() ] );
+
+backup_files = $[];
+DUMP( [ MapFilesToString() ] );
+
+backup_files = $[
+  "pkg1": $["changed_files" : [], "install_prefixes" : []],
+  "pkg2" : $["changed_files" : nil, "install_prefixes" : nil],
+  "aaa_base-2001.5.22-0" : $["changed_files" : ["/etc/inittab", "/etc/modules.conf"]],
+  "" : $["changed_files" : ["/etc/fstab", "/etc/passwd"]],
+  "pkg3" : nil
+];
+
+selected_files = add(selected_files, "", $["changed_files" : ["/etc/fstab"]]);
+
+DUMP( [ MapFilesToString() ] );
+
+}
+

@@ -1,0 +1,20 @@
+// Backup module - testsuite
+//
+// GetListWithFlags function tests
+//
+// $Id$
+//
+
+{
+
+include "backup/functions.ycp";
+include "testsuite.ycp";
+
+DUMP( GetListWithFlags(nil, nil) );
+DUMP( GetListWithFlags([], []) );
+DUMP( GetListWithFlags([], ["/dev"]) );
+DUMP( GetListWithFlags(["/dev"], []) );
+DUMP( GetListWithFlags(["/dev", "/etc"], ["/etc"]));
+
+}
+
