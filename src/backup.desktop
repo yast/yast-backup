@@ -16,7 +16,7 @@ X-SuSE-YaST-Geometry=
 X-SuSE-YaST-SortKey=
 X-SuSE-YaST-AutoInstResource=
 
-Icon=backup
+Icon=yast-backup
 Exec=/sbin/yast2 backup 
 
 Name=System Backup
