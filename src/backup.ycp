@@ -25,6 +25,7 @@ import "Backup";
 import "Report";
 import "Sequencer";
 import "Popup";
+import "CommandLine";
 
 include "backup/functions.ycp";
 include "backup/ui.ycp";
@@ -120,10 +121,14 @@ map aliases = $[
     "summary"	: ``(SummaryDialog())
 ];
 
+map cmdline_description = $[
+    "id" : "backup",
+];
 
 list args = WFM::Args();
 y2milestone("args: %1", args);
 
+// starting cron mode
 if (args[0]:"" == "cron")
 {
     y2milestone("Starting in cron mode");
@@ -134,6 +139,10 @@ if (args[0]:"" == "cron")
 	Backup::cron_profile = regexpsub(args[1]:"", "^[ \t]*profile[ \t]*=[ \t]*(.*)", "\\1");
 	y2milestone("Using profile: '%1'", Backup::cron_profile);
     }
+// starting CMDLine mode (!cron mode)
+} else if (size(args)>0) {
+    any ret = CommandLine::Run(cmdline_description);
+    return ret;
 }
 
 if (Backup::cron_mode != true)
