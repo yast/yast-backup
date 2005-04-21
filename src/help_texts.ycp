@@ -101,7 +101,7 @@ package can be optionally added to the archive.</P>")
 
  define string backup_help_searching_modified() ``{
     // For translators: help text in searching modified dialog - part 1/3
-    return _("<P><B><BIG>Searching</BIG></B><BR>The modified file search is in progess.</P>")
+    return _("<P><B><BIG>Searching</BIG></B><BR>The modified file search is in progress.</P>")
 
     // For translators: help text in searching modified dialog - part 2/3
     + _("<P>This will take several minutes, depending on the speed of your system and the number of installed packages.</P>")
@@ -249,7 +249,7 @@ free space for the entire achive.</P>\n");
     + _("<P>File systems that cannot be used on local disk (e.g., network file systems) are excluded by default.</P>")
 
     // For translators: help text in exclude directory dialog - part 5/5
-    + _("<P><B>Regular Expressions</B><BR>Any file name that matches any of the regular expressions will not be backed up. Use perl regular expresions. To exclude, for example, <I>*.bak</I> files, add the regular expression <I>\\.bak$</I></P>");
+    + _("<P><B>Regular Expressions</B><BR>Any file name that matches any of the regular expressions will not be backed up. Use Perl regular expressions. To exclude, for example, <I>*.bak</I> files, add the regular expression <I>\\.bak$</I></P>");
 
 }
 
