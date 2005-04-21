@@ -494,7 +494,7 @@ define boolean AbortNewProfileCreation(string profile_name) {
 			    `HBox(
 				`HSpacing(2),
 				// text entry label
-				`TextEntry(`id(`nfsserver), _("I&P adress or name of NFS server:"), Backup::nfsserver),
+				`TextEntry(`id(`nfsserver), _("I&P address or name of NFS server:"), Backup::nfsserver),
 				`HSpacing(1),
 				// push button label
 				`VBox(
@@ -2717,7 +2717,7 @@ Replace the existing profile?
 	    // part of summary text
 	    (em + _("Storing comment failed") + _em)) + br
 	    // part of summary text
-	    + (packages_list_stored ? _("List of installed packages stored succesfully") :
+	    + (packages_list_stored ? _("List of installed packages stored successfully") :
 	    // part of summary text
 	    (em + _("Storing list of installed packages failed") + _em)) + _p;
 
