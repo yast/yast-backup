@@ -815,7 +815,7 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
 
 	if (size(extra_options) > 0 && size(extra_key) > 0)
 	{
-	    Profile::Flat[extra_key] = extra_options;
+	    Profile::current[extra_key] = extra_options;
 	}
 
 	return Profile::Save(filename);
