@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed May 18 12:57:32 CEST 2005 - locilka@suse.cz
+
+- Fixed failing build after changes in AutoYaST
+  Profile::Flat -> Profile::current 
+
+-------------------------------------------------------------------
 Thu Apr 21 10:03:58 CEST 2005 - locilka@suse.cz
 
 - Added Command Line Interface support (actually only information
