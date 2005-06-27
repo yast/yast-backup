@@ -1073,13 +1073,14 @@ global define boolean WriteBackupProfiles() ``{
     // update cron setting
     WriteCronSettings();
 
-    if( !SCR::Write (.target.ycp, "/var/adm/YaST/backup/profiles", backup_profiles ) )
+    string profiles_file = "/var/adm/YaST/backup/profiles";
+    if( !SCR::Write (.target.ycp, profiles_file, backup_profiles ) )
     {
 	y2error( "Unable to write profiles into a file" );
 	// TRANSLATORS: An error popup message
 	//		%1 is the file name
-	Popup::Error( _("Could not store profiles to the '%1' file.
-The profile changes will be lost.") );
+	Popup::Error( sformat(_("Could not store profiles to the '%1' file.
+The profile changes will be lost."), profiles_file) );
 	return false;
     }
 
