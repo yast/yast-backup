@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Jun 27 12:24:27 CEST 2005 - locilka@suse.cz
+
+- Changed one error message to be more informative
+
+-------------------------------------------------------------------
 Wed May 18 12:57:32 CEST 2005 - locilka@suse.cz
 
 - Fixed failing build after changes in AutoYaST

@@ -1076,7 +1076,9 @@ global define boolean WriteBackupProfiles() ``{
     if( !SCR::Write (.target.ycp, "/var/adm/YaST/backup/profiles", backup_profiles ) )
     {
 	y2error( "Unable to write profiles into a file" );
-	Popup::Error( _("Could not store profiles to disk.
+	// TRANSLATORS: An error popup message
+	//		%1 is the file name
+	Popup::Error( _("Could not store profiles to the '%1' file.
 The profile changes will be lost.") );
 	return false;
     }
