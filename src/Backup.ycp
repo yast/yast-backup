@@ -291,7 +291,7 @@ global list< map<string,any> > units_description = [
     ],
     $[
 	// 2^10 bytes
-	"label" : _("kiB"),
+	"label" : _("KiB"),
 	"capacity" : 1024,
 	"symbol"   : `kiB
     ],
@@ -853,15 +853,17 @@ global define map ReadCronSetting(string filename) ``{
 
     if (unknown_settings == true)
     {
-	Report::Warning(sformat(_("Cron settings for profile '%1'
-in file '%2'
+	// %1 is profile name, %2 is filename
+	Report::Warning(sformat(_("Cron settings for profile %1
+in file %2
 are not fully supported.
 "), profilename, filename));
     }
 
     if (bad_settings == true)
     {
-	Report::Error(sformat(_("Some time values for profile '%1'\nin file '%2'\nare out of range."), profilename, filename));
+	//%1 is profile name, %2 is file name
+	Report::Error(sformat(_("Some time values for profile %1\nin file %2\nare out of range."), profilename, filename));
     }
 
     return (every != `none) ? $["profilename":profilename, "cronsettings": cronsettings] : $[];
@@ -1079,7 +1081,7 @@ global define boolean WriteBackupProfiles() ``{
 	y2error( "Unable to write profiles into a file" );
 	// TRANSLATORS: An error popup message
 	//		%1 is the file name
-	Popup::Error( sformat(_("Could not store profiles to the '%1' file.
+	Popup::Error( sformat(_("Could not store profiles to the file %1.
 The profile changes will be lost."), profiles_file) );
 	return false;
     }
@@ -1348,22 +1350,22 @@ global define string CreateCronDescription(string profilename) ``{
 	if (ltime == "")
 	{
 	    // table item - specified time is invalid
-	    ret = _("-- Invalid time --");
+	    ret = _("Invalid time");
 	}
 	else if (every == `day)
 	{
 	    // table item - start backup every day (%1 is time)
-	    ret = sformat(_("Backup Daily (at %1)"), ltime);
+	    ret = sformat(_("Back up daily at %1"), ltime);
 	}
 	else if (every == `week)
 	{
 	    // table item - start backup every week (%1 is day name, %2 is time)
-	    ret = sformat(_("Backup Weekly (%1 at %2)"), daynames[weekday]:"?", ltime);
+	    ret = sformat(_("Back up weekly (%1 at %2)"), daynames[weekday]:"?", ltime);
 	}
 	else if (every == `month)
 	{
 	    // table item - start backup once a month (%1 is day (ordinal number, e.g. 5th), %2 is time)
-	    ret = sformat(_("Backup Monthly (%1 day at %2)"), ordinal_numbers[day]:"?", ltime);
+	    ret = sformat(_("Back up monthly (%1 day at %2)"), ordinal_numbers[day]:"?", ltime);
 	}
     }
 
@@ -1503,7 +1505,7 @@ global define map RemovableDevices(boolean only_writable) ``{
 		    else if (dev["cdr"]:false || dev["cdrw"]:false)
 		    {
 			// CD-R or CD-RW writer device
-			type = _("CD Writer");
+			type = _("CD writer");
 			type_symbol = (dev["cdr"]:false) ? `cdr : `cdrw;
 			media = cd_media_descriptions;
 			preselected = `cd700;
@@ -1511,7 +1513,7 @@ global define map RemovableDevices(boolean only_writable) ``{
 		    else if (dev["dvdr"]:false)
 		    {
 			// DVD-R, DVD+R... writer device
-			type = _("DVD Writer");
+			type = _("DVD writer");
 			type_symbol = `dvdr;
 		    }
 		    else if (dev["dvdram"]:false)

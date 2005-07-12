@@ -38,9 +38,9 @@ define boolean AbortConfirmation(symbol type) ``{
     boolean ret = nil;
 
     // popup dialog header
-    string heading = _("Abort confirmation");
+    string heading = _("Abort Confirmation");
     // popup dialog question
-    string question = _("Do you really want to abort the backup?");
+    string question = _("Really abort the backup?");
     string yes = Label::YesButton();
     string no = Label::NoButton();
 
@@ -589,7 +589,7 @@ define boolean AbortConfirmation(symbol type) ``{
     string br = "\n";
 
     // e-mail subject - %1 is profile name
-    string subject = sformat(_("YaST2 Automatic Backup (%1)"), cron_profile);
+    string subject = sformat(_("YaST Automatic Backup (%1)"), cron_profile);
 
     // get all warnings and errors from Report module
     string reported = Report::GetMessages((Report::NumWarnings() > 0), (Report::NumErrors() > 0), false, false);
@@ -598,7 +598,7 @@ define boolean AbortConfirmation(symbol type) ``{
     if (Report::NumErrors() > 0)
     {
 	// text added to the subject if an error occured
-	subject = subject + _(" -- FAILED");
+	subject = subject + _(": FAILED");
     }
 
     y2debug("remove_result: %1", remove_result);
@@ -637,9 +637,9 @@ define boolean AbortConfirmation(symbol type) ``{
     string detail_heading = _("Details:");
 
     // header in email body
-    string body = sformat(_("YAST2 BACKUP REPORT -- Profile '%1'"), cron_profile) + br + br + br
+    string body = sformat(_("BACKUP REPORT for Profile '%1'"), cron_profile) + br + br + br
 	// header in email body followed by errors or warnings
-	+ ((size(reported) > 0) ? _("Some Problems Occurred During Automatic Backup:") + br + reported + br + br : "")
+	+ ((size(reported) > 0) ? _("Problems During Automatic Backup:") + br + reported + br + br : "")
 	+ summary_heading + br + CreateUnderLine(summary_heading, "=") + br + br + backup_result + br
 	+ ((size(ren_header) > 0) ? ren_header + br + br + renamed + br + br + removed + br + br : "")
 	+ detail_heading + br + CreateUnderLine(detail_heading, "=") + br + br + backup_details;
@@ -1019,10 +1019,10 @@ define string IsPossibleToCreateDirectoryOrExists (string directory) {
 		    directory, tested_directory
 		);
 		error_message = sformat(
-		    // Popup error message, %1 is a directory somewhere under %2, %2 is a directory - just tested for existency
-		    _("Cannot create backup archive in '%1'.
-'%2' is not a directory.
-Enter another one or remove '%2'."),
+		    // Popup error message, %1 is a directory somewhere under %2, %2 was tested for existency
+		    _("Cannot create backup archive in %1.
+%2 is not a directory.
+Enter another one or remove %2."),
 		    directory, tested_directory
 		);
 		break;

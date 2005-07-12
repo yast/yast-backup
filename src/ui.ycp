@@ -38,11 +38,11 @@ textdomain "backup";
  map<integer,integer> deselected_ids = $[];
 
 // type of item (displayed in the table)
- string filesystem_text = _("File System");
+ string filesystem_text = _("File system");
 // type of item (displayed in the table)
  string directory_text = _("Directory");
 // type of item (displayed in the table)
- string regexp_text = _("Reg. Expression");
+ string regexp_text = _("Regular expression");
 
  integer selected_pkg_num = 0;		// number of packages which files are selected
  integer modified_size = 0;		// size
@@ -161,7 +161,7 @@ define boolean InstallNeededPackages (list<string> packages) {
     if (exists == true)
     {
 	// For translators %1 is archive file name (e.g. /tmp/backup.tar)
-	ret = Popup::YesNo(sformat(_("File %1 already exists.\nDo you wish to overwrite it?"), Backup::archive_name));
+	ret = Popup::YesNo(sformat(_("File %1 already exists.\nOverwrite it?"), Backup::archive_name));
     }
     else if (exists == nil)
     {
@@ -194,7 +194,7 @@ define boolean InstallNeededPackages (list<string> packages) {
     );
 
     // dialog header - %1 is profile name
-    Wizard::SetContents(sformat(_("Automatic Backup Options -- Profile '%1'"), Backup::selected_profile),
+    Wizard::SetContents(sformat(_("Automatic Backup Options for Profile %1"), Backup::selected_profile),
 	`VBox(
 	    `VSpacing(0.5),
 	    // check box label
@@ -205,12 +205,13 @@ define boolean InstallNeededPackages (list<string> packages) {
 		`HSpacing(4),
 		`VBox(
 		    // frame label
-		    `Frame(_("Backup Frequency"),
+		    //rwalter please remove this frame
+		    `Frame(_("Frequency"),
 			`VBox(
 			    `VSpacing(0.45),
 			    `HBox(
 				`HSpacing(1),
-				`ComboBox(`id(`time), `opt(`notify), _("S&tart Backup"), [
+				`ComboBox(`id(`time), `opt(`notify), _("&Frequency"), [
 					`item(`id(`day), _("Daily"), cday == `day),
 					`item(`id(`week), _("Weekly"), cday == `week),
 					`item(`id(`month), _("Monthly"), cday == `month),
@@ -230,10 +231,10 @@ define boolean InstallNeededPackages (list<string> packages) {
 			    `HBox(
 				`HSpacing(1),
 				// combo box label
-				`ComboBox(`id(`weekday), _("Day of &Week"), items),
+				`ComboBox(`id(`weekday), _("Day of the &Week"), items),
 				`HSpacing(2),
 				// integer field widget label
-				`IntField(`id(`day), _("&Day of Month"), 1, 31, current_settings["day"]:1),
+				`IntField(`id(`day), _("&Day of the Month"), 1, 31, current_settings["day"]:1),
 				`HStretch()
 			    ),
 			    `VSpacing(0.45),
@@ -250,18 +251,19 @@ define boolean InstallNeededPackages (list<string> packages) {
 			)
 		    ),
 		    `VSpacing(0.45),
-		    `Frame(_("Other settings"),
+		    //rwalter we can probably do without this one too.
+		    `Frame(_("Other Settings"),
 			`VBox(
 			    `VSpacing(0.45),
 			    `HBox(
 				`HSpacing(1),
 				// integer field widget label
-				`IntField(`id(`old), _("Ma&x. Number of Old Backups"), 0, 100, current_settings["old"]:3),
+				`IntField(`id(`old), _("Ma&ximum Number of Old Backups"), 0, 100, current_settings["old"]:3),
 				`HStretch()
 			    ),
 			    `VSpacing(0.45),
 			    // Checkbox label
-			    `Left(`CheckBox(`id(`mail), _("S&end Summary Mail to User 'root'"), Backup::mail_summary)),
+			    `Left(`CheckBox(`id(`mail), _("S&end Summary Mail to User root"), Backup::mail_summary)),
 			    `VSpacing(0.45)
 			)
 		    )
@@ -453,7 +455,7 @@ define boolean AbortNewProfileCreation(string profile_name) {
 	    if (matched == true)
 	    {
 		// For translators %1 is volume file name (e.g. /tmp/01_backup.tar)
-		cont = Popup::YesNo(sformat(_("Existing file %1\ncan be part of new volume set and it can be rewritten.\nDo you wish to continue?"), dir + "/" + conflict_file));
+		cont = Popup::YesNo(sformat(_("The existing file %1 could become part of new volume set and be overwritten.\nReally continue?"), dir + "/" + conflict_file));
 	    }
 	    else
 	    {
@@ -475,7 +477,7 @@ define boolean AbortNewProfileCreation(string profile_name) {
     }
 
     // dialog header
-    Wizard::SetContents(_("Archive settings"),
+    Wizard::SetContents(_("Archive Settings"),
 	`VBox(
 	    `VSpacing(0.5),
 	    `TextEntry(`id(`filename), Label::FileName()),
@@ -487,14 +489,14 @@ define boolean AbortNewProfileCreation(string profile_name) {
 			`VBox(
 			    `VSpacing(0.3),
 			    // radio button label
-			    `Left(`RadioButton(`id(`file),  `opt(`notify), _("&Local file"), Backup::target_type == `file)),
+			    `Left(`RadioButton(`id(`file),  `opt(`notify), _("&Local File"), Backup::target_type == `file)),
 			    `VSpacing(0.3),
 			    // radio button label
 			    `Left(`RadioButton(`id(`nfs), `opt(`notify), _("Network (N&FS)"), Backup::target_type == `nfs)),
 			    `HBox(
 				`HSpacing(2),
 				// text entry label
-				`TextEntry(`id(`nfsserver), _("I&P address or name of NFS server:"), Backup::nfsserver),
+				`TextEntry(`id(`nfsserver), _("I&P Address or Name of NFS Server"), Backup::nfsserver),
 				`HSpacing(1),
 				// push button label
 				`VBox(
@@ -506,7 +508,7 @@ define boolean AbortNewProfileCreation(string profile_name) {
 			    `HBox(
 				`HSpacing(2),
 				// text entry label
-				`TextEntry(`id(`nfsexport), _("&Remote Directory:"), Backup::nfsexport),
+				`TextEntry(`id(`nfsexport), _("&Remote Directory"), Backup::nfsexport),
 				`HSpacing(1),
 				// push button label
 				`VBox(
@@ -524,7 +526,7 @@ define boolean AbortNewProfileCreation(string profile_name) {
 
 	    `VSpacing(0.5),
 	    // frame label
-	    `Frame( _("Archive type"),
+	    `Frame( _("Archive Type"),
 		`VBox(
 		    `VSpacing(`opt(`hstretch), 0.5),
 		    `RadioButtonGroup(`id(`rbgroup),
@@ -534,7 +536,7 @@ define boolean AbortNewProfileCreation(string profile_name) {
 				`HSpacing(4.0),
 				`ComboBox(`id(`type), `opt(`notify),
 				    // combo box label
-				    _("Select archive &type:"),
+				    _("Archive &Type"),
 				    // archive type - combo box item
 				    [ `item(`id(`tgz), _("tar with tar-gzip subarchives")),
 				    // archive type - combo box item
@@ -592,7 +594,7 @@ define boolean AbortNewProfileCreation(string profile_name) {
     {
 	// warning popup message
 	Popup::Warning(_("You are not logged in as root.
-Some files can only be read by the user 'root'.
+Some files can only be read by the user root.
 Not all files will be backed up,
 so it will not be possible to restore
 the system completely later.
@@ -663,8 +665,8 @@ Enter the directory name to use.
 		if (size(Backup::archive_name) == 0)
 		{
 		    // warning popup message
-		    Popup::Warning(_("An archive file name is required.
-Enter the file name to use.
+		    Popup::Warning(_("An archive filename is required.
+Enter the filename to use.
 "));
 		    cont = false;
 		    continue;
@@ -673,7 +675,7 @@ Enter the file name to use.
 		if (substring(Backup::archive_name, 0, 1) != "/" && Backup::target_type == `file)
 		{
 		    // warning popup message
-		    Popup::Warning(_("Please enter archive file name with\nabsolute path (e.g. /tmp/backup.tar)"));
+		    Popup::Warning(_("Enter archive file name with\nits absolute path, as in /tmp/backup.tar."));
 		    cont = false;
 		    continue;
 		}
@@ -735,7 +737,7 @@ Enter the file name to use.
 		    if (matched == true)
 		    {
 			// For translators %1 is volume file name (e.g. /tmp/01_backup.tar)
-			cont = Popup::YesNo(sformat(_("Existing file %1\ncan be part of new volume set and it can be rewritten.\nDo you wish to continue?"), dir + "/" + conflict_file));
+			cont = Popup::YesNo(sformat(_("The existing file %1 could become part of new volume set and be overwritten.\nReally continue?"), dir + "/" + conflict_file));
 		    }
 		    else
 		    {
@@ -835,7 +837,7 @@ Enter the file name to use.
 
     list description_combo = MediaList2UIList(Backup::media_descriptions);
     // combo box item - user defined volume size of archive
-    description_combo = add(description_combo, `item(`id(`user_defined), _("User-defined")));
+    description_combo = add(description_combo, `item(`id(`user_defined), _("Custom")));
 
     y2milestone("%1", description_combo);
 
@@ -843,15 +845,15 @@ Enter the file name to use.
     y2milestone("%1", description_combo_units);
 
     // dialog header
-    Wizard::SetContents( _("Archive file options"),
+    Wizard::SetContents( _("Archive File Options"),
 	`VBox(
 	    `VSpacing(0.5),
 	    // frame label
-	    `Frame(_("Multivolume archive"),
+	    `Frame(_("Multivolume Archive"),
 		`VBox(
 		    `VSpacing(`opt(`hstretch), 0.5),
 		    // check box label
-		    `Left(`CheckBox(`id(`multi_volume), `opt(`notify), _("&Create multivolume archive"), Backup::multi_volume)),
+		    `Left(`CheckBox(`id(`multi_volume), `opt(`notify), _("&Create a Multivolume Archive"), Backup::multi_volume)),
 		    `VSpacing(0.5),
 
 		    `HBox(
@@ -859,13 +861,13 @@ Enter the file name to use.
 
 			`VBox(
 			    // combo box label
-			    `Left(`ComboBox(`id(`vol), `opt(`notify), _("&Volume size:"), description_combo)),
+			    `Left(`ComboBox(`id(`vol), `opt(`notify), _("&Volume Size"), description_combo)),
 			    `VSpacing(0.5),
 
 			    `Left(
 				`HBox(
 				    // text entry label
-				    `TextEntry(`id(`user_size), _("&User-defined size:")),
+				    `TextEntry(`id(`user_size), _("Custom &Size")),
 				    `ComboBox(`id(`user_unit), "", description_combo_units),
 				    `HStretch()
 				)
@@ -973,14 +975,15 @@ Enter the file name to use.
     if( Backup::no_interactive ) return `next2;
 
     // dialog header
-    Wizard::SetContents( _("File selection"),
+    Wizard::SetContents( _("Backup Options"),
         `VBox(`VSpacing(0.5),
+	      //rwalter consider whether this frame and the next should be eliminated to simplify the dialog
 	    // frame label
-	    `Frame( _("Backup options"),
+	    `Frame( _("File Selection"),
 	        `VBox(
 		    `VSpacing(0.3),
 		    // check box label
-                    `Left(`CheckBox(`id(`search), `opt(`notify), _("&Backup Files Not Belonging to Any Package"), Backup::search)),
+                    `Left(`CheckBox(`id(`search), `opt(`notify), _("&Back Up Files Not Belonging to Any Package"), Backup::search)),
 		    `VSpacing(0.3),
 		    // check box label
 		    `Left(`CheckBox(`id(`display), _("Display List of Files Before &Creating Archive"), Backup::display)),
@@ -991,18 +994,18 @@ Enter the file name to use.
 	    `VSpacing(0.5),
 
 	    // frame label
-	    `Frame( _("Search options"),
+	    `Frame( _("Search Options"),
 		`VBox(
 		    `VSpacing(0.3),
 		    // frame label
-                    `Left(`CheckBox(`id(`md5_check), _("Check MD&5 sum instead of time or size"), Backup::do_md5_test)),
+                    `Left(`CheckBox(`id(`md5_check), _("Check MD&5 Sum instead of Time or Size"), Backup::do_md5_test)),
 		    `VSpacing(0.3)
 		)
 	    ),
 
 	    `VSpacing(0.3),
 	    // multi line widget label
-	    `MultiLineEdit(`id(`description), _("Archive &description:"), Backup::description),
+	    `MultiLineEdit(`id(`description), _("Archive &Description"), Backup::description),
 
 	    `VSpacing(0.3),
 	    `PushButton(`id(`xpert), _("E&xpert...")),
@@ -1054,22 +1057,22 @@ Enter the file name to use.
     }
 
     // dialog header
-    Wizard::SetContents( _("System area backup"),
+    Wizard::SetContents( _("System Area Backup"),
 	`VBox(
 	    `VSpacing(0.5),
 	    // frame label
-	    `Frame( _("Partition table"),
+	    `Frame( _("Partition Table"),
 		`VBox(
 		    `VSpacing(0.4),
 		    // check box label
-		    `CheckBox(`id(`pt), `opt(`hstretch), _("Ba&ck up partition tables"), Backup::backup_pt),
+		    `CheckBox(`id(`pt), `opt(`hstretch), _("Ba&ck Up Partition Tables"), Backup::backup_pt),
 		    `VSpacing(0.4)
 		)
 	    ),
 	    `VSpacing(0.5),
 
 	    // frame label
-	    `Frame(_("Ext2 file system critical area backup"),
+	    `Frame(_("Ext2 File System Critical Area Backup"),
 	        `RadioButtonGroup(`id(`rbg),
 	            `VBox(
 		        `VSpacing(0.3),
@@ -1077,14 +1080,14 @@ Enter the file name to use.
 			`Left(`RadioButton(`id(`none), `opt(`notify), _("N&one"), Backup::backup_none_ext2)),
 			`VSpacing(0.3),
 			// radio button label
-			`Left(`RadioButton(`id(`allmounted), `opt(`notify), _("All &mounted"), Backup::backup_all_ext2)),
+			`Left(`RadioButton(`id(`allmounted), `opt(`notify), _("All &Mounted"), Backup::backup_all_ext2)),
 			`VSpacing(0.3),
 			// radio button label
-			`Left(`RadioButton(`id(`selected), `opt(`notify), _("&Selected:"), Backup::backup_selected_ext2)),
+			`Left(`RadioButton(`id(`selected), `opt(`notify), _("&Selected"), Backup::backup_selected_ext2)),
 			`HBox(
 			    `HSpacing(3.0),
 			    // table header
-			    `Table(`id(`par), `header(_("Ext2 partition"), _("Mount point")), Backup::ext2_backup),
+			    `Table(`id(`par), `header(_("Ext2 Partition"), _("Mount Point")), Backup::ext2_backup),
 			    `HSpacing(2.0)
 			),
 
@@ -1189,7 +1192,7 @@ Enter the file name to use.
 	    );
 
 	    // popup dialog header
-	    map result = ShowEditDialog(_("&Add Ext2 partition"), "", detected_ext2_strings);
+	    map result = ShowEditDialog(_("&Add Ext2 Partition"), "", detected_ext2_strings);
 
 	    if (((symbol)(result["clicked"]:nil)) == `ok)
 	    {
@@ -1422,7 +1425,7 @@ Continue anyway?
     {
 	// error popup message
 	Report::Error(_("Could not start search script.
-Backup will be aborted.
+Back up will be aborted.
 "));
 	y2error("Errors: %1", (list<string>)SCR::Read(.background.newerr));
 	return `abort;
@@ -1600,37 +1603,37 @@ Backup will be aborted.
 					    if (Backup::cron_mode != true)
 					    {
 						// dialog header
-						Wizard::SetContents( _("Searching for modified files"),
+						Wizard::SetContents( _("Searching for Modified Files"),
 						    `Top(
 							`VBox(
 							    `VSpacing(0.5),
 							    `Left(
 								`HBox(
-								    // label text
-								    `Label(_("Modified files: ")),
+								    // label text, followed by number of files found so far
+								    `Label(_("Modified Files: ")),
 								    `Label(`id(`numfiles), `opt(`hstretch), sformat("%1", modified_num))
 								)
 							    ),
 							    `VSpacing(0.5),
 							    `Left(
 								`HBox(
-								    // label text
-								    `Label(_("Total size: ")),
+								    // label text, followed by sizes of files
+								    `Label(_("Total Size: ")),
 								    `Label(`id(`totsize), `opt(`hstretch), String::FormatSize(modified_size))
 								)
 							    ),
 							    `VSpacing(0.5),
 							    `Left(
 								`HBox(
-								    // label text
-								    `Label(_("Searching in package: ")),
+								    // label text, followed by name of current package
+								    `Label(_("Searching in Package: ")),
 								    `Label(`id(`package), `opt(`hstretch), "")
 								)
 							    ),
 							    `VSpacing(3.0),
 							    `Left(
 								// progress bar label
-								`ProgressBar(`id(`progress), _("Searching..."), total_packages)
+								`ProgressBar(`id(`progress), _("Search"), total_packages)
 							    )
 							)
 						    ),
@@ -1703,30 +1706,30 @@ Backup will be aborted.
 	if (Backup::cron_mode != true)
 	{
 	    // dialog header
-	    Wizard::SetContents(_("Searching files"),
+	    Wizard::SetContents(_("Searching Files"),
 		`Top(
 		    `VBox(
 			`VSpacing(0.5),
 			`Left(
 			    `HBox(
-				// label text
-				`Label(_("Number of files: ")),
+				// label text, followed by value
+				`Label(_("Number of Files: ")),
 				`Label(`id(`numfiles), `opt(`hstretch), sformat("%1", nopkg_num))
 			    )
 			),
 			`VSpacing(0.5),
 			`Left(
 			    `HBox(
-				// label text
-				`Label(_("Total size: ")),
+				// label text, followed by value
+				`Label(_("Total Size: ")),
 				`Label(`id(`totsize), `opt(`hstretch), String::FormatSize(nopkg_size))
 			    )
 			),
 			`VSpacing(0.5),
 			`Left(
 			    `HBox(
-				// label text
-				`Label(_("Searching in directory: ")),
+				// label text, followed by current directory name
+				`Label(_("Searching in Directory: ")),
 				`Label(`id(`directory), `opt(`hstretch), "")
 			    )
 			)
@@ -1931,31 +1934,31 @@ Backup will be aborted.
 
  define symbol FilesDialog() ``{
 
-    // dialog header
+    // busy message
     Wizard::SetContents("", `Label(_("Adding files to table...")), "", false, false);
 
     integer t1 = time();
     list<term> items = (list<term>)SCR::Read(.target.ycp, (string)SCR::Read(.target.tmpdir) + "/items.ycp");
 
     // dialog header
-    Wizard::SetContents( _("File selection"),
+    Wizard::SetContents( _("File Selection"),
 	`VBox(
 	    `VSpacing(0.5),
 	    // label text
-	    `Left(`Label(_("Select files to back up:"))),
+	    `Left(`Label(_("Files to Back Up"))),
 	    `Table(`id(`table),
 		`opt(`notify),
 		// table header
-		`header(" ", _("File name"), _("Package")),
+		`header(" ", _("Filename"), _("Package")),
 		items
 	    ),
 	    `HBox(
 		// push button label
-		`PushButton(`id(`sel_file), _("Select or Deselect &file")),
+		`PushButton(`id(`sel_file), _("Select or Deselect &File")),
 		// push button label
-		`PushButton(`id(`sel_all), _("&Select all")),
+		`PushButton(`id(`sel_all), _("&Select All")),
 		// push button label
-		`PushButton(`id(`desel_all), _("&Deselect all"))
+		`PushButton(`id(`desel_all), _("&Deselect All"))
 	    ),
 	    `VSpacing(1.0)
 	),
@@ -2154,9 +2157,9 @@ Backup will be aborted.
 
     // create Progress bar
 
-    // progress bar stage
+    // progress stage
     list<string> stages1 = [ _("Store host information") ];
-    // progress bar stage
+    // progress step
     list<string> stages2 = [ _("Storing host information...") ];
 
     map selected_info = Backup::MapFilesToString();
@@ -2176,10 +2179,10 @@ Backup will be aborted.
 
     if (Backup::system)
     {
-	// progress bar stage
+	// progress stage
 	stages1 = add(stages1, _("Create system area backup"));
-	// progress bar stage
-	stages2 = add(stages2, _("Creating system area backup ..."));
+	// progress step
+	stages2 = add(stages2, _("Creating system area backup..."));
 
 	if (Backup::backup_pt)
 	{
@@ -2213,19 +2216,19 @@ Backup will be aborted.
     integer last_file_stage = 0;
     integer this_file_stage = 0;
 
-    // progress bar stage
+    // progress stage
     stages1 = add(stages1, _("Create package archives"));
-    // progress bar stage
+    // progress stage
     stages1 = add(stages1, _("Create target archive"));
 
-    // progress bar stage
+    // progress step
     stages2 = add(stages2, _("Creating package archives..."));
-    // progress bar stage
+    // progress step
     stages2 = add(stages2, _("Creating target archive..."));
 
-    // progress bar stage
+    // progress stage
     stages1 = add(stages1, _("Write autoinstallation profile"));
-    // progress bar stage
+    // progress step
     stages2 = add(stages1, _("Writing autoinstallation profile..."));
 
     if (Backup::cron_mode == true)
@@ -2234,8 +2237,7 @@ Backup will be aborted.
     }
     else
     {
-	// progress bar label
-	Progress::New(_("Creating archive"), " ", num_stages, stages1, stages2, backup_help_creating_archive());
+	Progress::New(_("Creating Archive"), " ", num_stages, stages1, stages2, backup_help_creating_archive());
     }
 
     y2milestone("Number of selected packages: %1, selected files: %2", selected_pkg_num, selected_files_num);
@@ -2275,7 +2277,7 @@ Backup will be aborted.
 
     if (!file_list_stored)
     {
-	Report::Error(sformat(_("Cannot write the list of selected files to file '%1'"), tmpfile_list));
+	Report::Error(sformat(_("Cannot write the list of selected files to file %1."), tmpfile_list));
     }
 
     y2milestone("File names stored");
@@ -2290,7 +2292,7 @@ Backup will be aborted.
 
     if (!comment_stored)
     {
-	Report::Warning(sformat(_("Cannot write comment to file '%1'"), tmpfile_comment));
+	Report::Warning(sformat(_("Cannot write comment to file %1."), tmpfile_comment));
     }
 
     added_files = 0;
@@ -2304,7 +2306,7 @@ Backup will be aborted.
     {
 	// error popup message
 	Report::Error(_("Could not start archiving script.
-Backup will be aborted.
+Aborting back up.
 "));
 	return `abort;
     }
@@ -2622,14 +2624,14 @@ Backup will be aborted.
     // renaming the current profile
     if (current_name != nil && current_name != "") {
 	// TRANSLATORS: text of a popup dialog, %1 is a profile name to be renamed
-	dialog_text = sformat(_("Enter a new name for the '%1' profile."), current_name);
+	dialog_text = sformat(_("Enter a new name for the %1 profile."), current_name);
     }
     map new_name = ShowEditDialog(dialog_text, "", nil);
 
     while( (symbol)(new_name["clicked"]:nil) == `ok && Backup::backup_profiles[ (string)(new_name["text"]:nil) ]:nil != nil  )
     {
 	// Translators: error popup, %1 is profile name
-	if( ! Popup::YesNo(sformat(_("A profile '%1' already exists.
+	if( ! Popup::YesNo(sformat(_("A profile %1 already exists.
 Replace the existing profile?
 "), new_name["text"]:"")) ) {
 	    new_name = ShowEditDialog(_("Enter a name for the new profile."), "", nil);
@@ -2688,28 +2690,28 @@ Replace the existing profile?
     else
     {
 	// part of summary text
-	backup_result = p + _("Found modified files: ") + modified_num + br
+	backup_result = p + _("Found Modified Files: ") + modified_num + br
 	// part of summary text
-	    + _("Total size: ") + String::FormatSize(modified_size) + _p;
+	    + _("Total Size: ") + String::FormatSize(modified_size) + _p;
 
 	if (Backup::search)
 	{
 	    // part of summary text
-	    backup_result = backup_result + p + _("Found files not in a package: ") + nopkg_num + br
+	    backup_result = backup_result + p + _("Found Files Not in a Package: ") + nopkg_num + br
 	    // part of summary text
-		+ _("Total size: ") + String::FormatSize(nopkg_size) + _p;
+		+ _("Total Size: ") + String::FormatSize(nopkg_size) + _p;
 	}
 
 	if (Backup::display)
 	{
 	    // part of summary text
-	    backup_result = backup_result + p + _("Selected files to backup: ") + selected_files_num + _p;
+	    backup_result = backup_result + p + _("Selected Files to Back Up: ") + selected_files_num + _p;
 	}
 
 	    // part of summary text
-	backup_details = p + (hostname_stored ? _("Host name stored successfully") :
+	backup_details = p + (hostname_stored ? _("Hostname stored successfully") :
 	    // part of summary text
-	    (em + _("Storing host name failed") + _em)) + br + (date_stored ? _("Date stored successfully") :
+	    (em + _("Storing hostname failed") + _em)) + br + (date_stored ? _("Date stored successfully") :
 	    // part of summary text
 	    (em + _("Storing date failed") + _em)) + br + (file_list_stored ? _("File list stored successfully") :
 	    // part of summary text
@@ -2725,14 +2727,14 @@ Replace the existing profile?
 	if (size(not_readable_files) > 0 || !hostname_stored || !date_stored || !file_list_stored || !comment_stored || !packages_list_stored)
 	{
 	    // part of summary text, 'Details' is button label
-	    backup_result = backup_result + p + _("Some errors occurred during backup. Press 'Details' for more information.") + _p;
+	    backup_result = backup_result + p + _("Some errors occurred during backup. Press Details for more information.") + _p;
 	}
 
 
 	if (size(not_readable_files) > 0)
 	{
 	    // part of summary text
-	    backup_details = backup_details + br + p + em + _("Errors while creating archive:") + _em + br;
+	    backup_details = backup_details + br + p + em + _("Errors Creating Archive:") + _em + br;
 
 	    foreach(string f, not_readable_files,
 		``{
@@ -2795,7 +2797,7 @@ Replace the existing profile?
 			{
 			    backup_details = backup_details + em
 				// For translators: %1 is partition name e.g. /dev/hda1 - part of summary text
-				+ sformat(_("Storing Ext2 image of %1 failed"), partition_name) + _em + br;
+				+ sformat(_("Storing ext2 image of %1 failed"), partition_name) + _em + br;
 			}
 
 			index = index + 1;
@@ -2863,7 +2865,7 @@ Replace the existing profile?
 	    + _p;
 
 	// part of summary text
-	backup_details = backup_details + p + _("Total archived files: ") + archived_num + _p;
+	backup_details = backup_details + p + _("Total Archived Files: ") + archived_num + _p;
 
 
 	if (Backup::multi_volume)
@@ -2907,7 +2909,7 @@ Replace the existing profile?
     }
 
     // dialog header
-    Wizard::SetContents( _("Backup summary"),
+    Wizard::SetContents( _("Backup Summary"),
 	`VBox(
 	    `VSpacing(0.5),
 	    `RichText(backup_result),
@@ -2934,7 +2936,7 @@ Replace the existing profile?
 	if (ret == `details)
 	{
 	    // popup dialog header
-	    Popup::LongText(_("Backup summary details:"), `RichText(backup_details), 70, 15);
+	    Popup::LongText(_("Backup Summary Details"), `RichText(backup_details), 70, 15);
 	}
 	else if (ret == `abort || ret == `cancel)
 	{
@@ -2979,7 +2981,7 @@ Replace the existing profile?
 	    `VSpacing(0.5),
 	    // check box label
 	    `HBox(
-		`CheckBox(`id(`system), `opt(`notify), _("Back up &Hard Disk System Areas"), Backup::system),
+		`CheckBox(`id(`system), `opt(`notify), _("Back Up &Hard Disk System Areas"), Backup::system),
 		`HStretch(),
 		`PushButton(`id(`set_system), _("&Options..."))
 	    ),
@@ -3076,14 +3078,14 @@ string RenameProfilePupupDialog(string current_name) {
     string tableheader2 = _("Description");
     string tableheader3 = _("Automatic Backup");
 
-    Wizard::SetContents( _("YaST System Backup"),
+    Wizard::SetContents( _("System Backup"),
         `VBox(
             `Left(`Label(_("Available Profiles") )),
             `ReplacePoint(`id(`selectionBox),
             `Table(`id(`profile), `header(tableheader1, tableheader2, tableheader3), Backup::BackupProfileDescriptions() )
             ),
             `HBox(
-                `PushButton(`id(`start), _("&Start Backup")),
+                `PushButton(`id(`start), _("&Create Backup")),
                 `MenuButton(_("Profile Mana&gement"),
                     [
                         `item(`id(`add), Label::AddButton()+"..."),
@@ -3095,7 +3097,7 @@ string RenameProfilePupupDialog(string current_name) {
 			`item(`id(`cron), tableheader3 + "...")
                     ])
             ),
-            `PushButton(`id(`manual),_("Backup &Manually...")),
+            `PushButton(`id(`manual),_("Back Up &Manually...")),
             `VSpacing(1.5)
         ),
         profile_help(), false, true
@@ -3486,7 +3488,7 @@ string RenameProfilePupupDialog(string current_name) {
     // initialize excluded filesystems
     if (Backup::detected_fs == nil)
     {
-	// dialog header
+	// busy message
 	Wizard::SetContents("", `Label(_("Detecting file system types...")), "", false, false);
 	Backup::detected_fs = GetMountedFilesystems();
 	Backup::ExcludeNodevFS();
@@ -3505,7 +3507,7 @@ string RenameProfilePupupDialog(string current_name) {
 	`VBox(
 	    `VSpacing(1.0),
 	    // table label
-	    `Left(`Label(_("Items Excluded from Search:"))),
+	    `Left(`Label(_("Items Excluded from Search"))),
 	    // table header
 	    `Table(`id(`const), `header(_("Value"), _("Type")), table),
 
@@ -3514,7 +3516,7 @@ string RenameProfilePupupDialog(string current_name) {
                 `MenuButton(_("A&dd"), [
 			`item(`id(`dir), _("&Directory...")),
 			`item(`id(`fs), _("&File System...")),
-			`item(`id(`regexp), _("&Reg. Expression..."))
+			`item(`id(`regexp), _("&Regular Expression..."))
 		    ]
 		),
 		// push button label
@@ -3675,7 +3677,7 @@ string RenameProfilePupupDialog(string current_name) {
 	if (ret == `dir)
 	{
 	    // textentry label
-	    map result = ShowEditDialog(_("&Add new directory"), "", nil);
+	    map result = ShowEditDialog(_("&Add New Directory"), "", nil);
 
             if (result["clicked"]:nil == `ok)
             {
