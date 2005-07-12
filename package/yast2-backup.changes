@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Jul 12 11:46:56 CEST 2005 - locilka@suse.cz
+
+- Changing texts and dialogs to be YaST Style Guide compatible
+- 2.12.1
+
+-------------------------------------------------------------------
 Mon Jun 27 12:24:27 CEST 2005 - locilka@suse.cz
 
 - Changed one error message to be more informative
