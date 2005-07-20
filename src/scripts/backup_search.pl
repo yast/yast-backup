@@ -48,6 +48,7 @@ my $inst_src_packages = "";
 my %instalable_packages;
 
 my $widget_file = "";
+my $list_items_file = "";
 my $widget_index = 1;
 my $first = 1;
 
@@ -58,6 +59,7 @@ GetOptions('search' => \$search_files, 'exclude-dir=s' => \@exclude_d,
     'exclude-fs=s' => \@exclude_fs, 'help' => \$help, 'exclude-files=s' => \@exclude_reg,
     'output-progress' => \$output_progress, 'output-files' => \$output_files,
     'output-default' => \$output_default, 'widget-file=s'=> \$widget_file,
+    '--list-file=s'=> \$list_items_file,
     'start-dir=s' => \$start_directory, 'same-fs' => \$same_fs,
     'pkg-verification' => \$pkg_verification,
     'no-md5' => \$no_md5, 'inst-src-packages=s'=> \$inst_src_packages
@@ -110,6 +112,11 @@ if ($widget_file ne "")
 
     open(WIDGETFILE2, ">${widget_file}2");
     print WIDGETFILE2 "[\n";
+}
+
+if ($list_items_file ne "") {
+    open(LISTITEMSFILE, ">$list_items_file");
+    print LISTITEMSFILE "[\n";
 }
 
 # directory names with slash
@@ -245,6 +252,11 @@ if ($widget_file ne "")
     close(WIDGETFILE2);
 }
 
+if ($list_items_file ne "") {
+    print LISTITEMSFILE "\n]\n";
+    close LISTITEMSFILE;
+}
+
 exit 0;
 # End of main part
 ######################################################
@@ -276,9 +288,11 @@ sub ReadAllPackages()
 }
 
 # uses global variable exclude_reg_comp (precompiled regular expressions)
-sub PrintFoundFile($$$$$$)
+sub PrintFoundFile($$$$$)
 {
-    my ($file, $package, $widget_file, $widget_index, $output_files, $start_directory) = @_;
+    my ($file, $ref_package, $widget_file, $output_files, $start_directory) = @_;
+
+    # $widget_index <-> using the global one
 
     if (defined $file)
     {
@@ -293,6 +307,12 @@ sub PrintFoundFile($$$$$$)
 	    if (defined $reg && $file =~ $reg)
 	    {
 		# finish function if a match is found
+
+		###
+		# Arrary should be aplhabetically sorted, when the file (alphabetically sorted)
+		# matches the middle item of the array, the array could be reversed
+		###
+
 		return;
 	    }
 	}
@@ -302,11 +322,17 @@ sub PrintFoundFile($$$$$$)
 	    if (defined $ex_d && $file =~ "^$ex_d")
 	    {
 		# finish function if a match is found
+		
+		###
+		# Arrary should be aplhabetically sorted, when the file (alphabetically sorted)
+		# matches the middle item of the array, the array could be reversed
+		###
+		
 		return;
 	    }
 	}
 
-	my @filestat = stat($file);
+	++$widget_index;
 
 	# escaping newline characters is needed because each file
 	# is reported on separate line
@@ -314,86 +340,33 @@ sub PrintFoundFile($$$$$$)
 	$file =~ s/\\/\\\\/g;
 	$file =~ s/\n/\\n/g;
 
-	# reset file size for links and directories
-	if (-l $file || -d $file)
-	{
-	    $filestat[7] = 0;
-	}
-
-	if (!$output_files)
-	{
-	    my $sz = $filestat[7];
-	    if (!defined $sz)
-	    {
-		$sz = 0;
+	if (!$output_files) {
+	    my $size = 0;
+	    if ((! -d $file) && (! -l $file)) {
+		$size = -s $file;
 	    }
-
-	    print "Size: $sz $file\n";
-	}
-	else
-	{
-	    print "$file\n";
+	    print "Size: ".$size." ".$file."\n";
+	} else {
+	    print $file."\n";
 	}
 
 	if ($widget_file ne "")
 	{
-	    if (!$first)
-	    {
-		print WIDGETFILE ",\n";
-		print WIDGETFILE2 ",\n";
+	    print WIDGETFILE '`item(`id('.$widget_index.'), "X", "'.$file.'", "'.$$ref_package.'"),'."\n";
+	    print WIDGETFILE2 '`item(`id('.$widget_index.'), " ", "'.$file.'", "'.$$ref_package.'"),'."\n";
+	}
 
-		$first = 0;
-	    }
-
-	    print WIDGETFILE "`item(`id($widget_index), \"X\", \"$file\", \"$package\"),\n";
-	    print WIDGETFILE2 "`item(`id($widget_index), \" \", \"$file\", \"$package\"),\n";
+	if ($list_items_file ne "") {
+	    print LISTITEMSFILE '['.$widget_index.', "'.$file.'"],'."\n";
 	}
     }
 }
 
-# verify each package in the list
-sub VerifyPackages(@%%)
-{
-    my ($packages, $unavail, $duplicates) = @_;
-
-    foreach my $package (@$packages) {
-	if (!$output_files)
-	{
-	    print ((defined $$unavail{$package}) ? "Complete package: $package\n" : "Package: $package\n");
-
-	    print "Installed:";
-	    system('export LC_ALL=C; rpm -q '.$package.' --queryformat " %{INSTPREFIXES}"');
-	    print "\n";
-	}
-
-	if (defined $$unavail{$package})
-	{
-	    open(RPML, "rpm -ql $package |");
-
-	    while (my $l = <RPML>)
-	    {
-		chomp($l);
-
-		if (-e $l)
-		{
-		    PrintFoundFile($l, $package, $widget_file, $widget_index, $output_files, $start_directory);
-		    $widget_index++;
-		}
-	    }
-
-	    close(RPML);
-	}
-	else
-	{
-	    my $md5_param = ($no_md5) ? "--nomd5" : "";
-
-	    # verification of the package - do not check package dependencies
-	    open(RPMV, "export LC_ALL=C; rpm -V $package $md5_param --nodeps |")
-		or die "Verification of package $package failed.";
-
-	    while (my $line = <RPMV>)
-	    {
-		chomp ($line);
+# Check file and return whether to backup or not
+sub CheckFile {
+    my $line = shift;
+    my $refref_duplicates_file = shift;
+    my $package = shift;
 
 		# modified files have set flags Size or MTime
 
@@ -406,7 +379,7 @@ sub VerifyPackages(@%%)
 		my $backup = 1;
 		my $file_size = 0;
 
-		$link = ($line =~ /^....L.* (\/.*)/);
+		$link = ($$line =~ /^....L.* (\/.*)/);
 
 		if ($link)
 		{
@@ -415,13 +388,13 @@ sub VerifyPackages(@%%)
 
 		if ($no_md5)
 		{
-		    $size = ($line =~ /^S.* (\/.*)/);
+		    $size = ($$line =~ /^S.* (\/.*)/);
 		    if ($size)
 		    {
 			$file = $1;
 		    }
 		    
-		    $mtime = ($line =~ /^\..{6}T.* (\/.*)/);
+		    $mtime = ($$line =~ /^\..{6}T.* (\/.*)/);
 		    if ($mtime)
 		    {
 			$file = $1;
@@ -431,19 +404,19 @@ sub VerifyPackages(@%%)
 		    if ($size or $mtime)
 		    {
 			# check if Mtime changed file is in more than one package
-			if ($mtime and !$size and $no_md5 and $$duplicates{$file})
+			if ($mtime and !$size and $no_md5 and $$$refref_duplicates_file{$file})
 			{
 			    open(RPMQFILE, "rpm -qf $file |");
 			    my @packages_list = ();
-
+			    
 			    while (my $pkg = <RPMQFILE>)
 			    {
-				chomp($pkg);
-				
-				if ($pkg ne $package)
-				{
-				    push(@packages_list, $pkg);
-				}
+			    	chomp($pkg);
+			    	
+			    	if ($pkg ne $$package)
+			    	{
+			    	    push(@packages_list, $pkg);
+			    	}
 			    }
 			    close(RPMQFILE);
 
@@ -481,23 +454,90 @@ sub VerifyPackages(@%%)
 		}
 		else
 		{
-		    $md5_test = ($line =~ /^..5.* (\/.*)/);
+		    $md5_test = ($$line =~ /^..5.* (\/.*)/);
 		    if ($md5_test)
 		    {
 			$file = $1;
 		    }
 		}
 
+    return ($backup,$file);
+}
 
-		if ($backup)
-		{
-		    PrintFoundFile($file, $package, $widget_file, $widget_index, $output_files, $start_directory);
-		    $widget_index++;
+sub PrintOutInstPrefix ($) {
+    my $package = shift;
+
+    my $rpm_query = 'LC_ALL=C rpm -q --queryformat "%{INSTPREFIXES}" '.$package;
+    print "Installed: ".`$rpm_query`."\n";
+}
+
+# verify each package in the list
+sub VerifyPackages(@%%) {
+    my ($packages, $unavail, $duplicates) = @_;
+
+    # rpm -q --filesbypkg @all-rpm-packages
+
+    ### Printing out all unavailable packages and their content
+    if (keys %{$unavail}) {
+	open(RPML,
+	    'LC_ALL=C '.
+	    'rpm -q --queryformat "FULL-PACKAGE-NAME: %{NAME}-%{VERSION}-%{RELEASE}\n" --filesbypkg '.
+		join(' ', (keys %{$unavail})).
+	    ' |'
+	) || do {
+	    warn "Cannot run: ".'rpm -q --filesbypkg '.join(' ', (keys %{$unavail})).' |';
+	};
+	my $current_package_name = '';
+	while (my $l = <RPML>) {
+	    chomp($l);
+	    next if (!$l);
+	    # output is:
+	    #PACKAGE-NAME: full-package-name-with-version
+	    #package    (spaces)    file
+	    #package    (spaces)    another-file
+
+	    if ($l =~ /^FULL-PACKAGE-NAME: (.*)$/) {
+		print "Complete package: ".$1."\n";
+		PrintOutInstPrefix($1);
+		$current_package_name = $1;
+		next;
+	    } else {
+		# package name without version
+		$l =~ /^([^ \t]+)[ \t]+(.+)$/;
+	    
+		# checking existency of a file on the system
+		if (-e $2) {
+		    PrintFoundFile($2, \$current_package_name, $widget_file, $output_files, $start_directory);
+		}
+	    }
+	}
+	close (RPML);
+    }
+
+    ### Print out all availabe packages
+    my $md5_param = ($no_md5) ? "--nomd5" : "";
+    foreach my $package (@$packages) {
+	# skipping unavailable packages for this run
+	next if (defined $$unavail{$package});
+
+	if (!$output_files) {
+	    print "Package: ".$package."\n";
+	    PrintOutInstPrefix($package);
+	}
+
+	# verification of the package - do not check package dependencies
+	open(RPMV, "LC_ALL=C rpm -V $package $md5_param --nodeps |")
+	    or die "Verification of package $package failed.";
+
+	    while (my $line = <RPMV>) {
+		chomp ($line);
+		my ($backup,$file)=CheckFile(\$line, \$duplicates, \$package);
+		if ($backup) {
+		    PrintFoundFile($file, \$package, $widget_file, $output_files, $start_directory);
 		}
 	    }
 
-	    close(RPMV);
-	}
+	close(RPMV);
     }
 }
 
@@ -528,11 +568,11 @@ sub ReadAllFiles(%%)
 	    }
 	    else
 	    {
-		if ($search_files)
-		{
-		    my @st = stat($line);
-		    $pkg_inodes->{$st[0].$st[1]} = 1;	# store device and inode number
-		}
+		#if ($search_files)
+		#{
+		#    my @st = stat($line);
+		#    $pkg_inodes->{$st[0].$st[1]} = 1;	# store device and inode number
+		#}
 
 		$all_files->{$line} = 1;
 	    }
@@ -554,7 +594,7 @@ sub isinpackage($)
 {
     my ($filename) = @_;
 
-    open(RPMQFILE, "rpm -qf $filename 2> /dev/null |");
+    open(RPMQFILE, 'rpm -qf '.$filename.' 2>/dev/null |');
     my $inpackage = 0;
 
     while (my $pkg = <RPMQFILE>)
@@ -575,16 +615,13 @@ sub SearchDirectory($%%%)
 
     if ($output_progress)
     {
-	print "Dir: $dir\n";
+	print 'Dir: '.$dir."\n";
     }
 
     my $in_dir = $dir;
 
     # add ending '/' if neccessary
-    if (substr($dir, length($dir) - 1) ne '/')
-    {
-	$dir .= '/';
-    }
+    $dir .= '/' if ($dir !~ /\/$/);
 
     opendir(DIR, $dir)
 	or return;
@@ -593,10 +630,12 @@ sub SearchDirectory($%%%)
     my @content = readdir(DIR);
     closedir(DIR);
 
-    {
-	foreach my $item (@content)
-	{
+    my $emptypackage = "";
+    foreach my $item (@content) {
 	    my $fullname = $dir.$item;
+
+	    # skipping . and .. directories
+	    next if ($item eq "." || $item eq "..");
 
 	    if (-l $fullname)
 	    {
@@ -604,28 +643,26 @@ sub SearchDirectory($%%%)
 		{
 		    if (isinpackage($fullname) == 0)
 		    {
-			PrintFoundFile($fullname, '', $widget_file, $widget_index, $output_files, $dir);
-			$widget_index++;
+			PrintFoundFile($fullname, \$emptypackage, $widget_file, $output_files, $dir);
 		    }
 		}
 	    }
-	    elsif (-f $fullname || ($item ne "." and $item ne ".." and -d $fullname))
+	    elsif (-f $fullname || -d $fullname)
 	    {
 		# is file is some package?
 		if (!$$files{$fullname})
 		{
-		    my @filestat = stat($fullname);
-
-		    # it seems that file is not owned by any package, but do another check - dev/inode number
-		    if (!defined $inodes->{$filestat[0].$filestat[1]})
-		    {
-			PrintFoundFile($fullname, '', $widget_file, $widget_index, $output_files, $dir);
-			$widget_index++;
-		    }
+		#    my @filestat = stat($fullname);
+		#
+		#    # it seems that file is not owned by any package, but do another check - dev/inode number
+		#    if (!defined $inodes->{$filestat[0].$filestat[1]})
+		#    {
+			PrintFoundFile($fullname, \$emptypackage, $widget_file, $output_files, $dir);
+		#    }
 		}
 
 		# do recursive search in subdirectory (if it is not excluded)
-		if ($item ne "." and $item ne ".." and -d $fullname)
+		if (-d $fullname)
 		{
 		    if (!$$exclude{$fullname})
 		    {
@@ -635,12 +672,10 @@ sub SearchDirectory($%%%)
 
 	    }
 	    # ignore sockets - they can't be archived
-	    elsif ($item ne "." and $item ne ".." and !$$files{$fullname} and !(-S $fullname))
+	    elsif (!$$files{$fullname} and !(-S $fullname))
 	    {
-		PrintFoundFile($fullname, '', $widget_file, $widget_index, $output_files, $dir);
-		$widget_index++;
+		PrintFoundFile($fullname, \$emptypackage, $widget_file, $output_files, $dir);
 	    }
-	}
     }
 }
 
@@ -668,6 +703,3 @@ sub FsToDirs(@)
 
     return @dirs;
 }
-
-
-
