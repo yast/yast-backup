@@ -48,7 +48,7 @@ textdomain "backup";
  integer modified_size = 0;		// size
  integer modified_num = 0;		// number of modified files
 
- integer wait_time = 300;    // loop delay (in miliseconds)
+ integer wait_time = 500;    // loop delay (in miliseconds)
  integer nopkg_num = 0;			// number of found files which do not belong to any package
  integer nopkg_size = 0;			// size
  integer selected_files_num = 0;		// number of selected files to backup
@@ -78,6 +78,60 @@ textdomain "backup";
 
  boolean packages_list_stored = false;
  map profilewritten = $[];	// result of writing profile
+
+// -->>
+    // definition of variables for search dialog/functions
+    // trying to break huge cycle into more smaller functions
+
+    integer package_num = 0;
+    string actual_package = "";
+    list package_files = [ ];
+    string actual_instprefixes = "";
+    string line = "";
+    integer total_packages = 0;
+
+    // output strings from search script
+    string id_package = "Package: ";
+    string id_complete_package = "Complete package: ";
+    string id_file = "Size: ";
+    string id_nopackage = "Nopackage:";
+    string id_instprefixes = "Installed: ";
+    string id_reading_packages = "Reading installed packages";
+    string id_packages_num = "Packages: ";
+    string id_reading_files = "Reading all files";
+    string id_files_read = "Files read";
+
+    boolean search_no_package = false;
+    boolean reading_installed_packages = false;
+
+// <<--
+
+define void ResetGlobalVariables () {
+    deselected_ids = $[];
+    selected_pkg_num = 0;
+    modified_size = 0;
+    modified_num = 0;
+    nopkg_num = 0;
+    selected_files_num = 0;
+    archived_num = 0;
+    not_readable_files = [];
+    created_archive_files = [];
+    failed_ptables = [];
+    stored_ptables = [];
+    tar_result = 1;
+    total_files = 0;
+    added_files = 0;
+
+    package_num = 0;
+    actual_package = "";
+    package_files = [ ];
+    actual_instprefixes = "";
+    line = "";
+    total_packages = 0;
+
+    search_no_package = false;
+    reading_installed_packages = false;
+}
 
 /**
  * Function for installing packages
@@ -1386,222 +1440,12 @@ Continue anyway?
     return true;
 }
 
-
 /**
- * Display progress of searching modified files in packages
- * @return symbol Symbol for wizard sequencer - pressed button
+ * Sets dialog contents - Searching for Modified Files
+ * @param integer total_packages
  */
-
- define symbol SearchingModifiedDialog() ``{
-
-    if (Backup::cron_mode != true)
-    {
-	Wizard::ClearContents();
-    }
-
-    // set buffer size
-    SCR::Write(.background.buffer_size, 500);
-
-    if (Backup::cron_mode != true)
-    {
-	// label text
-	Wizard::SetContents("", `Label(_("Reading packages available on the installation sources...")), backup_help_searching_modified(), false, false);
-    }
-    // read list of available packages at the original installation sources
-    Backup::ReadInstallablePackages();
-
-    // initialize list of completely backed up packages
-    Backup::complete_backup = [];
-
-    y2milestone("Search script: %1", Backup::script_get_files + Backup::get_search_script_parameters());
-    boolean started = (boolean)SCR::Execute(.background.run_output, Backup::script_get_files + Backup::get_search_script_parameters());
-    list<string> script_out = [ ];
-
-    symbol ret = nil;
-
-    y2milestone("subprocess started: %1 (PID: %2)", started, (integer)SCR::Read(.background.pid));
-
-    if (!started)
-    {
-	// error popup message
-	Report::Error(_("Could not start search script.
-Back up will be aborted.
-"));
-	y2error("Errors: %1", (list<string>)SCR::Read(.background.newerr));
-	return `abort;
-    }
-
-
-    integer package_num = 0;
-    string actual_package = "";
-    list package_files = [ ];
-    string actual_instprefixes = "";
-    string line = "";
-    integer total_packages = 0;
-
-    // reset file counters
-    modified_size = 0;
-    modified_num = 0;
-    nopkg_size = 0;
-    nopkg_num = 0;
-
-    // output strings from search script
-    string id_package = "Package: ";
-    string id_complete_package = "Complete package: ";
-    string id_file = "Size: ";
-    string id_nopackage = "Nopackage:";
-    string id_instprefixes = "Installed: ";
-    string id_reading_packages = "Reading installed packages";
-    string id_packages_num = "Packages: ";
-    string id_reading_files = "Reading all files";
-    string id_files_read = "Files read";
-
-    boolean search_no_package = false;
-    boolean reading_installed_packages = false;
-
-    selected_pkg_num = 0;
-
-    while(((boolean)SCR::Read(.background.output_open)) || ((integer)SCR::Read(.background.newlines)) > 0)
-    {
-	script_out = (list<string>)SCR::Read(.background.newout);
-
-	while (size(script_out) > 0)
-	{
-	    line = script_out[0]:nil;			// read line
-	    script_out = remove(script_out, 0);		// remove line
-
-	    if (reading_installed_packages)
-	    {
-		if (substring(line, 0, size(id_packages_num)) == id_packages_num)
-		{
-		    reading_installed_packages = false;
-		    total_packages = tointeger(substring(line, size(id_packages_num)));
-
-		    y2milestone("Number of installed packages: %1", total_packages);
-		}
-	    }
-	    else
-	    {
-		if (substring(line, 0, size(id_package)) == id_package || substring(line, 0, size(id_complete_package)) == id_complete_package)
-		{
-		    // store package's changed files
-		    if (size(package_files) > 0)
-		    {
-			map package_info = $[
-			    "changed_files" : package_files,
-			    "install_prefixes" : actual_instprefixes
-			];
-
-			Backup::backup_files = add(Backup::backup_files, actual_package, package_info);
-			package_files = [ ];
-			selected_pkg_num = selected_pkg_num + 1;
-		    }
-
-		    boolean complete = (substring(line, 0, size(id_complete_package)) == id_complete_package);
-		    actual_package = complete ? substring(line, size(id_complete_package)) : substring(line, size(id_package));
-
-		    if (complete == true)
-		    {
-			y2debug("Complete package: %1", actual_package);
-			Backup::complete_backup = add(Backup::complete_backup, actual_package);
-		    }
-		    package_num = package_num + 1;
-
-		    if (Backup::cron_mode != true)
-		    {
-			UI::ChangeWidget(`id(`package), `Value, actual_package);
-			UI::ChangeWidget(`id(`progress), `Value, package_num);
-		    }
-		}
-		else
-		{
-		    if  (substring(line, 0, size(id_file)) == id_file)
-		    {
-			line = substring(line, size(id_file));
-
-			string size_str = substring(line, 0, findfirstof(line, " "));
-			modified_size = modified_size + tointeger(size_str);
-			modified_num = modified_num + 1;
-
-			if (Backup::cron_mode != true)
-			{
-			    UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", String::FormatSize(modified_size)));
-			    UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", modified_num));
-			}
-
-			string found_file = substring(line, findfirstof(line, " ") + 1);
-
-			// escape newlines in file name
-			// double backslashes
-			list<string> parts = splitstring(found_file, "\\");
-			string escaped = mergestring(parts, "\\\\");
-
-			// change newline to \n
-			parts = splitstring(escaped, "\n");
-			escaped = mergestring(parts, "\\n");
-
-			// add file to list of found files
-			package_files = add(package_files, escaped);
-		    }
-		    else
-		    {
-			if (line == id_nopackage)
-			{
-			    if (size(package_files) > 0)
-			    {
-				map package_info = $[
-				    "changed_files" : package_files,
-				    "install_prefixes" : actual_instprefixes
-				];
-
-				Backup::backup_files = add(Backup::backup_files, actual_package, package_info);
-				package_files = [ ];
-				selected_pkg_num = selected_pkg_num + 1;
-			    }
-
-			    actual_package = "";		// empty package name
-			    search_no_package = true;	// no package part of output
-
-			    y2milestone("Searching files which are not in any package started");
-
-			    break;
-			}
-			else
-			{
-			    if (substring(line, 0, size(id_instprefixes)) == id_instprefixes)
-			    {
-				actual_instprefixes = substring(line, size(id_instprefixes));
-			    }
-			    else
-			    {
-				if (line == id_reading_files)
-				{
-				    if (Backup::cron_mode != true)
-				    {
-					// label text
-					Wizard::SetContents("", `Label(_("Reading packages files...")), backup_help_searching_modified(), false, false);
-				    }
-				}
-				else
-				{
-				    if (line == id_reading_packages)
-				    {
-					y2milestone("Reading installed packages");
-
-					if (Backup::cron_mode != true)
-					{
-					    // label text
-					    Wizard::SetContents("", `Label(_("Reading list of installed packages...")), backup_help_searching_modified(), false, false);
-					}
-
-					reading_installed_packages = true;
-				    }
-				    else
-				    {
-					if (line == id_files_read)
-					{
-					    if (Backup::cron_mode != true)
-					    {
+define void SetDialogContents_SearchingForModifiedFiles(integer total_packages) {
+y2milestone("Progress Packages: %1", total_packages);
 						// dialog header
 						Wizard::SetContents( _("Searching for Modified Files"),
 						    `Top(
@@ -1639,72 +1483,157 @@ Back up will be aborted.
 						    ),
 						    backup_help_searching_modified(), false, false
 						);
-					    }
+}
+
+/**
+ * Initializes variables before the SearchingModifiedDialog
+ */
+define void InitSearchingModifiedDialog () {
+    if (!Backup::cron_mode) {
+	Wizard::ClearContents();
+	Wizard::SetContents("",
+	    // label text
+	    `Label(_("Reading packages available on the installation sources...")),
+	    backup_help_searching_modified(),
+	    false, false
+	);
+    }
+
+    // set buffer size
+    SCR::Write(.background.buffer_size, 500);
+
+    // read list of available packages at the original installation sources
+    Backup::ReadInstallablePackages();
+
+    // initialize list of completely backed up packages
+    Backup::complete_backup = [];
+
+    selected_pkg_num = 0;
+}
+
+
+/**
+ * Takes care about installed packages
+ */
+define void Search_ProcessInstalledPackages () {
+    if (substring(line, 0, size(id_packages_num)) == id_packages_num) {
+	reading_installed_packages = false;
+	total_packages = tointeger(substring(line, size(id_packages_num)));
+
+	y2milestone("Number of installed packages: %1", total_packages);
+    }
+}
+
+define void Search_ChangedPackageFiles () {
+		    // store package's changed files
+		    if (size(package_files) > 0) {
+			Backup::backup_files = add(Backup::backup_files, actual_package, $[
+			    "changed_files" : package_files,
+			    "install_prefixes" : actual_instprefixes
+			]);
+			package_files = [ ];
+			selected_pkg_num = selected_pkg_num + 1;
+		    }
+
+		    boolean complete = (substring(line, 0, size(id_complete_package)) == id_complete_package);
+		    actual_package = complete ? substring(line, size(id_complete_package)) : substring(line, size(id_package));
+
+		    if (complete == true) {
+			y2debug("Complete package: %1", actual_package);
+			Backup::complete_backup = add(Backup::complete_backup, actual_package);
+		    }
+		    package_num = package_num + 1;
+
+		    if (!Backup::cron_mode) {
+			UI::ChangeWidget(`id(`package), `Value, actual_package);
+			UI::ChangeWidget(`id(`progress), `Value, package_num);
+		    }
+}
+
+/**
+ * not sure
+ */
+define void Search_ModifiedFiles () {
+			line = substring(line, size(id_file));
+
+			string size_str = substring(line, 0, findfirstof(line, " "));
+			modified_size = modified_size + tointeger(size_str);
+			modified_num = modified_num + 1;
+
+			if (!Backup::cron_mode)
+			{
+			    UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", String::FormatSize(modified_size)));
+			    UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", modified_num));
+			}
+
+			string found_file = substring(line, findfirstof(line, " ") + 1);
+
+			// escape newlines in file name
+			// double backslashes
+			list<string> parts = splitstring(found_file, "\\");
+			string escaped = mergestring(parts, "\\\\");
+
+			// change newline to \n
+			parts = splitstring(escaped, "\n");
+			escaped = mergestring(parts, "\\n");
+
+			// add file to list of found files
+			package_files = add(package_files, escaped);
+}
+
+define void Search_NonPackageFile () {
+			    if (size(package_files) > 0) {
+				Backup::backup_files = add(Backup::backup_files, actual_package, $[
+				    "changed_files" : package_files,
+				    "install_prefixes" : actual_instprefixes
+				]);
+				package_files = [ ];
+				selected_pkg_num = selected_pkg_num + 1;
+			    }
+
+			    actual_package = "";		// empty package name
+			    search_no_package = true;	// no package part of output
+
+			    y2milestone("Searching files which are not in any package started");
+
+}
+
+/**
+ * Reads list of packages files, installed packages
+ */
+define void Search_ReadListOfFilesAndPackages () {
+				if (line == id_reading_files) {
+				    if (!Backup::cron_mode) {
+					// label text
+					Wizard::SetContents("", `Label(_("Reading packages files...")), backup_help_searching_modified(), false, false);
+				    }
+				} else {
+				    if (line == id_reading_packages) {
+					y2milestone("Reading installed packages");
+
+					if (!Backup::cron_mode) {
+					    // label text
+					    Wizard::SetContents("", `Label(_("Reading list of installed packages...")), backup_help_searching_modified(), false, false);
+					}
+
+					reading_installed_packages = true;
+				    } else {
+					if (line == id_files_read) {
+					    if (Backup::cron_mode != true)
+						SetDialogContents_SearchingForModifiedFiles(total_packages);
 
 					    y2milestone("Searching in packages started");
-					}
-					else
-					{
+					} else {
 					    y2warning("Unknown output from search script: %1", line);
 					}
 				    }
 				}
-			    }
-			}
-		    }
-		}
-	    }
-	}
+}
 
-	if (search_no_package)
-	{
-	    break;
-	}
-
-	if (Backup::cron_mode == true)
-	{
-	    // in cron mode only wait for subprocess
-	    while (((integer)SCR::Read(.background.newlines)) == 0 && (boolean)SCR::Read(.background.output_open))
-	    {
-		sleep(wait_time);
-	    }
-
-	    ret = nil;
-	}
-	else
-	{
-	    ret = waitForUserOrProcess(wait_time, `changed);
-	}
-
-	if (ret != nil)
-	{
-	    return ret;
-	}
-
-    }
-
-    if (size (package_files) > 0)
-    {
-	map package_info = $[
-	    "changed_files" : package_files,
-	    "install_prefixes" : actual_instprefixes
-	];
-
-	Backup::backup_files = add(Backup::backup_files, actual_package, package_info);
-	selected_pkg_num = selected_pkg_num + 1;
-    }
-
-    y2milestone("All packages verified.");
-
-    if (search_no_package)
-    {
-	string actual_dir = "/";
-	string id_readingall = "Reading all files";
-	string id_readall = "Files read";
-	string id_dir = "Dir: ";
-
-	if (Backup::cron_mode != true)
-	{
+/**
+ * Function sets the dialog contents before searching files...
+ */
+define void SetDialogContents_SearchingFiles () {
 	    // dialog header
 	    Wizard::SetContents(_("Searching Files"),
 		`Top(
@@ -1737,6 +1666,115 @@ Back up will be aborted.
 		),
 		backup_help_searching_files(), false, false
 	    );
+}
+
+/**
+ * Display progress of searching modified files in packages
+ * @return symbol Symbol for wizard sequencer - pressed button
+ */
+ define symbol SearchingModifiedDialog() {
+    ResetGlobalVariables();
+    InitSearchingModifiedDialog();
+
+    y2milestone("Search script: %1", Backup::script_get_files + Backup::get_search_script_parameters());
+    // starting the searching script in the background
+    boolean started = (boolean)SCR::Execute(.background.run_output, Backup::script_get_files + Backup::get_search_script_parameters());
+    list<string> script_out = [ ];
+
+    symbol ret = nil;
+
+    y2milestone("subprocess started: %1 (PID: %2)", started, (integer)SCR::Read(.background.pid));
+
+    if (!started) {
+	// error popup message
+	Report::Error(_("Could not start search script.
+Back up will be aborted.
+"));
+	y2error("Errors: %1", (list<string>)SCR::Read(.background.newerr));
+	if (Backup::cron_mode) {
+	    return `abort;
+	} else {
+	    return `maindialog;
+	}
+    }
+
+    integer search_time = time();
+
+    // while background script runs
+    while(((boolean)SCR::Read(.background.output_open)) || ((integer)SCR::Read(.background.newlines)) > 0) {
+	script_out = (list<string>)SCR::Read(.background.newout);
+
+	// processing the script output
+	while (size(script_out) > 0) {
+	    line = script_out[0]:nil;			// read line
+	    script_out = remove(script_out, 0);		// remove line
+
+	    // reading installed packages until the last package is read
+	    if (reading_installed_packages) {
+		Search_ProcessInstalledPackages();
+	    } else {
+		if (substring(line, 0, size(id_package)) == id_package || substring(line, 0, size(id_complete_package)) == id_complete_package) {
+		    Search_ChangedPackageFiles();
+		} else {
+		    if  (substring(line, 0, size(id_file)) == id_file) {
+			Search_ModifiedFiles();
+		    } else {
+			if (line == id_nopackage) {
+			    Search_NonPackageFile();
+			    break;
+			} else {
+			    if (substring(line, 0, size(id_instprefixes)) == id_instprefixes) {
+				actual_instprefixes = substring(line, size(id_instprefixes));
+			    } else {
+				Search_ReadListOfFilesAndPackages();
+			    }
+			}
+		    }
+		}
+	    }
+	}
+
+	if (search_no_package) {
+	    break;
+	}
+
+	if (Backup::cron_mode) {
+	    // in cron mode only wait for subprocess
+	    while (((integer)SCR::Read(.background.newlines)) == 0 && (boolean)SCR::Read(.background.output_open)) {
+		sleep(wait_time);
+	    }
+
+	    ret = nil;
+	} else {
+	    ret = waitForUserOrProcess(wait_time, `changed);
+	}
+
+	if (ret != nil) {
+	    return ret;
+	}
+
+    }
+    // end of the 'while' backround script runs
+
+    if (size (package_files) > 0) {
+	Backup::backup_files = add(Backup::backup_files, actual_package, $[
+	    "changed_files" : package_files,
+	    "install_prefixes" : actual_instprefixes
+	]);
+	selected_pkg_num = selected_pkg_num + 1;
+    }
+
+    y2milestone("All packages verified.");
+
+    // searching files not belonging to any package
+    if (search_no_package) {
+	string actual_dir = "/";
+	string id_readingall = "Reading all files";
+	string id_readall = "Files read";
+	string id_dir = "Dir: ";
+
+	if (!Backup::cron_mode) {
+	    SetDialogContents_SearchingFiles();
 	}
 
 	integer dircount = 0;
@@ -1850,15 +1888,14 @@ Back up will be aborted.
 	    }
 	}
 
-	map package_info = $[
+	Backup::backup_files = add(Backup::backup_files, actual_package, $[
 	    "changed_files" : merge(package_files, package_files_part),
 	    "install_prefixes" : actual_instprefixes
-	];
-
-	Backup::backup_files = add(Backup::backup_files, actual_package, package_info);
+	]);
     }
 
-    y2milestone("Searching done");
+    search_time = time() - search_time;
+    y2milestone("Searching done after %1 sec.", search_time);
 
     list<string> dparts = splitstring(Backup::archive_name, "/");
     dparts = remove(dparts, size(dparts) - 1);
@@ -1867,8 +1904,12 @@ Back up will be aborted.
     // check available space
     if (check_space(nopkg_size + modified_size, Backup::tmp_dir, tdir, Backup::archive_type) == false)
     {
-	// there is no space, user selected to not continue
-	return `abort;
+	// there is no space, user selected not to continue
+	if (Backup::cron_mode) {
+	    return `abort;
+	} else {
+	    return `maindialog;
+	}
     }
 
     if (Backup::display && !Backup::no_interactive)
@@ -1925,8 +1966,6 @@ Back up will be aborted.
     }
 }
 
-
-
 /**
  * Display found files, user can select files to backup
  * @return symbol Symbol for wizard sequencer - pressed button
@@ -1938,7 +1977,8 @@ Back up will be aborted.
     Wizard::SetContents("", `Label(_("Adding files to table...")), "", false, false);
 
     integer t1 = time();
-    list<term> items = (list<term>)SCR::Read(.target.ycp, (string)SCR::Read(.target.tmpdir) + "/items.ycp");
+
+    list< list<any> > items = (list< list<any> >) SCR::Read(.target.ycp, (string) SCR::Read(.target.tmpdir) + "/items-list.ycp");
 
     // dialog header
     Wizard::SetContents( _("File Selection"),
@@ -1950,7 +1990,8 @@ Back up will be aborted.
 		`opt(`notify),
 		// table header
 		`header(" ", _("Filename"), _("Package")),
-		items
+		// Items are pre-defined in the file
+		(list<term>) SCR::Read(.target.ycp, (string) SCR::Read(.target.tmpdir) + "/items.ycp")
 	    ),
 	    `HBox(
 		// push button label
@@ -1978,21 +2019,23 @@ Back up will be aborted.
 
 	y2milestone("Found %1 unselected files", size(Backup::unselected_files));
 
-	foreach(term itm, items, ``{
-		string f = (string)itm[2]:nil;
-		term tmp = (term) itm[0]:nil;
-		integer idx = (integer) tmp[0]:nil;
-
-		if (contains(Backup::unselected_files, f) == true)
+	UI::OpenDialog(
+	    `Left(`Label(
+		// busy message
+		_("Unselecting files...")
+	    ))
+	);
+	foreach(list file_f, items, ``{
+		if (contains(Backup::unselected_files, (string) file_f[1]:nil) == true)
 		{
-		    y2debug("Found previously unselected file: %1 (idx: %2)", f, idx);
-		    deselected_ids[idx] = 1;
+		    y2debug("Found previously unselected file: %1 (idx: %2)", file_f[1]:nil, file_f[0]:nil);
+		    deselected_ids[(integer) file_f[0]:nil] = 1;
 		}
 	    }
 	);
+	UI::CloseDialog();
 
-	t2 = time();
-	y2milestone("searching unselected files was finished after %1 seconds", t2 - t1);
+	y2milestone("searching unselected files was finished after %1 seconds", time() - t1);
     }
 
     if (size(deselected_ids) > 0)
@@ -2029,6 +2072,17 @@ Back up will be aborted.
 
 	if (ret == `sel_all || ret == `desel_all)
 	{
+	    UI::OpenDialog(
+		`Left(`Label(
+		    (ret == `sel_all) ?
+			// An informative popup label during deselecting all items in the table (can consume a lot of time)
+			_("Selecting all items...")
+		        :
+			// An informative popup label during deselecting all items in the table (can consume a lot of time)
+			_("Deselecting all items...")
+		))
+	    );
+
 	    if (ret == `sel_all)
 	    {
 		Backup::unselected_files = [];
@@ -2055,8 +2109,18 @@ Back up will be aborted.
 		}
 	    }
 
-	    UI::ChangeWidget(`id(`table), `Items, (ret == `sel_all) ? (list<term>)SCR::Read(.target.ycp, (string)SCR::Read(.target.tmpdir) + "/items.ycp")
-	                    : (list<term>)SCR::Read(.target.ycp, (string)SCR::Read(.target.tmpdir) + "/items.ycp2"));
+	    // reducing amount of memory spent, clearing all huge map after its expiration of need
+	    Backup::backup_files = $[];
+
+	    UI::CloseDialog();
+	    UI::ChangeWidget(`id(`table), `Items,
+		(ret == `sel_all) ?
+		    // selecting all
+		    (list<term>)SCR::Read(.target.ycp, (string)SCR::Read(.target.tmpdir) + "/items.ycp")
+		    :
+		    // deselecting all
+		    (list<term>)SCR::Read(.target.ycp, (string)SCR::Read(.target.tmpdir) + "/items.ycp2")
+	    );
 
 	    if (current_item != nil)
 	    {
@@ -2147,14 +2211,31 @@ Back up will be aborted.
     return ret;
 }
 
+//  Variables for the ArchivingDialog() and functions beyond
+    string id_hostname = "Storing hostname: ";
+    string id_date = "Storing date: ";
+    string id_partab = "Storing partition table";
+    string id_ptstored = "Stored partition: ";
+    string id_ok = "Success";
+    string id_failed = "Failed";
+    string id_storing_installed_pkgs = "Storing list of installed packages";
+    string id_storedpkg = "Packages stored: ";
+    string id_ext2 = "Storing ext2 area: ";
+    string id_archive = "Creating archive:";
+    string id_tar_exit = "/Tar result:";
+    string id_new_volume = "/Volume created: ";
+    string id_not_readable = "/File not readable: ";
+    string id_not_stored = "Error storing partition: ";
+    string id_pt_read = "Partition tables info read";
+    string id_creating_target = "Creating target archive file...";
 
-/**
- * Display progress of creating archive
- * @return symbol Symbol for wizard sequencer - pressed button
- */
+    map selected_info = $[];
 
- define symbol ArchivingDialog() ``{
+    integer last_file_stage = 0;
+    integer this_file_stage = 0;
+    integer stages_for_files = 0;
 
+define void CreateProgress_ArchivingDialog() {
     // create Progress bar
 
     // progress stage
@@ -2162,11 +2243,11 @@ Back up will be aborted.
     // progress step
     list<string> stages2 = [ _("Storing host information...") ];
 
-    map selected_info = Backup::MapFilesToString();
+    selected_info = Backup::MapFilesToString();
     selected_files_num = selected_info["sel_files"]:0;
     selected_pkg_num = selected_info["sel_packages"]:0;
 
-    symbol ret = nil;
+    
 
     // number of steps = number of selected files + nuber of selected packages (selected files added below)
     //			+ 6 files (comment, hostname, date, files, installed_packages, packages_info)
@@ -2174,11 +2255,7 @@ Back up will be aborted.
     //			+ 3 stages (storing files, creating package archives, creating big archive)
     integer num_stages =  12;
 
-    // selected_files_num should be XX% of num_stages;
-    integer selected_files_per_cent = 85;
-
-    if (Backup::system)
-    {
+    if (Backup::system) {
 	// progress stage
 	stages1 = add(stages1, _("Create system area backup"));
 	// progress step
@@ -2194,27 +2271,24 @@ Back up will be aborted.
 	num_stages = num_stages + 1;	// System backup stage
     }
 
-    if (Backup::multi_volume)
-    {
+    if (Backup::multi_volume) {
 	num_stages = num_stages + 1;    // tar prints Volume label if multi volume selected, but only at first volume
     }
 
-    if (Backup::search)
-    {
+    if (Backup::search) {
 	num_stages = num_stages + 1;	// add NOPACKAGE archive step
     }
 
-    if (size(Backup::complete_backup) > 0)
-    {
+    if (size(Backup::complete_backup) > 0) {
 	num_stages = num_stages + 1;	// add complete list step
     }
 
-    // adding more stages for files to selected_files_per_cent% of stages
-    integer stages_for_files = tointeger (num_stages * 100 / (100 - selected_files_per_cent));
+    stages_for_files = num_stages * 9;
+
     num_stages = num_stages + stages_for_files;
     // last file-stage is 0%
-    integer last_file_stage = 0;
-    integer this_file_stage = 0;
+    last_file_stage = 0;
+    this_file_stage = 0;
 
     // progress stage
     stages1 = add(stages1, _("Create package archives"));
@@ -2231,67 +2305,70 @@ Back up will be aborted.
     // progress step
     stages2 = add(stages1, _("Writing autoinstallation profile..."));
 
-    if (Backup::cron_mode == true)
-    {
-	Progress::off();
+    if (Backup::cron_mode == true) {
+	Progress::set(false);
+    } else {
+	y2milestone("Creating progress dialog with %1 steps", num_stages);
+	Progress::New(
+	    // progress
+	    _("Creating Archive"),
+	    " ",
+	    num_stages,
+	    stages1,
+	    stages2,
+	    backup_help_creating_archive()
+	);
     }
-    else
-    {
-	Progress::New(_("Creating Archive"), " ", num_stages, stages1, stages2, backup_help_creating_archive());
-    }
+}
+
+/**
+ * Display progress of creating archive
+ * @return symbol Symbol for wizard sequencer - pressed button
+ */
+
+ define symbol ArchivingDialog() ``{
+    // Creating Progress Bar/Steps
+    CreateProgress_ArchivingDialog();
+
+    symbol ret = nil;
+
+    integer progress_count = selected_pkg_num + selected_files_num;
 
     y2milestone("Number of selected packages: %1, selected files: %2", selected_pkg_num, selected_files_num);
     y2milestone("Storing file names list...");
 
-    // store selected file names to file
-    string tmpfile_list = (string)SCR::Read(.target.tmpdir) + "/filelist";
+    // store selected file names to the temporary file
+    string tmp_dir = (string)SCR::Read(.target.tmpdir);
+    string tmpfile_list = tmp_dir + "/filelist";
+    file_list_stored = (boolean) SCR::Write(.target.string, tmpfile_list + "_tmp", selected_info["filelist"]:"");
 
-
-    string flist = selected_info["filelist"]:"";
-
-    // remove backslash sequence
-    string newstr = "";
-    integer pos = 0;
-    while(size(flist) > 0)
-    {
-	pos = find(flist, "\\\\");
-
-	if (pos >= 0)
-	{
-	    // found
-	    newstr = newstr + substring(flist, 0, pos + 1);
-	    flist = substring(flist, pos + 2);
-	}
-	else
-	{
-	    // not found
-	    newstr = newstr + flist;
-	    flist = "";
-	}
+    // replace the double backslashes with single ones
+    if ((integer) SCR::Execute(.target.bash,
+	sformat("cd %1; sed 's/\\\\\\\\/\\\\/g' filelist_tmp > filelist", tmp_dir)
+    ) != 0) {
+	file_list_stored = false;
+    } else {
+	// free the disk
+	SCR::Execute(.target.remove, tmpfile_list + "_tmp");
     }
+    // free the memory
+    selected_info["filelist"] = "";
 
-    flist = newstr;
-    newstr = "";
-
-    file_list_stored = (boolean)SCR::Write(.target.string, tmpfile_list, flist);
-
-    if (!file_list_stored)
-    {
+    if (!file_list_stored) {
+	// a popup error message
 	Report::Error(sformat(_("Cannot write the list of selected files to file %1."), tmpfile_list));
+    } else {
+	y2milestone("File names stored");
     }
-
-    y2milestone("File names stored");
 
     // store comment to file
     string tmpfile_comment = (string)SCR::Read(.target.tmpdir) + "/comment";
     comment_stored = (boolean)SCR::Write(.target.string, tmpfile_comment, Backup::description);
 
-
     y2debug("%1", "Comment stored to file");
     Progress::NextStep();
 
-    if (!comment_stored)
-    {
+    if (!comment_stored) {
 	Report::Warning(sformat(_("Cannot write comment to file %1."), tmpfile_comment));
     }
 
@@ -2313,22 +2390,7 @@ Aborting back up.
 
     list<string> script_out = [ ];
 
-    string id_hostname = "Storing hostname: ";
-    string id_date = "Storing date: ";
-    string id_partab = "Storing partition table";
-    string id_ptstored = "Stored partition: ";
-    string id_ok = "Success";
-    string id_failed = "Failed";
-    string id_storing_installed_pkgs = "Storing list of installed packages";
-    string id_storedpkg = "Packages stored: ";
-    string id_ext2 = "Storing ext2 area: ";
-    string id_archive = "Creating archive:";
-    string id_tar_exit = "/Tar result:";
-    string id_new_volume = "/Volume created: ";
-    string id_not_readable = "/File not readable: ";
-    string id_not_stored = "Error storing partition: ";
-    string id_pt_read = "Partition tables info read";
-    string id_creating_target = "Creating target archive file...";
+
 
     archived_num = 0;
     boolean tar_running = false;
@@ -2415,25 +2477,21 @@ Aborting back up.
 			}
 			else
 			{
-			    if (Backup::multi_volume)
-			    {
+			    if (Backup::multi_volume) {
 				if (last_out != line)
 				{
 				    archived_num = archived_num + 1;
-				    Progress::NextStep();
 				    last_out = line;
 				}
-			    }
-			    else
-			    {
+			    } else {
 				archived_num = archived_num + 1;
 				y2debug("File: %1 added to archive", line);
-
-				this_file_stage = tointeger(archived_num * stages_for_files / (selected_files_num + selected_pkg_num));
-				if (this_file_stage > last_file_stage) {
-				    Progress::NextStep();
-				    last_file_stage = this_file_stage;
-				}
+			    }
+			    
+			    this_file_stage = tointeger(archived_num * stages_for_files / progress_count);
+			    if (this_file_stage > last_file_stage) {
+				Progress::NextStep();
+				last_file_stage = this_file_stage;
 			    }
 			}
 		    }
@@ -2567,8 +2625,7 @@ Aborting back up.
 		}
 	    }
 
-
-	    if (Backup::cron_mode == true)
+	    if (Backup::cron_mode)
 	    {
 		// in cron mode only wait for subprocess
 		while ((integer)SCR::Read(.background.newlines) == 0 && (boolean)SCR::Read(.background.output_open))

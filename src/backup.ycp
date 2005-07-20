@@ -86,6 +86,7 @@ map sequence = $[
     "do_searching"	: $[
 	`next	: "files",
 	`next2	: "archiving",
+	`maindialog	: "readprof",
 	`abort	: `abort
     ],
     "files" : $[
