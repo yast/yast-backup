@@ -1,4 +1,16 @@
 -------------------------------------------------------------------
+Wed Jul 20 13:14:02 CEST 2005 - locilka@suse.cz
+
+Changes in backup_search.pl script:
+- Increasing speed of searching files and directories by minimizing
+  rpm calls, minimizing unnecessary calls of files attributes,
+  using references instead of copying strings.
+- Minimizing memory usage to 60% by disabling the device/inode
+  checking, disputable files are just backed up.
+- Adding new option --list-file to minimize the memory usage using
+  the YaST UI.
+
+-------------------------------------------------------------------
 Thu Jul 14 14:48:40 CEST 2005 - arvin@suse.de
 
 - added yast2-storage-lib to neededforbuild
