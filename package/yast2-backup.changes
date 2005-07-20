@@ -1,4 +1,16 @@
 -------------------------------------------------------------------
+Wed Jul 20 13:53:55 CEST 2005 - locilka@suse.cz
+
+- Breaking huge 'while'-loops into more functions
+- Adding busy messages during some long UI delays
+- Adding support for --list-file script option
+- Minimizing memory usage by clearing some bigger variables after
+  expiration of their need
+- Minimizing memory and processor usage by parsing smaller list of
+  files instead of list of UI terms.
+- Using 'sed' for the filelist regexp changes rather than the YCP.
+
+-------------------------------------------------------------------
 Wed Jul 20 13:14:02 CEST 2005 - locilka@suse.cz
 
 Changes in backup_search.pl script:

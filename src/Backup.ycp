@@ -404,6 +404,9 @@ global define string get_search_script_parameters() ``{
     // add widget file option
     script_options = script_options + " --widget-file " + ((string)SCR::Read(.target.tmpdir)) + "/items.ycp";
 
+    // add items list option
+    script_options = script_options + " --list-file " + ((string)SCR::Read(.target.tmpdir)) + "/items-list.ycp";
+
     // add package verification option
     script_options = script_options + " --pkg-verification";
 
