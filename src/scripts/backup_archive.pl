@@ -639,7 +639,11 @@ if (defined $opened)
 close(FILES_INFO);
 
 # compress file packages_info (avg. ratio is ~10:1)
-system("/usr/bin/gzip -9 $tmp_dir/packages_info");
+while (!-e $tmp_dir.'/packages_info.gz') {
+    system("/usr/bin/gzip -9 $tmp_dir/packages_info");
+    warn 'Cannot create '.$tmp_dir.'/packages_info.gz: '.$!."\n";
+    sleep(15);
+}
 
 close(OUT);
 

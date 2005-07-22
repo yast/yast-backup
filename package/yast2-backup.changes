@@ -1,4 +1,23 @@
 -------------------------------------------------------------------
+Fri Jul 22 14:50:00 CEST 2005 - locilka@suse.cz
+
+- Fixing bug #53871 Backup ignored full filesystem and freezed
+  Now it asks user whether to abort backup or not. It aborts it
+  immediatelly when backup runs as a cron job.
+- Fixing memory wasted by creating all-filelist in the memory with
+  using .backup.file_append - creates the filelist directly on the
+  disk.
+- Fixing backup_archive.pl script didn't find out when it hadn't be
+  able to create gzipped packages_info due to full filesystem.
+- 2.12.3
+
+-------------------------------------------------------------------
+Thu Jul 21 15:03:24 CEST 2005 - locilka@suse.cz
+
+- Added new SCR Agent .backup.file_append
+- Added new SCR Agent .backup.free_space
+
+-------------------------------------------------------------------
 Wed Jul 20 13:53:55 CEST 2005 - locilka@suse.cz
 
 - Breaking huge 'while'-loops into more functions

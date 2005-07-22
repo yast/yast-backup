@@ -119,60 +119,6 @@ define boolean AbortConfirmation(symbol type) ``{
 }
 
 
-
-/**
- * Wait for output from subprocess or user action. If user press `abort button, then subprocess is terminated.
- * @param wait Delay in miliseconds between user action checks (if no output from subprocess is available)
- * @param abort_question Symbol for AbortConfirmation function - which dialog will be displayed if Abort button is pressed
- * @return symbol Pressed button id or nil if some data is ready from subprocess.
- */
-
- define symbol waitForUserOrProcess(integer wait, symbol abort_question) ``{
-    symbol ret = (symbol) UI::PollInput();
-
-    if (ret == `abort || ret == `cancel)
-    {
-	y2warning("Abort pressed");
-	ret = `abort;
-
-	if (AbortConfirmation(abort_question))
-	{
-	    SCR::Execute(.background.kill, nil);
-	    return ret;
-	}
-	else
-	{
-	    ret = nil;
-	}
-    }
-
-    while ((integer)SCR::Read(.background.newlines) == 0 && (boolean)SCR::Read(.background.output_open))
-    {
-	sleep(wait);
-
-	ret = (symbol) UI::PollInput();
-
-	if (ret == `abort || ret == `cancel)
-	{
-	    ret = `abort;
-	    y2warning("Abort pressed");
-
-	    if (AbortConfirmation(abort_question))
-	    {
-		SCR::Execute(.background.kill, "");
-		break;
-	    }
-	    else
-	    {
-		ret = nil;
-	    }
-	}
-    }
-
-    return ret;
-}
-
-
 /**
  * Returns list of mounted file systems types.
  * @return list List of strings, each mounted file system type is reported only onetimes, list is alphabetically sorted.
@@ -779,6 +725,9 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
     );
 
     y2debug("available packages: %1", installation_packages);
+
+    // Clear the packagemanager cache
+    Pkg::SourceFinishAll();
 
     return installation_packages;
 }
