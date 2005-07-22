@@ -33,6 +33,182 @@ include "backup/functions.ycp";
 
 textdomain "backup";
 
+ integer wait_time = 500;    // loop delay (in miliseconds)
+
+// variables needed for backup when freezes on ZERO (or almost zero) free space
+integer waiting_without_output = 0;
+boolean enough_free_space_tmp = true;
+boolean enough_free_space_target = true;
+
+// wait 1 minute between checking for the free space
+integer max_wait_without_output = 60000;
+// wait sec between checking
+integer wait_sec_check = 59;
+integer next_time_check = time() + wait_sec_check;
+// minimal reasonable free space is 512K
+integer min_free_space = 512;
+
+/**
+ * Function periodically checks the free space
+ */
+define void CheckFreeSpace () {
+    waiting_without_output = waiting_without_output + wait_time;
+
+    if (waiting_without_output >= max_wait_without_output) {
+	// null the waiting time now
+	waiting_without_output = 0;
+	if (time() < next_time_check) {
+	    return;
+	}
+	// next space check - not before time() + wait_sec_check
+	next_time_check = time() + wait_sec_check;
+y2milestone("Check FreeSpace");
+
+	// null the free space flags
+	waiting_without_output = 0;
+	enough_free_space_tmp = true;
+	enough_free_space_target = true;
+
+	// check the tmpdir free space
+	integer free_tmp = (integer) SCR::Read(.backup.free_space, Backup::tmp_dir);
+	if (free_tmp != -1 && free_tmp < min_free_space) {
+	    enough_free_space_tmp = false;
+	}
+
+	// check the targetdir free space
+	integer free_target = (integer) SCR::Read(.backup.free_space, Backup::target_dir);
+	if (free_target != -1 && free_target < min_free_space) {
+	    enough_free_space_target = false;
+	}
+    }
+    
+}
+
+define symbol EvaluateFreeSpace (symbol ret) {
+	    // If zero (or almost zero) free space in tmpdir
+	    if (!enough_free_space_tmp) {
+		y2warning("Not enough free space in the temporary directory");
+		// cron mode => finish immediately
+		if (Backup::cron_mode) {
+		    y2milestone("Finishing backup...");
+		    return `abort;
+		// !cron mode => ask user
+		} else if ((boolean) SCR::Read(.background.isrunning)) {
+		    if (!Popup::YesNoHeadline(
+			// headline of a popup message
+			_("Warning"),
+			// a popup question - no free space, %1 is the name of the directory
+			sformat(_("There is not enough free space in the temporary directory %1.\nDo you wish to continue?"), Backup::tmp_dir)
+		    )) {
+			y2milestone("Finishing backup...");
+			return `abort;
+		    } else {
+			y2milestone("Trying co continue...");
+			waiting_without_output = 0;
+			return ret;
+		    }
+		// background agent is not running
+		} else {
+		    // a popup error message - no free space, %1 is the name of the directory
+		    Report::Error(sformat(_("There is not enough free space in the temporary directory %1.\nBackup cannot continue and will be finished."),Backup::tmp_dir));
+		    return `abort;
+		}
+	    }
+
+	    // If zero (or almost zero) free space in targetdir
+	    if (!enough_free_space_target) {
+		y2warning("Not enough free space in the backup target directory");
+		// cron mode => finish immediately
+		if (Backup::cron_mode) {
+		    y2milestone("Finishing backup...");
+		    return `abort;
+		// !cron mode => ask user
+		} else if ((boolean) SCR::Read(.background.isrunning)) {
+		    if (!Popup::YesNoHeadline(
+			// headline of a popup message
+			_("Warning"),
+			// a popup question - no free space, %1 is the name of the directory
+			sformat(_("There is not enough free space in the backup target directory %1.\nDo you wish to continue?"), Backup::target_dir)
+		    )) {
+			y2milestone("Finishing backup...");
+			return `abort;
+		    } else {
+			y2milestone("Trying co continue...");
+			waiting_without_output = 0;
+			return ret;
+		    }
+		// background agent is not running
+		} else {
+		    // a popup error message - no free space, %1 is the name of the directory
+		    Report::Error(sformat(_("There is not enough free space in the backup target directory %1.\nBackup cannot continue and will be finished."),Backup::target_dir));
+		    return `abort;
+		}
+	    }
+
+    // nothing changed
+    return ret;
+}
+
+/**
+ * Wait for output from subprocess or user action. If user press `abort button, then subprocess is terminated.
+ * @param wait Delay in miliseconds between user action checks (if no output from subprocess is available)
+ * @param abort_question Symbol for AbortConfirmation function - which dialog will be displayed if Abort button is pressed
+ * @return symbol Pressed button id or nil if some data is ready from subprocess.
+ */
+
+ define symbol waitForUserOrProcess(integer wait, symbol abort_question) ``{
+    symbol ret = (symbol) UI::PollInput();
+
+    if (ret == `abort || ret == `cancel)
+    {
+        y2warning("Abort pressed");
+        ret = `abort;
+
+        if (AbortConfirmation(abort_question))
+        {
+            SCR::Execute(.background.kill, nil);
+            return ret;
+        }
+        else
+        {
+            ret = nil;
+        }
+    }
+
+    while ((integer)SCR::Read(.background.newlines) == 0 && (boolean)SCR::Read(.background.output_open))
+    {
+        sleep(wait);
+
+        ret = (symbol) UI::PollInput();
+
+        if (ret == `abort || ret == `cancel)
+        {
+            ret = `abort;
+            y2warning("Abort pressed");
+
+            if (AbortConfirmation(abort_question))
+            {
+                SCR::Execute(.background.kill, "");
+                break;
+            }
+            else
+            {
+                ret = nil;
+            }
+        }
+
+	if (Backup::just_creating_archive) {
+	    CheckFreeSpace();
+    	    ret = EvaluateFreeSpace(ret);
+    	    if (ret == `abort) {
+        	break;
+    	    }
+	}
+    }
+
+    return ret;
+}
+
  symbol last_input = nil;
 
  map<integer,integer> deselected_ids = $[];
@@ -48,7 +224,7 @@ textdomain "backup";
  integer modified_size = 0;		// size
  integer modified_num = 0;		// number of modified files
 
- integer wait_time = 500;    // loop delay (in miliseconds)
+
  integer nopkg_num = 0;			// number of found files which do not belong to any package
  integer nopkg_size = 0;			// size
  integer selected_files_num = 0;		// number of selected files to backup
@@ -131,6 +307,8 @@ define void ResetGlobalVariables () {
 
     search_no_package = false;
     reading_installed_packages = false;
+
+    Backup::just_creating_archive = false;
 }
 
 /**
@@ -260,7 +438,7 @@ define boolean InstallNeededPackages (list<string> packages) {
 		`VBox(
 		    // frame label
 		    //rwalter please remove this frame
-		    `Frame(_("Frequency"),
+		    //`Frame(_("Frequency"), as you wish
 			`VBox(
 			    `VSpacing(0.45),
 			    `HBox(
@@ -274,8 +452,8 @@ define boolean InstallNeededPackages (list<string> packages) {
 				`HStretch()
 			    ),
 			    `VSpacing(0.45)
-			)
-		    ),
+			),
+		    //),
 		    `VSpacing(0.45),
 
 		    // frame label
@@ -306,7 +484,7 @@ define boolean InstallNeededPackages (list<string> packages) {
 		    ),
 		    `VSpacing(0.45),
 		    //rwalter we can probably do without this one too.
-		    `Frame(_("Other Settings"),
+		    //`Frame(_("Other Settings"), well, let's see
 			`VBox(
 			    `VSpacing(0.45),
 			    `HBox(
@@ -320,7 +498,7 @@ define boolean InstallNeededPackages (list<string> packages) {
 			    `Left(`CheckBox(`id(`mail), _("S&end Summary Mail to User root"), Backup::mail_summary)),
 			    `VSpacing(0.45)
 			)
-		    )
+		    //)
 		),
 		`HSpacing(2)
 	    )
@@ -1312,31 +1490,32 @@ Enter the filename to use.
  *   nil = may be not enough space (compression is used, impossible to tell exactly)
  */
 
- define boolean is_space(integer required, integer available, symbol target_type) ``{
+ define boolean is_space(integer required, integer available, symbol target_type) {
 
-    if (available < 0)
-    {
+    y2milestone("Checking free space for the backup.");
+
+    if (available < 0) {
 	return false;
     }
 
-    if (contains( [`tgz, `stgz, `tbz, `stbz], target_type))
-    {
+    if (contains( [`tgz, `stgz, `tbz, `stbz], target_type)) {
 	// require at least 10M extra free space (overhead)
-	return (required + 10240 < available) ? true : nil;
-    }
-    else if (target_type == `tar || target_type == `star)
-    {
+	required = required + 10240;
+	y2milestone("Required: %1, Available: %2", required, available);
+	return (required < available) ? true : nil;
+    } else if (target_type == `tar || target_type == `star) {
 	// require at least 10M extra free space (overhead)
-	return required + 10240 < available;
-    }
-    else if (target_type == `txt)
-    {
+	required = required + 10240;
+	y2milestone("Required: %1, Available: %2", required, available);
+	return required < available;
+    } else if (target_type == `txt) {
 	// require at least 500k extra free space (overhead)
-	return required + 500 < available;
-    }
-    else
-    {
+	required = required + 500;
+	y2milestone("Required: %1, Available: %2", required, available);
+	return required < available;
+    } else {
 	y2warning("Unknown archive type: %1", target_type);
+	y2milestone("Required: %1, Available: %2", required, available);
     }
 
     return nil;
@@ -1509,6 +1688,8 @@ define void InitSearchingModifiedDialog () {
     Backup::complete_backup = [];
 
     selected_pkg_num = 0;
+
+    Backup::selected_files = $[];
 }
 
 
@@ -1527,11 +1708,11 @@ define void Search_ProcessInstalledPackages () {
 define void Search_ChangedPackageFiles () {
 		    // store package's changed files
 		    if (size(package_files) > 0) {
-			Backup::backup_files = add(Backup::backup_files, actual_package, $[
+			Backup::selected_files[actual_package] = $[
 			    "changed_files" : package_files,
 			    "install_prefixes" : actual_instprefixes
-			]);
-			package_files = [ ];
+			];
+			package_files = [];
 			selected_pkg_num = selected_pkg_num + 1;
 		    }
 
@@ -1583,11 +1764,11 @@ define void Search_ModifiedFiles () {
 
 define void Search_NonPackageFile () {
 			    if (size(package_files) > 0) {
-				Backup::backup_files = add(Backup::backup_files, actual_package, $[
+				Backup::selected_files[actual_package] = $[
 				    "changed_files" : package_files,
 				    "install_prefixes" : actual_instprefixes
-				]);
-				package_files = [ ];
+				];
+				package_files = [];
 				selected_pkg_num = selected_pkg_num + 1;
 			    }
 
@@ -1666,6 +1847,16 @@ define void SetDialogContents_SearchingFiles () {
 		),
 		backup_help_searching_files(), false, false
 	    );
+}
+
+// Function might be removed, only for testing memory spent...
+define string MemorySpent () {
+    string command = "LC_ALL=C /bin/ps auxw | grep \"\\(y2base\\|^USER\\)\" | grep -v \"grep\"";
+    map <string, any> run_ps = (map <string, any>) SCR::Execute(.target.bash_output, command);
+    if ((integer) run_ps["exit"]:0 != 0) {
+	y2warning("MemorySpent Error: '%1'", (string) run_ps["stderr"]:"");
+    }
+    return (string) run_ps["stdout"]:"";
 }
 
 /**
@@ -1757,10 +1948,10 @@ Back up will be aborted.
     // end of the 'while' backround script runs
 
     if (size (package_files) > 0) {
-	Backup::backup_files = add(Backup::backup_files, actual_package, $[
+	Backup::selected_files[actual_package] = $[
 	    "changed_files" : package_files,
 	    "install_prefixes" : actual_instprefixes
-	]);
+	];
 	selected_pkg_num = selected_pkg_num + 1;
     }
 
@@ -1888,10 +2079,10 @@ Back up will be aborted.
 	    }
 	}
 
-	Backup::backup_files = add(Backup::backup_files, actual_package, $[
+	Backup::selected_files[actual_package] = $[
 	    "changed_files" : merge(package_files, package_files_part),
 	    "install_prefixes" : actual_instprefixes
-	]);
+	];
     }
 
     search_time = time() - search_time;
@@ -1901,8 +2092,11 @@ Back up will be aborted.
     dparts = remove(dparts, size(dparts) - 1);
     string tdir = mergestring(dparts, "/");
 
+    // just for other functions
+    Backup::target_dir = tdir;
+
     // check available space
-    if (check_space(nopkg_size + modified_size, Backup::tmp_dir, tdir, Backup::archive_type) == false)
+    if (check_space(nopkg_size + modified_size, Backup::tmp_dir, Backup::target_dir, Backup::archive_type) == false)
     {
 	// there is no space, user selected not to continue
 	if (Backup::cron_mode) {
@@ -1914,53 +2108,39 @@ Back up will be aborted.
 
     if (Backup::display && !Backup::no_interactive)
     {
-	if (Backup::selected_files == nil)
-	{
-	    Backup::selected_files = (map<string,map>)eval(Backup::backup_files);
+	if (Backup::selected_files == $[]) {
+	    Backup::selected_files = nil;
 	}
 
 	return `next;
     }
     else
     {
-	// no manual selection, backup all files
-	Backup::selected_files = (map<string,map>)eval(Backup::backup_files);
-
 	// skip the files listed in Backup::unselected_files
-	if (Backup::unselected_files != nil)
-	{
+	if (Backup::unselected_files != nil) {
 	    // try to find each file in selected files
-	    foreach(string file, Backup::unselected_files,
-	    ``{
+	    foreach(string file, Backup::unselected_files, {
 		map new_selected = $[ ];
-		foreach(string pak, map val, Backup::selected_files,
-		``{
+		foreach(string pak, map val, Backup::selected_files, {
 		    list<string> changed_files = ((list<string>)(val["changed_files"]:[ ]));
-		    if( contains( changed_files , file ) )
-		    {
+		    if( contains( changed_files , file ) ) {
 			changed_files = filter( string v, changed_files, ``(v != file) );
 
 			// construct new package description
-			val = $[ "changed_files" : changed_files,
-			         "install_prefixes" : val["install_prefixes"]:[] ];
-		    }
-		    new_selected = add( new_selected, pak, val );
-		}
-		);
-		Backup::selected_files = (map<string,map>)eval(new_selected);
-	    }
-	    );
+			Backup::selected_files[pak, "changed_files"] = changed_files;
+			Backup::selected_files[pak, "install_prefixes"] = val["install_prefixes"]:[];
+		    }    
+		});
+	    });
 	    y2milestone("Filtered out unselected files according to profile");
 	}
 
 	// count number of files
 	selected_files_num = 0;
 
-	foreach(string pak, map val, Backup::selected_files,
-	    ``{
+	foreach(string pak, map val, Backup::selected_files, {
 		selected_files_num = selected_files_num + size( val["changed_files"]:[] );
-	    }
-	);
+	});
 
 	return (Backup::display && !Backup::cron_mode) ? `next : `next2;	// `next2 = skip file selection dialog
     }
@@ -2087,14 +2267,12 @@ Back up will be aborted.
 	    {
 		Backup::unselected_files = [];
 		deselected_ids = $[];
-		Backup::selected_files = (map<string,map>)eval(Backup::backup_files);
 	    }
 	    else
 	    {
-		Backup::selected_files = $[];
 		Backup::unselected_files = [];
 
-		foreach(string pack, map info, Backup::backup_files, ``{
+		foreach(string pack, map info, Backup::selected_files, ``{
 			Backup::unselected_files = (list<string>)merge(Backup::unselected_files, info["changed_files"]:[]);
 		    }
 		);
@@ -2108,9 +2286,6 @@ Back up will be aborted.
 		    desel_num = desel_num - 1;
 		}
 	    }
-
-	    // reducing amount of memory spent, clearing all huge map after its expiration of need
-	    Backup::backup_files = $[];
 
 	    UI::CloseDialog();
 	    UI::ChangeWidget(`id(`table), `Items,
@@ -2151,14 +2326,13 @@ Back up will be aborted.
 		    }
 
 		    // remove from selected files
-		    map info = (map)eval(Backup::selected_files[package_name]:$[]);
+		    map info = Backup::selected_files[package_name]:$[];
 		    if (size(info) > 0)
 		    {
 			list<string> chfiles = info["changed_files"]:[];
 			chfiles = filter(string fn, chfiles, ``(fn != file_name));
 
-			info["changed_files"] = chfiles;
-			Backup::selected_files[package_name] = eval(info);
+			Backup::selected_files[package_name, "changed_files"] = chfiles;
 		    }
 		    y2milestone("File %1 removed from %2", file_name, package_name);
 		}
@@ -2171,15 +2345,14 @@ Back up will be aborted.
 		    deselected_ids = remove(deselected_ids, current_item);
 
 		    // add to selected
-		    map info = (map)eval(Backup::selected_files[package_name]:$[]);
+		    map info = Backup::selected_files[package_name]:$[];
 		    list chfiles = info["changed_files"]:[];
 
 		    if (!contains(chfiles, file_name))
 		    {
 			chfiles = add(chfiles, file_name);
-			info["changed_files"] = chfiles;
 
-			Backup::selected_files[package_name] = eval(info);
+			Backup::selected_files[package_name, "changed_files"] = chfiles;
 		    }
 
 		    y2milestone("File %1 added to %2", file_name, package_name);
@@ -2246,9 +2419,7 @@ define void CreateProgress_ArchivingDialog() {
     selected_info = Backup::MapFilesToString();
     selected_files_num = selected_info["sel_files"]:0;
     selected_pkg_num = selected_info["sel_packages"]:0;
-
     
-
     // number of steps = number of selected files + nuber of selected packages (selected files added below)
     //			+ 6 files (comment, hostname, date, files, installed_packages, packages_info)
     //			+ 3 steps (comment, hostname, installed PRMs)
@@ -2326,40 +2497,21 @@ define void CreateProgress_ArchivingDialog() {
  * @return symbol Symbol for wizard sequencer - pressed button
  */
 
- define symbol ArchivingDialog() ``{
+ define symbol ArchivingDialog() {
     // Creating Progress Bar/Steps
     CreateProgress_ArchivingDialog();
 
     symbol ret = nil;
 
     integer progress_count = selected_pkg_num + selected_files_num;
+    if (progress_count<1) {
+	progress_count = 1;
+    }
 
     y2milestone("Number of selected packages: %1, selected files: %2", selected_pkg_num, selected_files_num);
-    y2milestone("Storing file names list...");
 
-    // store selected file names to the temporary file
-    string tmp_dir = (string)SCR::Read(.target.tmpdir);
-    string tmpfile_list = tmp_dir + "/filelist";
-    file_list_stored = (boolean) SCR::Write(.target.string, tmpfile_list + "_tmp", selected_info["filelist"]:"");
-
-    // replace the double backslashes with single ones
-    if ((integer) SCR::Execute(.target.bash,
-	sformat("cd %1; sed 's/\\\\\\\\/\\\\/g' filelist_tmp > filelist", tmp_dir)
-    ) != 0) {
-	file_list_stored = false;
-    } else {
-	// free the disk
-	SCR::Execute(.target.remove, tmpfile_list + "_tmp");
-    }
-    // free the memory
-    selected_info["filelist"] = "";
-
-    if (!file_list_stored) {
-	// a popup error message
-	Report::Error(sformat(_("Cannot write the list of selected files to file %1."), tmpfile_list));
-    } else {
-	y2milestone("File names stored");
-    }
+    file_list_stored = selected_info["file_list_stored"]:false;
+    string tmpfile_list = (string) SCR::Read(.target.tmpdir) + "/filelist";
 
     // store comment to file
     string tmpfile_comment = (string)SCR::Read(.target.tmpdir) + "/comment";
@@ -2407,9 +2559,15 @@ Aborting back up.
 
     y2milestone("Creating archive...");
 
+    Backup::just_creating_archive = true;
     while(((boolean)SCR::Read(.background.output_open)) == true || ((integer)(SCR::Read(.background.newlines)) > 0))
     {
-	script_out = (list<string>)(SCR::Read(.background.newout));
+	script_out = (list<string>) SCR::Read(.background.newout);
+	
+	// script returned some lines, no check the free space
+	if (size(script_out)>0) {
+	    waiting_without_output = 0;
+	}
 
 	while (size(script_out) > 0)
 	{
@@ -2625,20 +2783,22 @@ Aborting back up.
 		}
 	    }
 
-	    if (Backup::cron_mode)
-	    {
-		// in cron mode only wait for subprocess
-		while ((integer)SCR::Read(.background.newlines) == 0 && (boolean)SCR::Read(.background.output_open))
-		{
+	    if (Backup::cron_mode) {
+		// in cron mode only wait for subprocess (and free space!)
+		while ((integer) SCR::Read(.background.newlines) == 0 && (boolean) SCR::Read(.background.output_open) && enough_free_space_tmp && enough_free_space_target) {
 		    sleep(wait_time);
+		    CheckFreeSpace();
 		}
 
 		ret = nil;
-	    }
-	    else
-	    {
+	    } else {
 		ret = waitForUserOrProcess(wait_time, `changed);
+		CheckFreeSpace();
 	    }
+
+	    // evaluetest the free space, asks user when there not enough free space
+	    // changes ret symbol when needed
+	    ret = EvaluateFreeSpace(ret);
 
 	    if (ret != nil)
 	    {
@@ -2650,6 +2810,8 @@ Aborting back up.
 
     }
 
+    Backup::selected_files = $[];
+
     if (ret == `abort)
     {
 	// remove incomplete backup archive file
@@ -2659,6 +2821,7 @@ Aborting back up.
     {
 	// write autoinstallation profile
 	Progress::NextStage();
+
 	profilewritten = Backup::WriteProfile(created_archive_files);
     }
 

@@ -186,6 +186,8 @@ global boolean backup_none_ext2 = default_backup_none_ext2;		// backup none ext2
 global boolean backup_selected_ext2 = default_backup_selected_ext2;	// backup selected ext2 partitions
 
 global string tmp_dir = default_tmp_dir;
+// archive target dir used in functions
+global string target_dir = "";
 
 global boolean cron_mode = false;
 global string cron_profile = "";
@@ -227,6 +229,9 @@ map detected_mpoints = nil;
 
 // media description - capacity is maximum file size which fits
 // to formatted medium using widely used file system (FAT on floppies)
+
+// just archiving
+global boolean just_creating_archive = false;
 
 global list< map<string,any> > cd_media_descriptions = [
     $[
@@ -1643,52 +1648,86 @@ global define string GetLocalArchiveName() ``{
 }
 
 /**
- * Returns string generated from selected files list. String is in format which
+ * Writes file using the .backup.file_append SCR agent. This file
  * is accepted by backup_archive.pl script. Used global variables:
  * selected_files, backup_files.
- * @return map map with keys "filelist" (string - list of files), "sel_files"
- *	(integer - number of selected files), "sel_packages" (integer: number
- *	of selected packages).
+ *
+ * @return map with keys
+ *	"sel_files" (integer - number of selected files),
+ *	"sel_packages" (integer: number of selected packages),
+ *	"ret_file_list_stored" (boolean: whether the filelist has been completely stored)
  * @see <a href="../backup_specification.html">Backup module specification</a>
  */
 
-global define map MapFilesToString() ``{
-    string result = "";
+global define map MapFilesToString () {
     integer num_files = 0;
     integer num_pack = 0;
 
-    if (Backup::selected_files == nil || Backup::backup_files == nil)
-    {
+    if (Backup::selected_files == nil) {
 	return $[];
     }
 
-    foreach(string pkg, map info, Backup::selected_files,
-        ``{
-            if (pkg != "")
-            {
-		string tmp = "Package: " + pkg + "\nInstalled: "
-		    + Backup::backup_files[pkg, "install_prefixes"]:"(none)" + "\n";
-
-		list<string> chfiles = info["changed_files"]:[];
-		result = result + tmp + mergestring(chfiles, "\n") + "\n";
-
-		num_files = num_files + size(chfiles);
-		num_pack = num_pack + 1;
-            }
-        }
+    UI::OpenDialog(
+	`Left(`Label(
+	    // busy message
+	    _("Creating list of files for the backup...")
+	))
     );
 
-    list<string> nopkg = (list<string>) (Backup::selected_files["", "changed_files"]:[]);
+    y2milestone("Storing filenames list...");
+    string filelist_tmpfile = (string) SCR::Read(.target.tmpdir) + "/filelist";
+    boolean ret_file_list_stored = true;
+    boolean flist_appended = nil;
 
-    if (size(nopkg) > 0)
-    {
-	result = result + "Nopackage:\n" + mergestring(nopkg, "\n") + "\n";
+    foreach(string pkg, map info, Backup::selected_files, {
+	if (pkg != "") {
+		flist_appended = SCR::Write(.backup.file_append, [
+		    filelist_tmpfile,
+		    "Package: " + pkg + "\n" +
+		    "Installed: " + info["install_prefixes"]:"(none)" + "\n" +
+		    mergestring(info["changed_files"]:[], "\n") + "\n"
+		]);
+		if (!flist_appended) {
+		    ret_file_list_stored = false;
+		    // a popup error, %1 is as file name
+		    Report::Error(sformat(_("Cannot write the list of selected files to file %1."), filelist_tmpfile));
+		    break;
+		}
 
-	num_files = num_files + size(nopkg);
-	num_pack = num_pack + 1;
-    }
+		num_files = num_files + size(info["changed_files"]:[]);
+		num_pack = num_pack + 1;
+        }
+    });
 
-    return $[ "filelist" : result, "sel_files" : num_files, "sel_packages" : num_pack ];
+    // huge amount of files, write by one (or using a buffer)
+    flist_appended = SCR::Write(.backup.file_append,[
+	filelist_tmpfile,
+	"Nopackage:\n"
+    ]);
+    foreach (string changed_file, Backup::selected_files["", "changed_files"]:[], {
+	flist_appended = SCR::Write(.backup.file_append,[
+	    filelist_tmpfile,
+	    changed_file + "\n"
+	]);
+	if (!flist_appended) {
+	    ret_file_list_stored = false;
+	    // a popup error, %1 is as file name
+	    Report::Error(sformat(_("Cannot write the list of selected files to file %1."), filelist_tmpfile));
+	    break;
+	}
+	    
+	num_files = num_files + 1;
+    });
+    num_pack = num_pack + 1;
+
+    y2milestone("Filename stored");
+
+    // free the lizard
+    Backup::selected_files = $[];
+
+    UI::CloseDialog();
+
+    return $[ "sel_files" : num_files, "sel_packages" : num_pack, "file_list_stored" : ret_file_list_stored ];
 }
 
 /**
