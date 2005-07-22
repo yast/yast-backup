@@ -1,0 +1,989 @@
+/**
+ *  File:
+ *    functions.ycp
+ *
+ *  Module:
+ *    Backup module
+ *
+ *  Authors:
+ *    Ladislav Slezak <lslezak@suse.cz>
+ *
+ *  $Id$
+ *
+ *  Functions used by backup module.
+ */
+
+
+{
+
+import "Label";
+import "Report";
+
+import "Nfs";
+import "Popup";
+import "FileUtils";
+import "Mode";
+
+textdomain "backup";
+
+
+/**
+ * Display abort confirmation dialog
+ * @param type Select dialog type, possible values: `changed, `not_changed or `none for none dialog
+ * @return boolean False if user select to not abort, true otherwise.
+ */
+
+define boolean AbortConfirmation(symbol type) ``{
+
+    boolean ret = nil;
+
+    // popup dialog header
+    string heading = _("Abort Confirmation");
+    // popup dialog question
+    string question = _("Really abort the backup?");
+    string yes = Label::YesButton();
+    string no = Label::NoButton();
+
+    if (type == `changed)
+    {
+	ret = Popup::AnyQuestion(heading, question, yes, no, `focus_no);
+    }
+    else
+    {
+	if (type == `not_changed)
+	{
+	    ret = Popup::AnyQuestion(heading, question, yes, no, `focus_yes);
+	}
+	else
+	{
+	    if (type == `none)
+	    {
+		ret = true;
+	    }
+	    else
+	    {
+		y2warning("Unknown type of abort confirmation dialog: %1", type);
+	    }
+	}
+    }
+
+    return ret;
+}
+
+
+/**
+ * Ask user for some value: display dialog with label, text entry and OK/Cancel buttons.
+ * @param label Displayed text above the text entry in the dialog
+ * @param value Default text in text entry, for empty text set value to "" or nil
+ * @return map Returned map: $[ "text" : string, "clicked" : symbol ]. Value with key text is string entered by user, symbol is `ok or `cancel depending which button was pressed.
+ */
+
+ define map ShowEditDialog(string label, string value, list<string> values) ``{
+
+    if (label == nil)
+    {
+	label = "";
+    }
+
+    if (value == nil)
+    {
+	value = "";
+    }
+
+    list<term> combo_content = [];
+
+    if (values != nil && size(values) > 0)
+    {
+	combo_content = maplist(string v, values, ``(`item(`id(v), v, v == value)));
+    }
+
+    UI::OpenDialog(
+	`VBox(
+	    ((size(combo_content) > 0) ? `ComboBox(`id(`te), `opt(`hstretch, `editable), label, combo_content) : `TextEntry(`id(`te), label, value)),
+	    `VSpacing(1.0),
+	    `HBox(
+	        `PushButton(`id(`ok), `opt(`default, `key_F10), Label::OKButton()),
+		`PushButton(`id(`cancel), `opt(`key_F9), Label::CancelButton())
+	    )
+	)
+    );
+
+    UI::SetFocus(`id(`te));
+
+    symbol input = (symbol) UI::UserInput();
+
+    string text = (string) UI::QueryWidget(`id(`te), `Value);
+    UI::CloseDialog();
+
+    return $[ "text" : text, "clicked" : input ];
+}
+
+
+/**
+ * Returns list of mounted file systems types.
+ * @return list List of strings, each mounted file system type is reported only onetimes, list is alphabetically sorted.
+ * @example GetMountedFilesystems() -> [ "devpts", "ext2", "nfs", "proc", "reiserfs" ]
+ */
+
+ define list<string> GetMountedFilesystems() ``{
+    list<map<string, any> > mounted = (list<map<string, any> >) SCR::Read(.proc.mounts);
+    list<string> result = [ ];
+
+    if (mounted == nil)
+    {
+	return [];
+    }
+
+    foreach(map<string, any> m, mounted,
+	``{
+	    string fs = (string) (m["vfstype"]:nil);
+
+	    if (fs != nil)
+	    {
+		result[size(result)] = fs;
+	    }
+	}
+    );
+
+    return toset(result);
+}
+
+
+/**
+ * Returns list of Ext2 mountpoints - actually mounted and from /etc/fstab file
+ * @return list List of strings
+ * @example Ext2Filesystems() -> [ "/dev/hda1", "/dev/hda4" ]
+ */
+
+ define list<map<string, any> > Ext2Filesystems() ``{
+    list<map<string, any> > mounted = (list<map<string, any> >) SCR::Read(.proc.mounts);
+    list<map<string, any> > ext2mountpoints = [ ];
+    list tmp_parts = [];
+
+    if (mounted != nil)
+    {
+	foreach(map<string, any> m, mounted,
+	    ``{
+		string fs = (string) (m["vfstype"]:nil);
+		string dev = (string) (m["spec"]:nil);
+		string file = (string) (m["file"]:nil);
+
+		if (fs == "ext2" && dev != nil && !contains(tmp_parts, dev))
+		{
+		    ext2mountpoints = add(ext2mountpoints, $[ "partition" : dev, "mountpoint" : file ]);
+		    tmp_parts = add(tmp_parts, dev);
+		}
+	    }
+	);
+    }
+
+    list<map<string, any> > fstab = (list<map<string, any> >)SCR::Read(.etc.fstab);
+
+    if (fstab != nil)
+    {
+	foreach(map<string, any> f, fstab,
+	    ``{
+		string fs = (string) (f["vfstype"]:nil);
+		string dev = (string) (f["spec"]:nil);
+		string file = (string) (f["file"]:nil);
+
+		if (fs == "ext2" && dev != nil && !contains(tmp_parts, dev))
+		{
+		    ext2mountpoints = add(ext2mountpoints, $[ "partition" : dev, "mountpoint" : file ]);
+		    tmp_parts = add(tmp_parts, dev);
+		}
+	    }
+	);
+    }
+
+    return ext2mountpoints;
+}
+
+
+/**
+ * This function reads two lists: full list and selection list (contains subset of items in full list). Returned list can be used in MultiSelectionBox widget.
+ * @return list List of alphabetically sorted strings
+ * @param in List of items
+ * @param selected List with subset of items from list in.
+ * @example GetListWithFlags(["/dev", "/etc"], ["/etc"]) -> [`item (`id ("/dev"), "/dev", false), `item (`id ("/etc"), "/etc", true)]
+ */
+
+ define list<term> GetListWithFlags(list<string> in, list<string> selected) ``{
+
+    if (in == nil)
+    {
+	return [];
+    }
+
+    return maplist(string i, in, ``{
+	return `item(`id(i), i, (contains(selected, i) ? true : false));
+    });
+}
+
+/**
+ * Set boolean value val to all items in list.
+ * @return list List of items
+ * @param in Input list of items
+ * @param val Requested value
+ * @example AddIdBool( [ `item(`id("ext2"), "ext2", true) ], false) ) -> [ `item (`id ("ext2"), "ext2", false) ]
+ */
+
+ define list<term> AddIdBool(list in, boolean val) ``{
+    if (val == nil)
+    {
+	val = false;
+    }
+
+    if (in == nil)
+    {
+	return [];
+    }
+
+    return maplist(any i, in, ``{
+	term tmp_id = nil;
+	string tmp_s = nil;
+
+	boolean isterm = is(i,term);
+
+	if (isterm)
+	{
+	    term ti = (term)i;
+	    tmp_id = (term)ti[0]:nil;
+	    tmp_s = (string)ti[1]:nil;
+	}
+
+        return (isterm && tmp_id != nil && tmp_s != nil) ? `item(tmp_id, tmp_s, val) : nil;
+    });
+}
+
+
+/**
+ * Returns list of items from list of values.
+ * @return list List of items
+ * @param in Input list of values
+ * @example AddId("abc", "123") -> [`item(`id("abc"), "abc"), `item(`id("123"), "123")]
+ */
+
+ define list<term> AddId(list<string> in) ``{
+    if (in == nil) return [];
+
+    return maplist(string i, in, ``{
+	return `item(`id(i), i);
+    });
+}
+
+
+/**
+ * Returns list of items from list of values.
+ * @return list List of items
+ * @param in Input list of maps with keys "partition", "mountpoints" and strings as values
+ * @example AddId([ $["partition" : "/dev/hda3", "mountpoint" : "/usr"] ]) -> [`item(`id("/dev/hda3"), "/dev/hda3", "/usr")]
+ */
+
+ define list<term> AddIdExt2(list<map<string, any> > in) ``{
+
+    if (in == nil) return [];
+
+    return maplist(map<string, any> i, in, ``{
+	string pt = (string)(i["partition"]:nil);
+	string mp = (string)(i["mountpoint"]:nil);
+
+        return `item(`id(pt), pt, mp);
+    });
+}
+
+/**
+ * Convert media description list to ComboBox items list
+ * @param media Medium descriptions - list of maps with keys (and values): "label" (description string), "symbol" (identification symbol), "capacity" (size of free space on empty medium)
+ * @return list Items list for UI widgets
+ */
+
+ define list<term> MediaList2UIList(list<map<string, any> > media) ``{
+    list<term> result = [];
+
+    if (media == nil)
+    {
+	return [];
+    }
+
+    foreach(map<string, any> v, media,
+	``{
+	    symbol i = (symbol)(v["symbol"]:nil);
+	    string l = (string)(v["label"]:nil);
+
+	    if (i != nil && l != nil)
+	    {
+		result = add(result, `item(`id(i), l));
+	    }
+	}
+    );
+
+    return result;
+}
+
+
+/**
+ * Set state of depending widgets in Multiple volume options dialog
+ * @return void
+ */
+
+ define void SetMultiWidgetsState() ``{
+    boolean tmp_multi = (boolean)UI::QueryWidget(`id(`multi_volume), `Value);
+    UI::ChangeWidget(`id(`vol), `Enabled, tmp_multi);
+
+    boolean user = (tmp_multi && ((symbol)UI::QueryWidget(`id(`vol), `Value)) == `user_defined);
+    UI::ChangeWidget(`id(`user_size), `Enabled, user);
+    UI::ChangeWidget(`id(`user_unit), `Enabled, user);
+}
+
+/**
+ * Return mount point for Ext2 partition. This function at first checks if partition is mounted. If yes it returns actual mout point, if no it searches mount point from /etc/fstab file.
+ * @param device_name Name of device
+ * @return string Mount point of device or nil if device does not exist or there is other file system than Ext2
+ * @example Ext2MountPoint("/dev/hda1") -> "/boot"
+ */
+
+ define string Ext2MountPoint(string device_name) ``{
+    // chack if partition is now mounted
+    list<map<string, any> > mp = (list<map<string, any> >)SCR::Read(.proc.mounts);
+    string result = nil;
+
+    if (mp != nil)
+    {
+	foreach(map<string, any> p, mp,
+	    ``{
+		string d = (string) (p["file"]:nil);
+		string dev = (string) (p["spec"]:nil);
+		string fs = (string) (p["vfstype"]:nil);
+
+		if (fs == "ext2" && dev == device_name)
+		{
+		    result = d;
+		}
+	    }
+	);
+    }
+
+    // if partition is not mounted then search mount point from fstab
+    if (result == nil)
+    {
+	list<map<string, any> > fstab = (list<map<string, any> >) SCR::Read(.etc.fstab);
+
+	if (fstab != nil)
+	{
+	    foreach(map<string, any> p, fstab,
+		``{
+		    string d = (string) (p["file"]:nil);
+		    string dev = (string) (p["spec"]:nil);
+		    string fs = (string) (p["vfstype"]:nil);
+
+		    if (fs == "ext2" && dev == device_name)
+		    {
+			result = d;
+		    }
+		}
+	    );
+	}
+    }
+
+    return result;
+}
+
+
+/**
+ * Add extension to the file name if it is missing.
+ * @param file filname
+ * @param extension file extension (with dot)
+ * @return string filename with extension
+ * @example AddMissingExtension("filename", ".ext") -> "filename.ext"
+ * @example AddMissingExtension("filename.tar", ".gz") -> "filename.tar.gz"
+ * @example AddMissingExtension("filename.tar", ".tar") -> "filename.tar"
+ */
+ define string AddMissingExtension(string file, string extension)
+``{
+    // input check
+    if (file == nil)
+    {
+	return "";
+    }
+
+    if (extension == nil)
+    {
+	return file;
+    }
+
+    list<string> dirs = splitstring(file, "/");
+    string filename = dirs[size(dirs) - 1]:file;
+
+    string result = "";
+
+    // check if file can contain extension
+    if (size(filename) >= size(extension))
+    {
+	// add extension only if it is missing
+	filename = (substring(filename, size(filename) - size(extension)) != extension) ? filename + extension : filename;
+    }
+    else
+    {
+	filename = filename + extension;
+    }
+
+    if (size(dirs) > 0)
+    {
+	dirs = remove(dirs, size(dirs) - 1);
+    }
+
+    dirs = add(dirs, filename);
+    result = mergestring(dirs, "/");
+
+    return result;
+}
+
+/**
+ * Get base file name without extension
+ * @param file file name
+ * @return string base file name
+ * @example GetBaseName("file.ext") -> "file"
+ * @example GetBaseName("file") -> "file"
+ * @example GetBaseName("dir/file.ext") -> "file"
+ */
+ define string GetBaseName(string file)
+``{
+    string result = "";
+
+    if (file == nil || file == "")
+    {
+	return result;
+    }
+
+    list<string> dirs = splitstring(file, "/");
+    string filename = dirs[size(dirs) - 1]:"";
+
+    list<string> parts = splitstring(filename, ".");
+
+    if (size(parts) > 1)
+    {
+	// remove last part (extension)
+	parts = remove(parts, size(parts) - 1);
+	filename = mergestring(parts, ".");
+    }
+
+    result = filename;
+
+    return result;
+}
+
+/**
+ * Send mail to specified user
+ * @param user Target email address
+ * @param subject Subject string
+ * @param message Message body
+ * @return boolean True on success
+ */
+ define boolean SendMail(string user, string subject, string message) ``{
+    // check user
+    if (user == "" || user == nil)
+    {
+	return false;
+    }
+
+    // get temporary directory
+    string d = (string)SCR::Read(.target.tmpdir);
+    if (d == "" || d == nil)
+    {
+	y2security("Using /tmp directory for temporary files!");
+	d = "/tmp";
+    }
+
+    string mail_file = d + "/mail";
+
+    // write mail body to the temporary file
+    if (SCR::Write(.target.string, mail_file, message) == false)
+    {
+	return false;
+    }
+
+    // send mail - set UTF-8 charset for message text
+    return (SCR::Execute(.target.bash, "export charset=UTF-8; export ttycharset=UTF-8; /bin/cat " + mail_file + " | /usr/bin/mail " + user + " -s '" + subject + "'") == 0);
+}
+
+/**
+ * Create string from character ch with the same lenght as input
+ * @param input Input string
+ * @param ch String used in output
+ * @return string String containg size(input) character
+ */
+ define string CreateUnderLine(string input, string ch) ``{
+    integer len = size(input);
+    string ret = "";
+
+    while(len > 0)
+    {
+	ret = ret + ch;
+	len = len - 1;
+    }
+
+    return ret;
+}
+
+/**
+ * Send summary mail of the backup process to root.
+ * @param remove_result Result of removing/renaming of the old archives
+ * @return boolean True on success
+ */
+ define boolean SendSummary(map remove_result, string cron_profile, string backup_result, string backup_details) ``{
+    string br = "\n";
+
+    // e-mail subject - %1 is profile name
+    string subject = sformat(_("YaST Automatic Backup (%1)"), cron_profile);
+
+    // get all warnings and errors from Report module
+    string reported = Report::GetMessages((Report::NumWarnings() > 0), (Report::NumErrors() > 0), false, false);
+    // TODO: remove richtext tags from Report:: result
+
+    if (Report::NumErrors() > 0)
+    {
+	// text added to the subject if an error occured
+	subject = subject + _(": FAILED");
+    }
+
+    y2debug("remove_result: %1", remove_result);
+
+    string removed = "";
+    if (size(remove_result["removed"]:[]) > 0)
+    {
+	// header in email body followed by list of files
+	removed = _("Removed Old Archives:") + br;
+
+	foreach(string f, remove_result["removed"]:[], ``{
+		removed = removed + f + br;
+	    }
+	);
+    }
+
+    string renamed = "";
+    if (size(remove_result["renamed"]:$[]) > 0)
+    {
+	// header in email body followed by list of files
+	renamed = _("Renamed Old Archives:") + br;
+
+	foreach(string from, string to, remove_result["renamed"]:$[], ``{
+		renamed = renamed + from + " -> " + to + br;
+	    }
+	);
+    }
+
+    // header in email body
+    string oldarch = _("Changed Existing Archives:");
+    string ren_header = (size(renamed) > 0 || size(removed) > 0) ? oldarch + br + CreateUnderLine(oldarch, "=") : "";
+
+    // header in email body
+    string summary_heading = _("Summary:");
+    // header in email body
+    string detail_heading = _("Details:");
+
+    // header in email body
+    string body = sformat(_("BACKUP REPORT for Profile '%1'"), cron_profile) + br + br + br
+	// header in email body followed by errors or warnings
+	+ ((size(reported) > 0) ? _("Problems During Automatic Backup:") + br + reported + br + br : "")
+	+ summary_heading + br + CreateUnderLine(summary_heading, "=") + br + br + backup_result + br
+	+ ((size(ren_header) > 0) ? ren_header + br + br + renamed + br + br + removed + br + br : "")
+	+ detail_heading + br + CreateUnderLine(detail_heading, "=") + br + br + backup_details;
+
+    if (SendMail("root", subject, body) == false)
+    {
+	y2error("Cannot send report");
+	return false;
+    }
+
+    return true;
+}
+
+/**
+ * Convert number of second since 1.1.1970 to string. Result has format YYYYMMDDHHMMSS
+ * @param sec Number of seconds
+ * @return string String representation of the time, returns input value (sec) if an error occured
+ */
+ define string SecondsToDateString(integer sec) ``{
+    // convert seconds to time string - use localtime function in perl
+    map result = (map)SCR::Execute(.target.bash_output, "/usr/bin/perl -e '($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(" + sformat("%1", sec) + ");
+$mon++;
+$year += 1900;
+printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
+
+    string ret  = (result["exit"]:-1 == 0) ? result["stdout"]:sformat("%1", sec) : sformat("%1", sec);
+    y2debug("time string: %1", ret);
+
+    return ret;
+}
+
+
+
+/**
+ * Read packages available on the installation sources
+ * (Requires at least one installation source, otherwise return empty list)
+ * @return list<string> available packages
+ */
+ define list<string> GetInstallPackages() ``{
+    y2milestone("Reading packages available on the installation sources...");
+
+    // fake return for testsuites
+    if (Mode::test()) {
+	y2milestone("SKIPPING");
+	return [];
+    }
+
+    Pkg::TargetInit("/", false);
+
+    // list of available enabled installation sources
+    list<integer> sources = Pkg::SourceStartCache(true);
+    y2debug("availables sources: %1", sources);
+
+    // list of installed products (last installed is first in the list)
+    list installed_products = Pkg::TargetProducts();
+    y2debug("installed products: %1", installed_products);
+
+    // installation sources for installed products
+    list<integer> product_sources = [];
+
+    // user defined installation sources
+    list<integer> nonproduct_sources = [];
+
+    if (size(sources) > 0)
+    {
+	foreach(integer source_id, sources,
+	    ``{
+		map source_description = Pkg::SourceProduct(source_id);
+
+		y2debug("Source %1 description: %2", source_id, source_description);
+
+		// TODO: really compare whole maps? Have they same keys?
+		if (contains(installed_products, source_description))
+		{
+		    product_sources = add(product_sources, source_id);
+		}
+		else
+		{
+		    nonproduct_sources = add(nonproduct_sources, source_id);
+		}
+	    }
+	);
+    }
+    else
+    {
+	y2warning("No installation source configured");
+    }
+
+    y2debug("product sources: %1", product_sources);
+    y2debug("non product sources: %1", nonproduct_sources);
+
+    // TODO: use better solution than temporal disabling of the installation sources
+    //       probably Pkg::GetPackages(`installed, false) should be extened to
+    //       Pkg::GetPackages(`installed, false, source_id)
+
+    // temporaly disable non-product installation sources
+    if (size(nonproduct_sources) > 0)
+    {
+	foreach(integer source_id, nonproduct_sources,
+	    ``{
+		boolean res = Pkg::SourceSetEnabled(source_id, false);
+
+		if (res == false)
+		{
+		    y2error("Cannot disable installation source %1", source_id);
+		}
+	    }
+	);
+    }
+
+    // get all available packages at the product installation sources
+    list<string> installation_packages = Pkg::GetPackages(`available, false);
+
+    // reenable disabled non-product installation sources
+    if (size(nonproduct_sources) > 0)
+    {
+	foreach(integer source_id, nonproduct_sources,
+	    ``{
+		boolean res = Pkg::SourceSetEnabled(source_id, true);
+
+		if (res == false)
+		{
+		    y2error("Cannot enable installation source %1", source_id);
+		}
+	    }
+	);
+    }
+
+    // convert package description to rpm format
+    // ("pkg version release arch" -> "pkg-version-release")
+    installation_packages = maplist(string pkginfo, installation_packages,
+	``{
+	    list<string> parts = splitstring(pkginfo, " ");
+
+	    return sformat("%1-%2-%3", parts[0]:"", parts[1]:"", parts[2]:"");
+	}
+    );
+
+    y2debug("available packages: %1", installation_packages);
+
+    // Clear the packagemanager cache
+    Pkg::SourceFinishAll();
+
+    return installation_packages;
+}
+
+/**
+ * Store autoyast profile of the system to file
+ * @param filename where setting will be saved
+ * @param additional additional part of system to clone
+ * @param extra_key name of the extra configuration
+ * @param extra_options options for extra_key
+ * @return boolean true on success
+ */
+ define boolean CloneSystem(string filename, list<string> additional, string extra_key, map extra_options) ``{
+    import "AutoinstClone";
+    import "Profile";
+
+    boolean ret = false;
+
+    if (size(filename) > 0)
+    {
+	if (size(additional) > 0)
+	{
+	    // clonne additional system parts
+	    AutoinstClone::additional = additional;
+	}
+
+	// create profile with with currently available resources (partitioning, software etc.)
+	y2milestone("Clonning system started...");
+	if (Mode::test()) {
+	    AutoinstClone::Process();
+	    y2milestone("SKIPPING");
+	}
+	y2milestone("System clonned");
+
+	if (size(extra_options) > 0 && size(extra_key) > 0)
+	{
+	    Profile::current[extra_key] = extra_options;
+	}
+
+	return Profile::Save(filename);
+    }
+
+    return false;
+}
+
+/**
+ * Detect mount points
+ * @return map map of mount points
+ */
+ define map DetectMountpoints() ``{
+    if (Mode::test()) {
+	y2milestone("SKIPPING");
+	return $[];
+    }
+
+    import "Storage";
+    
+    map<string,map<string,any> > targetmap = (map<string,map<string,any> >)Storage::GetTargetMap();
+    y2debug("targetmap: %1", targetmap);
+
+    map devices = $[];
+
+    foreach(string disk, map info, targetmap,
+	``{
+	    list<map<string, any> > partitions = info["partitions"]:[];
+
+	    foreach(map<string, any> part_info, partitions,
+		``{
+		    string device = (string) (part_info["device"]:nil);
+		    string mpoint = (string) (part_info["mount"]:nil);
+		    symbol fs = (symbol) (part_info["detected_fs"]:nil);
+
+		    y2debug("device: %1, mount: %2, fs: %3", device, mpoint, fs);
+
+		    // check for valid device and mount point name, ignore some filesystems
+		    if (device != nil && mpoint != nil && fs != `swap && fs != `lvm
+			&& fs != `raid && fs != `xbootpdisk && fs != `xhibernate)
+		    {
+			devices[device] = $[
+			    "mpoint" : mpoint,
+			    "fs" : fs
+			];
+		    }
+		}
+	    );
+	}
+    );
+
+    y2milestone("Detected mountpoints: %1", devices);
+    return devices;
+}
+
+/**
+ * Create table content with detected mount points
+ * @param selected selected mount points to use
+ * @param all all detected mount points + user defined dirs
+ * @param description detected mount points
+ * @return list table content
+ */
+ define list MpointTableContents(list<string> selected, list<string> all, map<string,map> description) ``{
+    y2milestone("selected: %1, description: %2", selected, description);
+
+    import "FileSystems";
+
+    list ret = [];
+    map processed = $[];
+
+    if (size(description) > 0)
+    {
+	foreach(string device, map info, description,
+	    ``{
+		string dir = info["mpoint"]:"";
+		string fs = FileSystems::GetName(info["fs"]:`unknown, _("Unknown file system"));
+
+		string mark = contains(selected, dir) ? "X" : " ";
+
+		processed[dir] = true;
+		ret = add(ret, `item(`id(dir), mark, dir + " ", device + " ", fs));
+	    }
+	);
+    }
+
+    if (size(all) > 0)
+    {
+	// check for user defined directories
+	foreach(string d, all,
+	    ``{
+		if (processed[d]:false == false)
+		{
+		    ret = add(ret, `item(`id(d), contains(selected, d) ? "X" : " ", d, "", ""));
+		}
+	    }
+	);
+    }
+
+    return ret;
+}
+
+/**
+ * Check whether file on the NFS server exists
+ * @param server remote server name
+ * @param share exported directory
+ * @param filename name of the file
+ * @return boolean true - file exists, false - file doesn't exist, nil - error (mount failed)
+ */
+
+ define boolean NFSFileExists(string server, string share, string filename) ``{
+    if (size(server) == 0 || size(share) == 0 || size(filename) == 0)
+    {
+	return nil;
+    }
+
+    string mpoint = Nfs::Mount(server, share, nil, "");
+
+    if (mpoint == nil)
+    {
+	return nil;
+    }
+
+    boolean ret = ((integer)SCR::Read(.target.size, mpoint + "/" + filename)) >= 0;
+
+    Nfs::Unmount(mpoint);
+
+    return ret;
+}
+
+/**
+ * Create NFS file description string
+ * @param server server name
+ * @param share exported directory name
+ * @param filename remote file name
+ * @return string result (nil if any of the parameter is nil)
+ */
+ define string NFSfile(string server, string share, string filename) ``{
+    if (size(server) == 0 || size(share) == 0 || size(filename) == 0)
+    {
+	return nil;
+    }
+
+    // check if filename begins with '/' character
+    string slash = (substring(filename, 0, 1) == "/") ? "" : "/";
+
+    return server + ":" + share + slash + filename;
+}
+
+
+/**
+ * Get available space in the directory
+ * @param directory selected directory
+ * @return map on success returns parsed df output in a map
+ * $["device" : string(device), "total" : integer(total), "used" : integer(used), "free" : integer(free) ]
+ */
+
+ define map get_free_space(string directory) ``{
+
+    if (size(directory) == 0)
+    {
+	y2warning("Wrong parameter directory: %1", directory);
+	return $[];
+    }
+
+    map result = (map)SCR::Execute(.target.bash_output, "/bin/df -P " + directory);
+    integer exit = result["exit"]:-1;
+
+    if (exit != 0)
+    {
+	y2warning("Command df failed, exit: %1", exit);
+	return $[];
+    }
+
+    list out = splitstring(result["stdout"]:"", "\n");
+
+    // ignore header on the first line
+    string line = out[1]:"";
+
+    string device = regexpsub(line,  "^([^ ]*) +([0-9]+) +([0-9]+) +([0-9]+) +[0-9]+%", "\\1");
+    string total  = regexpsub(line,  "^([^ ]*) +([0-9]+) +([0-9]+) +([0-9]+) +[0-9]+%", "\\2");
+    string used   = regexpsub(line,  "^([^ ]*) +([0-9]+) +([0-9]+) +([0-9]+) +[0-9]+%", "\\3");
+    string free   = regexpsub(line,  "^([^ ]*) +([0-9]+) +([0-9]+) +([0-9]+) +[0-9]+%", "\\4");
+
+    return $["device" : device, "total" : tointeger(total), "used" : tointeger(used), "free" : tointeger(free) ];
+}
+
+define string IsPossibleToCreateDirectoryOrExists (string directory) {
+    string error_message = "";
+
+    list<string> directory_path = splitstring(directory, "/");
+    string tested_directory = "";
+    foreach(string dir, directory_path, {
+	tested_directory = tested_directory + (tested_directory != "/" ? "/":"") + dir;
+	y2debug("TESTING: %1", tested_directory);
+
+	// directory exists
+	if (FileUtils::Exists(tested_directory)) {
+	    // exists, but it isn't a directory, can't create archive 'inside'
+	    if (! FileUtils::IsDirectory(tested_directory)) {
+		y2error("Cannot create backup archive in '%1', '%2' is not a directory.",
+		    directory, tested_directory
+		);
+		error_message = sformat(
+		    // Popup error message, %1 is a directory somewhere under %2, %2 was tested for existency
+		    _("Cannot create backup archive in %1.
+%2 is not a directory.
+Enter another one or remove %2."),
+		    directory, tested_directory
+		);
+		break;
+	    }
+	// directory doesn't exist, will be created
+	} else {
+	    break;
+	}
+
+    });
+
+    return error_message;
+}
+
+}

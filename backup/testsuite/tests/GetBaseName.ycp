@@ -1,0 +1,37 @@
+// Backup module - testsuite
+//
+// GetBaseName tests
+//
+// testedfiles: backup/functions.ycp
+//
+// $Id$
+//
+
+{
+import "Testsuite";
+
+map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
+    "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
+    "probe" : $["has_smp" : false, "is_uml" : false, "cdrom" : $["manual" : []]],
+    ];
+
+map execmap = $[ "target" : $["bash_output" : $["exit":0, "stderr":"", "stdout":"charmap=\"ISO-8859-1\"\n"]]];
+
+Testsuite::Init([ readmap, $[], execmap ], nil);
+
+include "backup/functions.ycp";
+
+Testsuite::Test( ``(GetBaseName(nil) ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("file") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("file.ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("/") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("/file") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("/file.ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("/dir/") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("/dir/dir2/file.ext") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("/dir.1/dir.2/file") ), [ $[], $[], $[] ], nil );
+Testsuite::Test( ``(GetBaseName("/dir.1/dir.2/file.ext") ), [ $[], $[], $[] ], nil );
+
+}
+

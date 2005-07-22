@@ -1,0 +1,60 @@
+[Desktop Entry]
+Type=Application
+Categories=Qt;X-SuSE-YaST;X-SuSE-YaST-System;
+
+X-KDE-ModuleType=Library
+X-KDE-RootOnly=true
+X-KDE-HasReadOnlyMode=true
+X-KDE-Library=yast2
+X-SuSE-YaST-Call=backup
+
+X-SuSE-YaST-Group=System
+X-SuSE-YaST-Argument=
+X-SuSE-YaST-RootOnly=true
+X-SuSE-YaST-AutoInst=
+X-SuSE-YaST-Geometry=
+X-SuSE-YaST-SortKey=
+X-SuSE-YaST-AutoInstResource=
+
+Icon=yast-backup
+Exec=/sbin/yast2 backup 
+
+Name=System Backup
+GenericName=Back up files and system areas
+Name[cs]=Záloha systému
+GenericName[cs]=Zálohujte si soubory a systémové oblasti
+Name[de]=Sicherungskopie der Systembereiche
+GenericName[de]=Sicherung von Dateien und Systembereichen
+Name[es]=Copia de seguridad del sistema
+GenericName[es]=Hacer una copia de seguridad de archivos y zonas del sistema
+Name[hu]=Biztonsági mentés
+GenericName[hu]=Fájlok és rendszerterület mentése
+Name[it]=Backup del sistema
+GenericName[it]=Effettua la copia di backup dei file e delle aree di sistema
+Name[ko]=시스템 백업
+GenericName[ko]=파일과 시스템 영역을 백업합니다
+Name[nl]=Systeem backup
+GenericName[nl]=Backup bestanden en systeemgebieden
+Name[pt]=Salvamento do sistema
+GenericName[pt]=Salvamento de arquivos e áreas de sistema
+Name[sk]=Záloha systému
+GenericName[sk]=Záloha súborov a systémových oblastí
+Name[sv]=Säkerhetskopiera system
+GenericName[sv]=Säkerhetskopiera filer och systemområden
+Name[da]=System sikkerhedskopi
+GenericName[da]=Sikkerhedskopiér filer og systemområder
+Name[el]=Αντίγραφα Εφεδρείας Συστήματος
+GenericName[el]=Δημιουργία αντιγράφων εφεδρείας για αρχεία και περιοχή συστήματος
+Name[fr]=Sauvegarde du système
+GenericName[fr]=Sauvegarde des fichiers et des zones système
+Name[ja]=システムのバックアップ
+GenericName[ja]=バックアップの概要
+Name[lt]=Sistemos atsarginės kopijos
+GenericName[lt]=Daryti bylų ir sisteminių sričių atsargines kopijas
+Name[ru]=Резервное копирование Системы
+GenericName[ru]=Резервное копирование файлов и системных областей
+Name[sl]=Varnostna kopija sistema
+GenericName[sl]=Varujte datoteke in sistemska področja
+Name[tr]=Sistem yedekleme
+GenericName[tr]=Dosyaları ve sistem alanını yedekle
+X-KDE-SubstituteUID=true

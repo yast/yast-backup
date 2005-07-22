@@ -1,0 +1,13 @@
+/**
+ * File:        cfg_backup.scr
+ * Summary:     Agent for appending strings to the file
+ * Author:      Lukas Ocilka <locilka@suse.cz>
+ * Access:      write
+ *
+ * $Id: cfg_backup.scr 18759 2004-08-23 13:22:52Z locilka $
+ *
+ */
+.backup.file_append
+
+`ag_file_append ()
+

@@ -1,0 +1,32 @@
+Features of a new YaST2 module
+-------------------------------
+
+Name: Backup module
+
+Purpose: Backup changed files, partition table and critical ext2 areas
+
+Features:
+
+    * backup files which were changed since package installation
+
+    * can backup files which do not belong to any RPM package
+      (can exclude selected filesystems/directories/files from search)
+
+    * create tar backup file (with tar, tar.gz, tar.bz2 or star package archives)
+             or only store list of changed files
+
+    * backup partition table (text: sfdisk -d, raw:dd)
+
+    * backup ext2 critical data (e2image)
+
+    * additional information is part of the archive (hostname,
+        date of backup, user comment, installed packages...)
+
+    * support ACLs (only star subarchives)
+
+    * write autoinstallation profile for easy system reinstallation
+
+    * restore files from archive (by Yast2 Restore module)
+
+    * profile manager (reuse previous setting)
+

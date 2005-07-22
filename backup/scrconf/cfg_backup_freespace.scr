@@ -1,0 +1,13 @@
+/**
+ * File:        cfg_freespace.scr
+ * Summary:     Agent for getting the free space in the directory (in 1K blocks)
+ * Author:      Lukas Ocilka <locilka@suse.cz>
+ * Access:      read
+ *
+ * $Id: cfg_freespace.scr 18759 2004-08-23 13:22:52Z locilka $
+ *
+ */
+.backup.free_space
+
+`ag_free_space ()
+

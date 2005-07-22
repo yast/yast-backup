@@ -1,0 +1,9 @@
+Read	.proc.filesystems nil
+Return	nil
+Dump	["iso9660", "ntfs"]
+Read	.proc.filesystems $["afs":"nodev", "iso9660":"\t", "minix":"\t", "nfs":"nodev", "pipefs":"nodev", "proc":"nodev", "ramfs":"nodev", "reiserfs":"\t", "rootfs":"nodev"]
+Return	nil
+Dump	["afs", "iso9660", "nfs", "ntfs", "pipefs", "proc", "ramfs", "rootfs"]
+Read	.proc.filesystems nil
+Return	nil
+Dump	[]

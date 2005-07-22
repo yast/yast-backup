@@ -1,0 +1,43 @@
+#!/usr/bin/perl -w
+
+use ycp;
+use File::Temp;
+
+while ( <STDIN> ) {
+    my ($command, $path, $arguments) = ycp::ParseCommand ($_);
+
+    if ($command eq "Write") {
+	if ($path eq "." && ref ($arguments) eq "ARRAY") {
+	    my $file   = @{$arguments}[0] || "";
+	    my $string = @{$arguments}[1] || "";
+
+	    $string =~ s/\\\\/\\/g;
+
+	    if (!$file) {
+		y2error("File for 'file_append' not defined");
+		ycp::Return ("false");
+	    }
+
+	    open (OUT, ">>$file") || do {
+		y2error("Cannot append into the file ".$file.". ".$!);
+		ycp::Return ("false");
+	    };
+
+	    print OUT $string;
+
+	    close (OUT) || do {
+		y2error("Cannot save the file ".$file.". ".$!);
+		ycp::Return ("false");
+	    };
+	    ycp::Return ("true");
+	} else {
+	    y2error ("Wrong arguments");
+	    ycp::Return ("false");
+	}
+    } elsif ($command eq "result") {
+	exit 0;
+    } else {
+        y2error ("Wrong path or arguments");
+        ycp::Return ("false");
+    }
+}
