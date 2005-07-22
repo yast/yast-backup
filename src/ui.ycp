@@ -62,7 +62,6 @@ define void CheckFreeSpace () {
 	}
 	// next space check - not before time() + wait_sec_check
 	next_time_check = time() + wait_sec_check;
-y2milestone("Check FreeSpace");
 
 	// null the free space flags
 	waiting_without_output = 0;
