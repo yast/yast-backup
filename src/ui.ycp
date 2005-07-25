@@ -2254,7 +2254,7 @@ Back up will be aborted.
 	    UI::OpenDialog(
 		`Left(`Label(
 		    (ret == `sel_all) ?
-			// An informative popup label during deselecting all items in the table (can consume a lot of time)
+			// An informative popup label during selecting all items in the table (can consume a lot of time)
 			_("Selecting all items...")
 		        :
 			// An informative popup label during deselecting all items in the table (can consume a lot of time)
