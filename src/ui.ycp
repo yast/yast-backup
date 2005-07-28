@@ -906,7 +906,7 @@ Enter the filename to use.
 		if (substring(Backup::archive_name, 0, 1) != "/" && Backup::target_type == `file)
 		{
 		    // warning popup message
-		    Popup::Warning(_("Enter archive file name with\nits absolute path, as in /tmp/backup.tar."));
+		    Popup::Warning(_("Enter the archive file name with\nits absolute path, as in /tmp/backup.tar."));
 		    cont = false;
 		    continue;
 		}
@@ -1877,8 +1877,8 @@ define string MemorySpent () {
 
     if (!started) {
 	// error popup message
-	Report::Error(_("Could not start search script.
-Back up will be aborted.
+	Report::Error(_("Could not start the search script.
+Aborting the backup.
 "));
 	y2error("Errors: %1", (list<string>)SCR::Read(.background.newerr));
 	if (Backup::cron_mode) {
@@ -2201,7 +2201,7 @@ Back up will be aborted.
 	UI::OpenDialog(
 	    `Left(`Label(
 		// busy message
-		_("Unselecting files...")
+		_("Deselecting files...")
 	    ))
 	);
 	foreach(list file_f, items, ``{
@@ -2534,7 +2534,7 @@ define void CreateProgress_ArchivingDialog() {
     {
 	// error popup message
 	Report::Error(_("Could not start archiving script.
-Aborting back up.
+Aborting backup.
 "));
 	return `abort;
     }

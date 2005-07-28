@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Jul 28 12:37:39 CEST 2005 - locilka@suse.cz
+
+- Merged proofed texts
+- Updated .desktop file
+
+-------------------------------------------------------------------
 Fri Jul 22 14:50:00 CEST 2005 - locilka@suse.cz
 
 - Fixing bug #53871 Backup ignored full filesystem and freezed
