@@ -862,7 +862,7 @@ global define map ReadCronSetting(string filename) ``{
     if (unknown_settings == true)
     {
 	// %1 is profile name, %2 is filename
-	Report::Warning(sformat(_("Cron settings for profile %1
+	Report::Warning(sformat(_("cron settings for profile %1
 in file %2
 are not fully supported.
 "), profilename, filename));
@@ -1513,7 +1513,7 @@ global define map RemovableDevices(boolean only_writable) ``{
 		    else if (dev["cdr"]:false || dev["cdrw"]:false)
 		    {
 			// CD-R or CD-RW writer device
-			type = _("CD writer");
+			type = _("CD Writer");
 			type_symbol = (dev["cdr"]:false) ? `cdr : `cdrw;
 			media = cd_media_descriptions;
 			preselected = `cd700;
@@ -1521,7 +1521,7 @@ global define map RemovableDevices(boolean only_writable) ``{
 		    else if (dev["dvdr"]:false)
 		    {
 			// DVD-R, DVD+R... writer device
-			type = _("DVD writer");
+			type = _("DVD Writer");
 			type_symbol = `dvdr;
 		    }
 		    else if (dev["dvdram"]:false)

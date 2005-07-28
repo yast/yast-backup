@@ -583,7 +583,7 @@ define boolean AbortConfirmation(symbol type) ``{
     string detail_heading = _("Details:");
 
     // header in email body
-    string body = sformat(_("BACKUP REPORT for Profile '%1'"), cron_profile) + br + br + br
+    string body = sformat(_("BACKUP REPORT for Profile %1"), cron_profile) + br + br + br
 	// header in email body followed by errors or warnings
 	+ ((size(reported) > 0) ? _("Problems During Automatic Backup:") + br + reported + br + br : "")
 	+ summary_heading + br + CreateUnderLine(summary_heading, "=") + br + br + backup_result + br
