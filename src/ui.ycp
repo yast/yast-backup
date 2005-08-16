@@ -97,7 +97,7 @@ define symbol EvaluateFreeSpace (symbol ret) {
 			// headline of a popup message
 			_("Warning"),
 			// a popup question - no free space, %1 is the name of the directory
-			sformat(_("There is not enough free space in the temporary directory %1.\nDo you wish to continue?"), Backup::tmp_dir)
+			sformat(_("There is not enough free space in the temporary directory %1.\nContinue anyway?"), Backup::tmp_dir)
 		    )) {
 			y2milestone("Finishing backup...");
 			return `abort;
@@ -109,7 +109,7 @@ define symbol EvaluateFreeSpace (symbol ret) {
 		// background agent is not running
 		} else {
 		    // a popup error message - no free space, %1 is the name of the directory
-		    Report::Error(sformat(_("There is not enough free space in the temporary directory %1.\nBackup cannot continue and will be finished."),Backup::tmp_dir));
+		    Report::Error(sformat(_("There is not enough free space in the backup target directory %1.\nAborting the backup."),Backup::tmp_dir));
 		    return `abort;
 		}
 	    }
@@ -127,7 +127,7 @@ define symbol EvaluateFreeSpace (symbol ret) {
 			// headline of a popup message
 			_("Warning"),
 			// a popup question - no free space, %1 is the name of the directory
-			sformat(_("There is not enough free space in the backup target directory %1.\nDo you wish to continue?"), Backup::target_dir)
+			sformat(_("There is not enough free space in the backup target directory %1.\nContinue anyway?"), Backup::target_dir)
 		    )) {
 			y2milestone("Finishing backup...");
 			return `abort;
@@ -139,7 +139,7 @@ define symbol EvaluateFreeSpace (symbol ret) {
 		// background agent is not running
 		} else {
 		    // a popup error message - no free space, %1 is the name of the directory
-		    Report::Error(sformat(_("There is not enough free space in the backup target directory %1.\nBackup cannot continue and will be finished."),Backup::target_dir));
+		    Report::Error(sformat(_("There is not enough free space in the backup target directory %1.\nAborting the backup."),Backup::target_dir));
 		    return `abort;
 		}
 	    }
@@ -906,7 +906,7 @@ Enter the filename to use.
 		if (substring(Backup::archive_name, 0, 1) != "/" && Backup::target_type == `file)
 		{
 		    // warning popup message
-		    Popup::Warning(_("Enter the archive file name with\nits absolute path, as in /tmp/backup.tar."));
+		    Popup::Warning(_("Enter the archive filename with\nits absolute path, as in /tmp/backup.tar."));
 		    cont = false;
 		    continue;
 		}
@@ -2534,7 +2534,7 @@ define void CreateProgress_ArchivingDialog() {
     {
 	// error popup message
 	Report::Error(_("Could not start archiving script.
-Aborting backup.
+Aborting the backup.
 "));
 	return `abort;
     }
@@ -2909,14 +2909,14 @@ Replace the existing profile?
     else
     {
 	// part of summary text
-	backup_result = p + _("Found Modified Files: ") + modified_num + br
+	backup_result = p + _("Modified Files Found: ") + modified_num + br
 	// part of summary text
 	    + _("Total Size: ") + String::FormatSize(modified_size) + _p;
 
 	if (Backup::search)
 	{
 	    // part of summary text
-	    backup_result = backup_result + p + _("Found Files Not in a Package: ") + nopkg_num + br
+	    backup_result = backup_result + p + _("Files Not in a Package Found: ") + nopkg_num + br
 	    // part of summary text
 		+ _("Total Size: ") + String::FormatSize(nopkg_size) + _p;
 	}

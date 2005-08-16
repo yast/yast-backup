@@ -113,7 +113,7 @@ They can be used to restore the system in case of a crash.</P>");
  define string backup_help_searching_modified() ``{
     // For translators: help text in searching modified dialog - part 1/3
      return _("<P><B><BIG>Searching</BIG></B><BR>
-The modified file search is in progress.  This will take several minutes, 
+The modified file search is in progress.  This takes several minutes, 
 depending on the speed of your system and the number of installed 
 packages.</P>");
 }
@@ -126,7 +126,7 @@ packages.</P>");
 
  define string backup_help_searching_files() ``{
     // For translators: help text in searching files dialog - part 1/3
-     return _("<P><B><BIG>Searching</BIG></B><BR>The search is in progress for files that do not belong to a package. This will take several minutes, depending on the speed of your system and the size of the file system.</P>");
+ return _("<P><B><BIG>Searching</BIG></B><BR>The search is in progress for files that do not belong to a package. This takes several minutes, depending on the speed of your system and the size of the file system.</P>");
 }
 
 
@@ -241,7 +241,7 @@ modified before starting the backup process.</P>");
     return _("<P><BIG><B>Expert Options</B></BIG><BR>Some advanced configuration options
 can be set in this dialog. Usually there is no need to modify the default values.</P>")
 	// For translators: help text in backup expert options dialog - part 3/3
-	+ _("<P>System areas (partition table, ext2 image) can be added to the backup archive with <b>Back Up Hard Disk System Areas</b>. These system areas can only be restored from an archive manually.</P>")
+	+ _("<P>System areas, such as partition table or ext2 image, can be added to the backup archive with <b>Back Up Hard Disk System Areas</b>. These system areas can only be restored from an archive manually.</P>")
 	// For translators: help text in backup expert options dialog - part 2/3
 	+ _("<P>In <B>Temporary Directory</B>, set the location in which parts
 of the archive are stored before the final archive is created. The temporary directory should have enough
@@ -257,7 +257,7 @@ free space for the entire archive.</P>\n");
  define string backup_help_constraints() ``{
 
     // For translators: help text in exclude directory dialog - part 1/4
-    return _("<P><BIG><B>Constraints</B></BIG><BR>It is possible to exclude some files from backup. Search constraints can be a directory, file system, or regular expression.  Use <b>Edit</b> to modify an existing constraint.  <b>Delete<b> removes the selected constrain.  To add a new constraint, click <b>Add</b> then select the type of constraint. </P>")
+    return _("<P><BIG><B>Constraints</B></BIG><BR>It is possible to exclude some files from the backup. Search constraints can be a directory, file system, or regular expression.  Use <b>Edit</b> to modify an existing constraint.  <b>Delete<b> removes the selected constrain.  To add a new constraint, click <b>Add</b> then select the type of constraint. </P>")
 
     // For translators: help text in exclude directory dialog - part 2/4
     + _("<P><B>Directory</B>: All files located in the specified directories will not be backed up.</P>")

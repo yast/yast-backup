@@ -1670,7 +1670,7 @@ global define map MapFilesToString () {
     UI::OpenDialog(
 	`Left(`Label(
 	    // busy message
-	    _("Creating list of files for the backup...")
+	    _("Creating the list of files for the backup...")
 	))
     );
 
