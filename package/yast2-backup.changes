@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Thu Dec  1 12:36:39 CET 2005 - locilka@suse.cz
+
+- Renaming variable 'search' to 'do_search' because of new
+  a builtin function with the same name.
+- Replacing a hardcoded string containing the path to the
+  configuration file with a variable.
+- Using FileUtils before reading the file to avoid from error
+  messages.
+- 2.13.0 
+
+-------------------------------------------------------------------
 Tue Aug 16 11:38:36 CEST 2005 - locilka@suse.cz
 
 - Merged proofed texts (2nd round)

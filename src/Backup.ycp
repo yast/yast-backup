@@ -23,6 +23,7 @@ import "Progress";
 import "Report";
 import "Nfs";
 import "Popup";
+import "FileUtils";
 
 include "backup/functions.ycp";
 include "hwinfo/classnames.ycp";
@@ -158,7 +159,7 @@ global integer user_vol_size = 0;
 global string temporary_dir = default_temporary_dir;
 global boolean mail_summary = default_mail_summary;
 
-global boolean search = default_search;			// search files which do not belong to any package
+global boolean do_search = default_search;			// search files which do not belong to any package
 global boolean system = default_system;			// backup system areas
 global boolean display = default_display;		// display files before creating archive
 global boolean do_md5_test = default_do_md5_test;
@@ -314,6 +315,8 @@ global list< map<string,any> > units_description = [
     ],
 ];
 
+/* File where configuration is stored */
+string configuration_filename = "/var/adm/YaST/backup/profiles";
 
 /**
  * Return capacity of required medium
@@ -349,7 +352,7 @@ global define integer GetCapacity(list<map<string,any> > media, symbol m) ``{
 global define string get_search_script_parameters() ``{
     string script_options = " --start-dir / --output-progress";       // required parameter for YaST2 frontend
 
-    if (search)
+    if (do_search)
     {
 	script_options = script_options + " --search";
     }
@@ -949,12 +952,18 @@ global define void ReadCronSettings() ``{
 
 /**
  * Read backup profiles from file, do not set any global settings, just
- * @see backup_profiles. The profiles are stored in hardcoded place (/var/adm/YaST/backup/profiles).
+ * @see backup_profiles. The profiles are stored in hardcoded place (configuration_filename variable).
  * @return boolean true if there are some profiles available
  */
 
 global define boolean ReadBackupProfiles() ``{
-    backup_profiles = (map<string, map>) SCR::Read( .target.ycp, "/var/adm/YaST/backup/profiles" );
+    if (FileUtils::Exists(configuration_filename)) {
+	y2milestone("Reading configuration from %1", configuration_filename);
+	backup_profiles = (map<string, map>) SCR::Read( .target.ycp, configuration_filename );
+    } else {
+	y2milestone("Configuration file %1 doesn't exist yet", configuration_filename);
+	backup_profiles = nil;
+    }
 
     // if the list is empty or the file does not exists, set empty map
     if( backup_profiles == nil ) backup_profiles = $[];
@@ -1075,7 +1084,7 @@ global define void WriteCronSettings() ``{
 
 
 /**
- * Write the backup profiles to a file - hardcoded /var/adm/YaST/backup/profiles.
+ * Write the backup profiles to a file - hardcoded configuration_filename.
  * @return boolean true if the write operation was successful.
  */
 
@@ -1083,7 +1092,7 @@ global define boolean WriteBackupProfiles() ``{
     // update cron setting
     WriteCronSettings();
 
-    string profiles_file = "/var/adm/YaST/backup/profiles";
+    string profiles_file = configuration_filename;
     if( !SCR::Write (.target.ycp, profiles_file, backup_profiles ) )
     {
 	y2error( "Unable to write profiles into a file" );
@@ -1123,7 +1132,7 @@ global define void StoreSettingsToBackupProfile( string profile_name ) ``{
 	`volume_size  		: volume_size,
 	`user_volume_size 	: user_volume_size,
 	`user_volume_unit 	: user_volume_unit,
-	`search 		: search,
+	`search 		: do_search,
 	`system 		: system,
 	`display 		: display,
 	`do_md5_test 		: do_md5_test,
@@ -1184,7 +1193,7 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
     volume_size =	profile[ `volume_size ]:	default_volume_size;
     user_volume_size =  profile[ `user_volume_size ]:	default_user_volume_size;
     user_volume_unit =	profile[ `user_volume_unit ]:	default_user_volume_unit;
-    search =		profile[ `search ]:		default_search;
+    do_search =		profile[ `search ]:		default_search;
     system =		profile[ `system ]:		default_system;
     display =		profile[ `display ]:		default_display;
     do_md5_test =	profile[ `do_md5_test ]:	default_do_md5_test;
@@ -1273,7 +1282,7 @@ global define void RestoreDefaultSettings() ``{
     volume_size = default_volume_size;
     user_volume_size = default_user_volume_size;
     user_volume_unit = default_user_volume_unit;
-    search = default_search;
+    do_search = default_search;
     system = default_system;
     display = default_display;
     do_md5_test = default_do_md5_test;

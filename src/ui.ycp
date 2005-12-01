@@ -1214,7 +1214,7 @@ Enter the filename to use.
 	        `VBox(
 		    `VSpacing(0.3),
 		    // check box label
-                    `Left(`CheckBox(`id(`search), `opt(`notify), _("&Back Up Files Not Belonging to Any Package"), Backup::search)),
+                    `Left(`CheckBox(`id(`search), `opt(`notify), _("&Back Up Files Not Belonging to Any Package"), Backup::do_search)),
 		    `VSpacing(0.3),
 		    // check box label
 		    `Left(`CheckBox(`id(`display), _("Display List of Files Before &Creating Archive"), Backup::display)),
@@ -1263,7 +1263,7 @@ Enter the filename to use.
     }
 
     // get values
-    Backup::search = (boolean)UI::QueryWidget(`id(`search), `Value);
+    Backup::do_search = (boolean)UI::QueryWidget(`id(`search), `Value);
     Backup::display = (boolean)UI::QueryWidget(`id(`display), `Value);
     Backup::do_md5_test = (boolean)UI::QueryWidget(`id(`md5_check), `Value);
     Backup::description = (string)UI::QueryWidget(`id(`description), `Value);
@@ -2445,7 +2445,7 @@ define void CreateProgress_ArchivingDialog() {
 	num_stages = num_stages + 1;    // tar prints Volume label if multi volume selected, but only at first volume
     }
 
-    if (Backup::search) {
+    if (Backup::do_search) {
 	num_stages = num_stages + 1;	// add NOPACKAGE archive step
     }
 
@@ -2913,7 +2913,7 @@ Replace the existing profile?
 	// part of summary text
 	    + _("Total Size: ") + String::FormatSize(modified_size) + _p;
 
-	if (Backup::search)
+	if (Backup::do_search)
 	{
 	    // part of summary text
 	    backup_result = backup_result + p + _("Files Not in a Package Found: ") + nopkg_num + br
