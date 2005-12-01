@@ -3,6 +3,7 @@ Thu Dec  1 12:36:39 CET 2005 - locilka@suse.cz
 
 - Renaming variable 'search' to 'do_search' because of new
   a builtin function with the same name.
+- Fixing testsuites.
 - Replacing a hardcoded string containing the path to the
   configuration file with a variable.
 - Using FileUtils before reading the file to avoid from error

@@ -33,7 +33,7 @@ Testsuite::Dump( Backup::backup_profiles);
     Backup::volume_size = nil;
     Backup::user_volume_size = nil;
     Backup::user_volume_unit = nil;
-    Backup::search = nil;
+    Backup::do_search = nil;
     Backup::system = nil;
     Backup::display = nil;
     Backup::do_md5_test = nil;
