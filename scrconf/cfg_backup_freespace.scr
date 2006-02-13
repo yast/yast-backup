@@ -4,7 +4,7 @@
  * Author:      Lukas Ocilka <locilka@suse.cz>
  * Access:      read
  *
- * $Id: cfg_freespace.scr 18759 2004-08-23 13:22:52Z locilka $
+ * $Id$
  *
  */
 .backup.free_space
