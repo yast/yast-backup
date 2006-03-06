@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Mar  6 12:47:16 CET 2006 - locilka@suse.cz
+
+- Adjusting BuildRequires in the package
+- 2.13.1
+
+-------------------------------------------------------------------
 Thu Dec  1 12:36:39 CET 2005 - locilka@suse.cz
 
 - Renaming variable 'search' to 'do_search' because of new

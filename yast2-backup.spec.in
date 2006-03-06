@@ -1,7 +1,7 @@
 @HEADER-COMMENT@
 
 @HEADER@
-BuildRequires:	autoyast2-installation yast2-devel-packages yast2-network yast2-nfs-client yast2-tune yast2-update yast2-bootloader
+BuildRequires:	autoyast2-installation perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-testsuite yast2-network yast2-nfs-client yast2-tune yast2-update yast2-bootloader
 
 Summary:		Backup module for YaST2
 BuildArchitectures:	noarch
