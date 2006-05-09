@@ -278,6 +278,9 @@ define symbol EvaluateFreeSpace (symbol ret) {
 
     boolean search_no_package = false;
     boolean reading_installed_packages = false;
+    
+    // we are in ncurses
+    boolean in_ncurses = false;
 
 // <<--
 
@@ -308,6 +311,10 @@ define void ResetGlobalVariables () {
     reading_installed_packages = false;
 
     Backup::just_creating_archive = false;
+    
+    map ui_capabilities = UI::GetDisplayInfo();
+    in_ncurses = ui_capabilities["TextMode"]:true;
+    y2milestone("Running in TextMode: %1", in_ncurses);
 }
 
 /**
@@ -1624,43 +1631,41 @@ Continue anyway?
  */
 define void SetDialogContents_SearchingForModifiedFiles(integer total_packages) {
 y2milestone("Progress Packages: %1", total_packages);
-						// dialog header
-						Wizard::SetContents( _("Searching for Modified Files"),
-						    `Top(
+						Wizard::SetContents(
+						    // dialog header
+						    _("Searching for Modified Files"),
 							`VBox(
 							    `VSpacing(0.5),
 							    `Left(
-								`HBox(
-								    // label text, followed by number of files found so far
-								    `Label(_("Modified Files: ")),
-								    `Label(`id(`numfiles), `opt(`hstretch), sformat("%1", modified_num))
-								)
+								// label text, followed by number of files found so far
+								`Label(`id(`numfiles), _("Modified Files: ") + sformat("%1", modified_num))
 							    ),
 							    `VSpacing(0.5),
 							    `Left(
-								`HBox(
-								    // label text, followed by sizes of files
-								    `Label(_("Total Size: ")),
-								    `Label(`id(`totsize), `opt(`hstretch), String::FormatSize(modified_size))
-								)
+								// label text, followed by sizes of files
+								`Label(`id(`totsize), _("Total Size: ") + String::FormatSize(modified_size))
 							    ),
 							    `VSpacing(0.5),
 							    `Left(
-								`HBox(
-								    // label text, followed by name of current package
-								    `Label(_("Searching in Package: ")),
-								    `Label(`id(`package), `opt(`hstretch), "")
-								)
+								// label text, followed by name of current package
+								`Label(`id(`package), _("Searching in Package: ") + "                            ")
 							    ),
 							    `VSpacing(3.0),
 							    `Left(
-								// progress bar label
-								`ProgressBar(`id(`progress), _("Search"), total_packages)
-							    )
-							)
-						    ),
+								// bug #172406
+								`MinSize(42, 2,
+								    `VBox (
+									`HStretch(),
+									// progress bar label
+									`ProgressBar(`id(`progress), `opt(`hstretch), _("Search"), total_packages)
+								    )
+								)
+							    ),
+							    `VStretch()
+							),
 						    backup_help_searching_modified(), false, false
 						);
+						UI::RecalcLayout();
 }
 
 /**
@@ -1725,8 +1730,11 @@ define void Search_ChangedPackageFiles () {
 		    package_num = package_num + 1;
 
 		    if (!Backup::cron_mode) {
-			UI::ChangeWidget(`id(`package), `Value, actual_package);
+			UI::ChangeWidget(`id(`package), `Value, _("Searching in Package: ") + actual_package);
 			UI::ChangeWidget(`id(`progress), `Value, package_num);
+			// bug #172406
+			// Cannot be used for ncurses
+			if (!in_ncurses) UI::RecalcLayout();
 		    }
 }
 
@@ -1742,8 +1750,8 @@ define void Search_ModifiedFiles () {
 
 			if (!Backup::cron_mode)
 			{
-			    UI::ChangeWidget(`id(`totsize), `Value, sformat("%1", String::FormatSize(modified_size)));
-			    UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", modified_num));
+			    UI::ChangeWidget(`id(`totsize),  `Value, _("Total Size: ")     + sformat("%1", String::FormatSize(modified_size)));
+			    UI::ChangeWidget(`id(`numfiles), `Value, _("Modified Files: ") + sformat("%1", modified_num));
 			}
 
 			string found_file = substring(line, findfirstof(line, " ") + 1);
@@ -1799,8 +1807,10 @@ define void Search_ReadListOfFilesAndPackages () {
 					reading_installed_packages = true;
 				    } else {
 					if (line == id_files_read) {
-					    if (Backup::cron_mode != true)
+					    if (Backup::cron_mode != true) {
 						SetDialogContents_SearchingForModifiedFiles(total_packages);
+						UI::RecalcLayout();
+					    }
 
 					    y2milestone("Searching in packages started");
 					} else {
@@ -1816,36 +1826,31 @@ define void Search_ReadListOfFilesAndPackages () {
 define void SetDialogContents_SearchingFiles () {
 	    // dialog header
 	    Wizard::SetContents(_("Searching Files"),
-		`Top(
 		    `VBox(
+			`HStretch(),
 			`VSpacing(0.5),
 			`Left(
-			    `HBox(
-				// label text, followed by value
-				`Label(_("Number of Files: ")),
-				`Label(`id(`numfiles), `opt(`hstretch), sformat("%1", nopkg_num))
-			    )
+			    // label text, followed by value
+			    `Label(`id(`numfiles), _("Modified Files: ") + sformat("%1", nopkg_num))
 			),
 			`VSpacing(0.5),
 			`Left(
-			    `HBox(
-				// label text, followed by value
-				`Label(_("Total Size: ")),
-				`Label(`id(`totsize), `opt(`hstretch), String::FormatSize(nopkg_size))
-			    )
+			    // label text, followed by value
+			    `Label(`id(`totsize), _("Total Size: ") + String::FormatSize(nopkg_size))
 			),
 			`VSpacing(0.5),
 			`Left(
-			    `HBox(
-				// label text, followed by current directory name
-				`Label(_("Searching in Directory: ")),
-				`Label(`id(`directory), `opt(`hstretch), "")
+			    // bug #172406
+			    `MinSize(
+				42, 1,
+				    // label text, followed by current directory name
+				    `Label(`id(`directory), _("Searching in Directory: ") + "                                                            ")
 			    )
 			)
-		    )
-		),
+		    ),
 		backup_help_searching_files(), false, false
 	    );
+	    UI::RecalcLayout();
 }
 
 // Function might be removed, only for testing memory spent...
@@ -2001,8 +2006,8 @@ Aborting the backup.
 		    // refresh status when 10 new files was found - it's faster...
 		    if (nopkg_num % 10 == 0 && Backup::cron_mode != true)
 		    {
-			UI::ChangeWidget(`id(`totsize), `Value, String::FormatSize(nopkg_size));
-			UI::ChangeWidget(`id(`numfiles), `Value, sformat("%1", nopkg_num));
+			UI::ChangeWidget(`id(`totsize),  `Value, _("Total Size: ") + String::FormatSize(nopkg_size));
+			UI::ChangeWidget(`id(`numfiles), `Value, _("Modified Files: ") + sformat("%1", nopkg_num));
 		    }
 
 		    string found_file = substring(line, findfirstof(line, " ") + 1);
@@ -2038,9 +2043,12 @@ Aborting the backup.
 			{
 			    actual_dir = substring(line, size(id_dir));
 
-			    if (Backup::cron_mode != true)
+			    if (!Backup::cron_mode)
 			    {
-				UI::ChangeWidget(`id(`directory), `Value, actual_dir);
+				UI::ChangeWidget(`id(`directory), `Value, _("Searching in Directory: ") + actual_dir);
+				// bug #172406
+				// Cannot be used for ncurses
+				if (!in_ncurses) UI::RecalcLayout();
 			    }
 
 			    dircount = 0;
@@ -2577,11 +2585,7 @@ Aborting the backup.
 
 	    if (Backup::archive_type == `txt)
 	    {
-		if (line == id_storing_list)
-		{
-		    // ?
-		}
-		else
+		if (line != id_storing_list)
 		{
 		    if (line == id_list_stored)
 		    {
