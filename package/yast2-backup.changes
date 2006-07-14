@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Tue May  9 15:14:25 CEST 2006 - locilka@suse.cz
+
+- Fixing UI behavior when searching for modified files. Now it does
+  not cut filenames off and a seach progress is bigger (#172406).
+- Fixed SCR agent for checking the free space. Now it handles
+  exceptions, e.g. missing /bin/df, correctly (#172408).
+- 2.13.1.1
+
+-------------------------------------------------------------------
 Mon Mar  6 12:47:16 CET 2006 - locilka@suse.cz
 
 - Adjusting BuildRequires in the package
