@@ -3,6 +3,7 @@ Mon Jul 31 11:09:11 CEST 2006 - locilka@suse.cz
 
 - Do not add the suffix .tar to a backup destination if the file is
   a block device or lies under the /dev/ path (#185042).
+- Adjusted testsuite.
 - 2.13.3
 
 -------------------------------------------------------------------
