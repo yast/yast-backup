@@ -23,6 +23,7 @@ import "Nfs";
 import "Popup";
 import "FileUtils";
 import "Mode";
+import "FileUtils";
 
 textdomain "backup";
 
@@ -392,6 +393,9 @@ define boolean AbortConfirmation(symbol type) ``{
 
 /**
  * Add extension to the file name if it is missing.
+ * This function skips adding when the file is under the /dev/ path
+ * or when it is an existing device file.
+ *
  * @param file filname
  * @param extension file extension (with dot)
  * @return string filename with extension
@@ -399,16 +403,32 @@ define boolean AbortConfirmation(symbol type) ``{
  * @example AddMissingExtension("filename.tar", ".gz") -> "filename.tar.gz"
  * @example AddMissingExtension("filename.tar", ".tar") -> "filename.tar"
  */
- define string AddMissingExtension(string file, string extension)
-``{
+ define string AddMissingExtension(string file, string extension) {
     // input check
-    if (file == nil)
-    {
+    if (file == nil) {
 	return "";
     }
 
-    if (extension == nil)
-    {
+    if (extension == nil) {
+	return file;
+    }
+
+    // removing unneded slashes
+    if (regexpmatch(file, "^/")) {
+	file = regexpsub(file, "^/+(.*)", "/\\1");
+    }
+
+    // skip if the file is a block device
+    if (FileUtils::Exists(file) && FileUtils::GetFileType(file) == "block") {
+	y2milestone("Leaving destination unchanged, '%1' is a block device", file);
+
+	return file;
+    }
+
+    // skipping /dev/ directory
+    if (regexpmatch(file, "^/dev/")) {
+	y2milestone("Leaving destination unchanged, '%1' is under the /dev/ directory", file);
+
 	return file;
     }
 
@@ -418,18 +438,14 @@ define boolean AbortConfirmation(symbol type) ``{
     string result = "";
 
     // check if file can contain extension
-    if (size(filename) >= size(extension))
-    {
+    if (size(filename) >= size(extension)) {
 	// add extension only if it is missing
 	filename = (substring(filename, size(filename) - size(extension)) != extension) ? filename + extension : filename;
-    }
-    else
-    {
+    } else {
 	filename = filename + extension;
     }
 
-    if (size(dirs) > 0)
-    {
+    if (size(dirs) > 0) {
 	dirs = remove(dirs, size(dirs) - 1);
     }
 

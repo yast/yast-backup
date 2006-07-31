@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Jul 31 11:09:11 CEST 2006 - locilka@suse.cz
+
+- Do not add the suffix .tar to a backup destination if the file is
+  a block device or lies under the /dev/ path (#185042).
+- 2.13.3
+
+-------------------------------------------------------------------
 Tue May  9 15:14:25 CEST 2006 - locilka@suse.cz
 
 - Fixing UI behavior when searching for modified files. Now it does
