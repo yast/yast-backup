@@ -10,7 +10,16 @@
 {
 import "Testsuite";
 
-map readmap = $[ "target" : $["string" : "", "size" : -1, "tmpdir" : "/tmp" ],
+map readmap = $[
+    "target" : $[
+	"string" : "", "size" : -1, "tmpdir" : "/tmp",
+	"stat" : $[
+	    "atime":1101890288, "ctime":1101890286, "gid":0,
+	    "inode":29236, "isblock":true, "ischr":false, "isdir":false,
+	    "isfifo":false, "islink":false, "isreg":false, "issock":false, "mtime":1101890286,
+	    "nlink":1, "size":804, "uid":0
+	]
+    ],
     "proc" : $["cpuinfo" : $[ "value" : $["0" : $[ "flags" : ""]]]],
     "probe" : $["has_smp" : false, "is_uml" : false, "cdrom" : $["manual" : []]],
     ];
@@ -36,5 +45,9 @@ Testsuite::Test( ``(AddMissingExtension("/dir.ext/", ".ext") ), [ $[], $[], $[] 
 Testsuite::Test( ``(AddMissingExtension("/dir.ext/file.ext", ".ext") ), [ $[], $[], $[] ], nil );
 Testsuite::Test( ``(AddMissingExtension("/dir1.ext/dir2.ext/file", ".ext") ), [ $[], $[], $[] ], nil );
 
+// '/dev/' and block devices should not be bothered by adding an extension
+// bugzilla #185042
+// see "target" : $[ "stat" : $[] ]
+Testsuite::Test( ``(AddMissingExtension("/dev/nst0", ".ext") ), [ $[], $[], $[] ], nil );
 }
 
