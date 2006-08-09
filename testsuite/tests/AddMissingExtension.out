@@ -12,3 +12,4 @@ Return	/dir.ext/file.ext
 Return	/dir.ext/.ext
 Return	/dir.ext/file.ext
 Return	/dir1.ext/dir2.ext/file.ext
+Return	/dev/nst0

@@ -256,16 +256,36 @@ free space for the entire archive.</P>\n");
 
  define string backup_help_constraints() ``{
 
-    // For translators: help text in exclude directory dialog - part 1/4
-    return _("<P><BIG><B>Constraints</B></BIG><BR>It is possible to exclude some files from the backup. Search constraints can be a directory, file system, or regular expression.  Use <b>Edit</b> to modify an existing constraint.  <b>Delete<b> removes the selected constrain.  To add a new constraint, click <b>Add</b> then select the type of constraint. </P>")
+    return
+    
+    // For translators: help text in exclude directory dialog - part 1/5
+    _("<p><big><b>Included Directories</b></big><br>
+It is possible to limit the search to back up only selected directories.
+To add a new directory, click <b>Add</b> and select a directory.
+To change or delete a directory, select it and click 
+<b>Edit</b> or <b>Delete</b>.
+If you do not select any directory or if you delete all already listed ones,
+the entire file system is searched and backed up.</p>")
+    
+    // For translators: help text in exclude directory dialog - part 2/5
+    + _("<P><BIG><B>Constraints</B></BIG>
+<BR>It is possible to exclude some files from the backup.
+Search constraints can be a directory, file system, or regular expression.
+Use <b>Edit</b> to modify an existing constraint.
+<b>Delete</b> removes the selected constrain.
+To add a new constraint, click <b>Add</b> then select the type of constraint. </P>")
 
-    // For translators: help text in exclude directory dialog - part 2/4
+    // For translators: help text in exclude directory dialog - part 3/5
     + _("<P><B>Directory</B>: All files located in the specified directories will not be backed up.</P>")
 
-    // For translators: help text in exclude directory dialog - part 3/4
-    + _("<P><B>File System</B><BR>It is possible to exclude all files located on a certain type of file system (such as ReiserFS or Ext2). The root directory will always be searched, even if its file system is selected.  File systems that cannot be used on local disk, such as network file systems, are excluded by default.</P>")
+    // For translators: help text in exclude directory dialog - part 4/5
+    + _("<P><B>File System</B>: It is possible to exclude all files located
+on a certain type of file system (such as ReiserFS or Ext2).
+The root directory will always be searched, even if its file system is selected.
+File systems that cannot be used on local disk, such as network file systems,
+are excluded by default.</P>")
 
-    // For translators: help text in exclude directory dialog - part 4/4
+    // For translators: help text in exclude directory dialog - part 5/5
     + _("<P><B>Regular Expressions</B>: Any filename that matches any of the regular expressions will not be backed up. Use Perl regular expressions. To exclude, for example, <tt>*.bak</tt> files, add the regular expression <tt>\\.bak$</tt>.</P>");
 
 }
