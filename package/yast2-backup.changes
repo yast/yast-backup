@@ -3,6 +3,7 @@ Fri Aug  4 12:23:56 CEST 2006 - locilka@suse.cz
 
 - Adjusted search scripts to backup only included directories.
 - Adjusted helps.
+- Adjusted testsuites.
 - 2.14.0
 
 -------------------------------------------------------------------
