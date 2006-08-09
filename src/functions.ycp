@@ -23,6 +23,7 @@ import "Nfs";
 import "Popup";
 import "FileUtils";
 import "Mode";
+import "FileUtils";
 
 textdomain "backup";
 
@@ -78,7 +79,7 @@ define boolean AbortConfirmation(symbol type) ``{
  * @return map Returned map: $[ "text" : string, "clicked" : symbol ]. Value with key text is string entered by user, symbol is `ok or `cancel depending which button was pressed.
  */
 
- define map ShowEditDialog(string label, string value, list<string> values) ``{
+ define map ShowEditDialog(string label, string value, list<string> values) {
 
     if (label == nil)
     {
@@ -99,7 +100,11 @@ define boolean AbortConfirmation(symbol type) ``{
 
     UI::OpenDialog(
 	`VBox(
-	    ((size(combo_content) > 0) ? `ComboBox(`id(`te), `opt(`hstretch, `editable), label, combo_content) : `TextEntry(`id(`te), label, value)),
+	    ((size(combo_content) > 0) ?
+		`ComboBox(`id(`te), `opt(`hstretch, `editable), label, combo_content)
+		:
+		`TextEntry(`id(`te), label, value)
+	    ),
 	    `VSpacing(1.0),
 	    `HBox(
 	        `PushButton(`id(`ok), `opt(`default, `key_F10), Label::OKButton()),
@@ -116,8 +121,60 @@ define boolean AbortConfirmation(symbol type) ``{
     UI::CloseDialog();
 
     return $[ "text" : text, "clicked" : input ];
-}
+ }
 
+ define map <string, any> ShowEditBrowseDialog (string label, string value) {
+
+    if (label == nil) {
+	label = "";
+    }
+
+    if (value == nil) {
+	value = "";
+    }
+
+    UI::OpenDialog(
+	`VBox(
+	    `HBox (
+		`TextEntry(`id(`te), label, value),
+		`HSpacing(1.0),
+		`VBox (
+		    `VSpacing(0.9),
+		    `PushButton(`id(`browse), Label::BrowseButton())
+		)
+	    ),
+	    `VSpacing(1.0),
+	    `HBox(
+	        `PushButton(`id(`ok), `opt(`default, `key_F10), Label::OKButton()),
+		`PushButton(`id(`cancel), `opt(`key_F9), Label::CancelButton())
+	    )
+	)
+    );
+
+    UI::SetFocus(`id(`te));
+
+    symbol input = nil;
+    
+    while (true) {
+	input = (symbol) UI::UserInput();
+	
+	if (input == `browse) {
+	    string start_dir = (value == "" ? "/" : value);
+	    string new_dir = (string) UI::AskForExistingDirectory (
+		start_dir,
+		_("Select a directory to be included...")
+	    );
+	    if (new_dir != nil) UI::ChangeWidget(`id(`te), `Value, new_dir);
+	} else if (input == `ok || input == `cancel) {
+	    break;
+	}
+    }
+
+    string text = (string) UI::QueryWidget(`id(`te), `Value);
+    UI::CloseDialog();
+
+    return $[ "text" : text, "clicked" : input ];
+ }
 
 /**
  * Returns list of mounted file systems types.
@@ -392,6 +449,9 @@ define boolean AbortConfirmation(symbol type) ``{
 
 /**
  * Add extension to the file name if it is missing.
+ * This function skips adding when the file is under the /dev/ path
+ * or when it is an existing device file.
+ *
  * @param file filname
  * @param extension file extension (with dot)
  * @return string filename with extension
@@ -399,16 +459,32 @@ define boolean AbortConfirmation(symbol type) ``{
  * @example AddMissingExtension("filename.tar", ".gz") -> "filename.tar.gz"
  * @example AddMissingExtension("filename.tar", ".tar") -> "filename.tar"
  */
- define string AddMissingExtension(string file, string extension)
-``{
+ define string AddMissingExtension(string file, string extension) {
     // input check
-    if (file == nil)
-    {
+    if (file == nil) {
 	return "";
     }
 
-    if (extension == nil)
-    {
+    if (extension == nil) {
+	return file;
+    }
+
+    // removing unneded slashes
+    if (regexpmatch(file, "^/")) {
+	file = regexpsub(file, "^/+(.*)", "/\\1");
+    }
+
+    // skip if the file is a block device
+    if (FileUtils::Exists(file) && FileUtils::GetFileType(file) == "block") {
+	y2milestone("Leaving destination unchanged, '%1' is a block device", file);
+
+	return file;
+    }
+
+    // skipping /dev/ directory
+    if (regexpmatch(file, "^/dev/")) {
+	y2milestone("Leaving destination unchanged, '%1' is under the /dev/ directory", file);
+
 	return file;
     }
 
@@ -418,18 +494,14 @@ define boolean AbortConfirmation(symbol type) ``{
     string result = "";
 
     // check if file can contain extension
-    if (size(filename) >= size(extension))
-    {
+    if (size(filename) >= size(extension)) {
 	// add extension only if it is missing
 	filename = (substring(filename, size(filename) - size(extension)) != extension) ? filename + extension : filename;
-    }
-    else
-    {
+    } else {
 	filename = filename + extension;
     }
 
-    if (size(dirs) > 0)
-    {
+    if (size(dirs) > 0) {
 	dirs = remove(dirs, size(dirs) - 1);
     }
 
@@ -624,113 +696,11 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
  * (Requires at least one installation source, otherwise return empty list)
  * @return list<string> available packages
  */
- define list<string> GetInstallPackages() ``{
-    y2milestone("Reading packages available on the installation sources...");
-
-    // fake return for testsuites
-    if (Mode::test()) {
-	y2milestone("SKIPPING");
-	return [];
-    }
-
-    Pkg::TargetInit("/", false);
-
-    // list of available enabled installation sources
-    list<integer> sources = Pkg::SourceStartCache(true);
-    y2debug("availables sources: %1", sources);
-
-    // list of installed products (last installed is first in the list)
-    list installed_products = Pkg::TargetProducts();
-    y2debug("installed products: %1", installed_products);
-
-    // installation sources for installed products
-    list<integer> product_sources = [];
-
-    // user defined installation sources
-    list<integer> nonproduct_sources = [];
-
-    if (size(sources) > 0)
-    {
-	foreach(integer source_id, sources,
-	    ``{
-		map source_description = Pkg::SourceProduct(source_id);
-
-		y2debug("Source %1 description: %2", source_id, source_description);
-
-		// TODO: really compare whole maps? Have they same keys?
-		if (contains(installed_products, source_description))
-		{
-		    product_sources = add(product_sources, source_id);
-		}
-		else
-		{
-		    nonproduct_sources = add(nonproduct_sources, source_id);
-		}
-	    }
-	);
-    }
-    else
-    {
-	y2warning("No installation source configured");
-    }
-
-    y2debug("product sources: %1", product_sources);
-    y2debug("non product sources: %1", nonproduct_sources);
-
-    // TODO: use better solution than temporal disabling of the installation sources
-    //       probably Pkg::GetPackages(`installed, false) should be extened to
-    //       Pkg::GetPackages(`installed, false, source_id)
-
-    // temporaly disable non-product installation sources
-    if (size(nonproduct_sources) > 0)
-    {
-	foreach(integer source_id, nonproduct_sources,
-	    ``{
-		boolean res = Pkg::SourceSetEnabled(source_id, false);
-
-		if (res == false)
-		{
-		    y2error("Cannot disable installation source %1", source_id);
-		}
-	    }
-	);
-    }
-
-    // get all available packages at the product installation sources
-    list<string> installation_packages = Pkg::GetPackages(`available, false);
-
-    // reenable disabled non-product installation sources
-    if (size(nonproduct_sources) > 0)
-    {
-	foreach(integer source_id, nonproduct_sources,
-	    ``{
-		boolean res = Pkg::SourceSetEnabled(source_id, true);
-
-		if (res == false)
-		{
-		    y2error("Cannot enable installation source %1", source_id);
-		}
-	    }
-	);
-    }
-
-    // convert package description to rpm format
-    // ("pkg version release arch" -> "pkg-version-release")
-    installation_packages = maplist(string pkginfo, installation_packages,
-	``{
-	    list<string> parts = splitstring(pkginfo, " ");
-
-	    return sformat("%1-%2-%3", parts[0]:"", parts[1]:"", parts[2]:"");
-	}
-    );
-
-    y2debug("available packages: %1", installation_packages);
-
-    // Clear the packagemanager cache
-    Pkg::SourceFinishAll();
-
-    return installation_packages;
-}
+ define list<string> GetInstallPackages() {
+    y2milestone("---------------------------------------------");
+    return (list <string>) WFM::call("backup_get_packages", []);
+    y2milestone("---------------------------------------------");
+ }
 
 /**
  * Store autoyast profile of the system to file

@@ -34,6 +34,9 @@ my $search_files = 0;
 my @exclude_d = ();
 my @exclude_fs = ();
 my @exclude_reg = ();
+my @include_d = ();
+my $has_include_d = 0;
+
 our @exclude_reg_comp = undef;
 my $start_directory = '/';
 my $help = 0;
@@ -53,6 +56,7 @@ my $widget_index = 1;
 my $first = 1;
 
 my %exclude_dirs;
+my %include_dirs;
 
 # parse command line options
 GetOptions('search' => \$search_files, 'exclude-dir=s' => \@exclude_d,
@@ -62,7 +66,8 @@ GetOptions('search' => \$search_files, 'exclude-dir=s' => \@exclude_d,
     '--list-file=s'=> \$list_items_file,
     'start-dir=s' => \$start_directory, 'same-fs' => \$same_fs,
     'pkg-verification' => \$pkg_verification,
-    'no-md5' => \$no_md5, 'inst-src-packages=s'=> \$inst_src_packages
+    'no-md5' => \$no_md5, 'inst-src-packages=s'=> \$inst_src_packages,
+    'include-dir=s' => \@include_d,
 );
 
 if ($help)
@@ -78,7 +83,9 @@ if ($help)
     print "  --search           Search files which do not belog to any package\n";
     print "    --exclude-dir <dir>  Exclude directory <dir> from search\n";
     print "    --exclude-fs <fs>    Exclude filesystem <fs> from search\n";
-    print "    --exclude-files <r>	Exclude files matching regular expression <r>\n";
+    print "    --exclude-files <r>  Exclude files matching regular expression <r>\n";
+    
+    print "    --include-dir <dir>  Only directories listed are backed up\n";
 
     print "  --output-files     Display only names of files to backup\n";
     print "  --output-progress  Display data for frontend\n";
@@ -132,6 +139,46 @@ foreach my $d (@exclude_d) {
     }
 
     push(@exclude_dir_slash, $d);
+}
+
+# Either some directories are included
+# (meaning that only these directories are backed up)
+# and $has_include_d is true and %include_dirs contains these dirs
+#
+# Or the whole filesystem AKA root "/" is backed up
+# $has_include_d is false
+#
+# Excludes still work!
+
+# Evaluating Includes
+foreach my $d (sort(@include_d)) {
+    # including the whole root fs
+    if ($d eq "/") {
+	%include_dirs = {};
+	$has_include_d = 0;
+	last;
+    }
+
+    $d =~ s/\/*$//;
+    $has_include_d = 1;
+
+    # There mustn't be any directory already listed in another one
+    my $current_path_check = "";
+    my $add_new_path = 1;
+    foreach my $d_item (split(/\//, $d)) {
+	$current_path_check .= ($current_path_check eq "/" ? "":"/").$d_item;
+	#print "\tCheck >>".$current_path_check."<<\n";
+	if (defined $include_dirs{$current_path_check}) {
+	    #print $d." is already in ".$current_path_check."\n";
+	    $add_new_path = 0;
+	    last;
+	}
+    }
+
+    if ($add_new_path) {
+	#print "Adding: ".$d."\n";
+	$include_dirs{$d} = 1;
+    }
 }
 
 # verify installed packages
@@ -227,8 +274,15 @@ if ($search_files)
 	close(MOUNT);
     }
 
+    # start searching from every-single include-dir
+    if ($has_include_d > 0) {
     # start searching from root directory
-    SearchDirectory($start_directory, \%packages_files, \%exclude_dirs, \%package_files_inodes);
+	foreach my $dir (sort(@include_d)) {
+	    SearchDirectory($dir, \%packages_files, \%exclude_dirs, \%package_files_inodes);
+	}
+    } else {
+	SearchDirectory($start_directory, \%packages_files, \%exclude_dirs, \%package_files_inodes);
+    }
 }
 # backup RPM DB if some updated package was found
 elsif (keys(%unavailable_pkgs) > 0)
@@ -287,12 +341,16 @@ sub ReadAllPackages()
     return @all_packages;
 }
 
+sub BackItUp_AccordingIncludes ($);
+
 # uses global variable exclude_reg_comp (precompiled regular expressions)
 sub PrintFoundFile($$$$$)
 {
     my ($file, $ref_package, $widget_file, $output_files, $start_directory) = @_;
 
     # $widget_index <-> using the global one
+
+    return if (! BackItUp_AccordingIncludes($file));
 
     if (defined $file)
     {
@@ -606,12 +664,41 @@ sub isinpackage($)
     return $inpackage;
 }
 
+sub BackItUp_AccordingIncludes ($) {
+    my $file_dir = shift;
 
+    # There are some includes, run through the machinery
+    if ($has_include_d) {
+	my @subdirs = split(/\//, $file_dir);
+	#print "\nDEBUG: searching for : >>".$file_dir."<<\n";
+
+	while (1) {
+	    # no match other possible
+	    return 0 if (@subdirs == 0);
+	    
+	    # the last item is >><< empty but leads to the "/" root fs
+	    my $check_dir = join("/", @subdirs);
+	    #print "\ttrying: ".$check_dir."\n";
+
+	    if (defined $include_dirs{$check_dir}) {
+		#print "DEBUG: found ".$check_dir."\n";
+		last;
+	    }
+
+	    # for the next turn
+	    pop(@subdirs);
+	}
+    }
+    
+    return 1;
+}
 
 # search files which do not belong to any package
 sub SearchDirectory($%%%)
 {
     my ($dir, $files, $exclude, $inodes) = @_;
+    
+    return if (! BackItUp_AccordingIncludes($dir));
 
     if ($output_progress)
     {
@@ -629,6 +716,9 @@ sub SearchDirectory($%%%)
     # read directory content
     my @content = readdir(DIR);
     closedir(DIR);
+
+    # only directories, filesystems and regexps can be excluded
+    # PrintFoundFile works with regexps
 
     my $emptypackage = "";
     foreach my $item (@content) {
@@ -652,13 +742,7 @@ sub SearchDirectory($%%%)
 		# is file is some package?
 		if (!$$files{$fullname})
 		{
-		#    my @filestat = stat($fullname);
-		#
-		#    # it seems that file is not owned by any package, but do another check - dev/inode number
-		#    if (!defined $inodes->{$filestat[0].$filestat[1]})
-		#    {
-			PrintFoundFile($fullname, \$emptypackage, $widget_file, $output_files, $dir);
-		#    }
+		    PrintFoundFile($fullname, \$emptypackage, $widget_file, $output_files, $dir);
 		}
 
 		# do recursive search in subdirectory (if it is not excluded)

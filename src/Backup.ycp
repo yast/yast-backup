@@ -24,6 +24,7 @@ import "Report";
 import "Nfs";
 import "Popup";
 import "FileUtils";
+import "String";
 
 include "backup/functions.ycp";
 include "hwinfo/classnames.ycp";
@@ -105,6 +106,7 @@ global boolean default_perms = true;			// store RPM file if owner/permissions we
 
 global list<string> default_default_dir = [ "/media", "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache", "/sys", "/windows" ];		// default excluded directoried from search
 global list<string> default_dir_list = default_default_dir;			// selected directoried to exclude
+global string default_include_dir = "/";
 global list<string> default_regexp_list = [];
 
 // iso9660 is used on CDROM, ntfs read-only
@@ -171,6 +173,7 @@ global symbol target_type = default_target_type;
 
 global list<string> default_dir = default_default_dir;		// default excluded directoried from search
 global list<string> dir_list = default_dir_list;		// selected directoried to exclude
+global list<string> include_dirs = [default_include_dir];	// selected included directories
 
 global list<string> regexp_list = default_regexp_list;
 
@@ -357,40 +360,38 @@ global define string get_search_script_parameters() ``{
 	script_options = script_options + " --search";
     }
 
+	// Include Dirs
+	include_dirs = toset(include_dirs);
+	y2milestone("Directories to include: %1", include_dirs);
+	if (size(include_dirs) == 0) {
+	    include_dirs = [default_include_dir];
+	}
+	foreach(string d, include_dirs, {
+	    if (d != nil) script_options = script_options + sformat(" --include-dir '%1'", String::Quote(d));
+	});
+
+	// Exclude Dirs
 	y2milestone("Directories to exclude: %1", dir_list);
-
-	if (size(dir_list) > 0)
-	{
-	    foreach(string d, dir_list,
-		``{
-		    if (d != nil)
-		    {
-			script_options = script_options + " --exclude-dir " + d;
-		    }
-		}
-	    );
+	if (size(dir_list) > 0) {
+	    foreach(string d, dir_list, {
+		if (d != nil) script_options = script_options + sformat(" --exclude-dir '%1'", String::Quote(d));
+	    });
 	}
 
+	// Exclude Files
 	y2milestone("Files to exclude: %1", regexp_list);
-
-	if (size(regexp_list) > 0)
-	{
-	    foreach(string r, regexp_list,
-		``{
-		    if (r != nil)
-		    {
-			// TODO: single quotes in tmp_d need to handled properly
-			script_options = script_options + " --exclude-files '" + r + "'";
-		    }
-		}
-	    );
+	if (size(regexp_list) > 0) {
+	    foreach(string r, regexp_list, {
+		if (r != nil) script_options = script_options + sformat(" --exclude-files '%1'", String::Quote(r));
+	    });
 	}
 
+	// Exclude FileSystems
 	y2milestone("Filesystems to exclude: %1", fs_exclude);
-
-	if (size(fs_exclude) > 0)
-	{
-	    foreach(string i, fs_exclude, ``{script_options = script_options + " --exclude-fs " + i;});
+	if (size(fs_exclude) > 0) {
+	    foreach(string i, fs_exclude, {
+		script_options = script_options + sformat(" --exclude-fs '%1'", String::Quote(i));
+	    });
 	}
 
     // save list of installable packages and pass it to the search script
@@ -1140,6 +1141,7 @@ global define void StoreSettingsToBackupProfile( string profile_name ) ``{
 	`dir_list		: dir_list,
 	`fs_exclude		: fs_exclude,
 	`regexp_list		: regexp_list,
+	`include_dirs		: include_dirs,
 	`detected_fs		: detected_fs,
 	`detected_ext2		: detected_ext2,
 	`ext2_backup		: ext2_backup,
@@ -1260,6 +1262,7 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
     mail_summary =	profile[ `mail_summary ]:	default_mail_summary;
     tmp_dir =		profile[ `tmp_dir ]:		default_tmp_dir;
     regexp_list =	profile[ `regexp_list ]:	default_regexp_list;
+    include_dirs =	profile[ `include_dirs ]:	[default_include_dir];
 
     selected_files = default_selected_files;
     backup_files = default_backup_files;
@@ -1311,6 +1314,7 @@ global define void RestoreDefaultSettings() ``{
     mail_summary = default_mail_summary;
     tmp_dir = default_tmp_dir;
     regexp_list = default_regexp_list;
+    include_dirs = [default_include_dir];
 
     selected_files = (map<string,map>)eval(default_selected_files);
     backup_files = (map<string,map>)eval(default_backup_files);
