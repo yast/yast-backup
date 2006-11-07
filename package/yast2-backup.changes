@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Nov  7 16:55:14 CET 2006 - locilka@suse.cz
+
+- Using Pkg::TargetInitialize instead of Pkg::TargetInit to
+  initialize installed vs. available packages correctly (#199656).
+- 2.13.4
+
+-------------------------------------------------------------------
 Mon Jul 31 11:09:11 CEST 2006 - locilka@suse.cz
 
 - Do not add the suffix .tar to a backup destination if the file is
