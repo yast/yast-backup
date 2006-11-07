@@ -649,7 +649,7 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
 	return [];
     }
 
-    Pkg::TargetInit("/", false);
+    Pkg::TargetInitialize ("/");
 
     // list of available enabled installation sources
     list<integer> sources = Pkg::SourceStartCache(true);
@@ -713,7 +713,7 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
     }
 
     // get all available packages at the product installation sources
-    list<string> installation_packages = Pkg::GetPackages(`available, false);
+    list<string> installation_packages = Pkg::GetPackages (`available, false);
 
     // reenable disabled non-product installation sources
     if (size(nonproduct_sources) > 0)
