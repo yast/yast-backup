@@ -33,7 +33,7 @@
 	return [];
     }
 
-    Pkg::TargetInit("/", false);
+    Pkg::TargetInitialize ("/");
 
     // list of available enabled installation sources
     list<integer> sources = Pkg::SourceStartCache(true);
@@ -97,7 +97,7 @@
     }
 
     // get all available packages at the product installation sources
-    list<string> installation_packages = Pkg::GetPackages(`available, false);
+    list<string> installation_packages = Pkg::GetPackages (`available, false);
 
     // reenable disabled non-product installation sources
     if (size(nonproduct_sources) > 0)
@@ -124,13 +124,13 @@
 	}
     );
 
-    y2debug("available packages: %1", installation_packages);
-
     // Clear the packagemanager cache
     Pkg::SourceFinishAll();
     Pkg::TargetFinish();
 
-    y2milestone("Packages: %1", installation_packages);
+    y2debug ("All 'installed && available' packages: (%1) %2",
+	size(installation_packages), installation_packages
+    );
 
     return installation_packages;
 }
