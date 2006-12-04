@@ -2000,7 +2000,12 @@ Aborting the backup.
 		    line = substring(line, size(id_file));
 
 		    string size_str = substring(line, 0, findfirstof(line, " "));
-		    nopkg_size = nopkg_size + tointeger(size_str);
+		    integer size_line = nil;
+		    if (size_str != nil) {
+			size_line = tointeger(size_str);
+			if (size_line != nil) nopkg_size = nopkg_size + size_line;
+		    }
+
 		    nopkg_num = nopkg_num + 1;
 
 		    // refresh status when 10 new files was found - it's faster...
