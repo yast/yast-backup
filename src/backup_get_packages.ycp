@@ -19,6 +19,7 @@
     textdomain "backup";
 
     import "Mode";
+    import "Directory";
 
     /**
      * Read packages available on the installation sources
@@ -27,7 +28,7 @@
      */
     y2milestone("Reading packages available on the installation sources...");
 
-    string filename = "/tmp/yast-backup-out";
+    string filename = sformat ("%1/backup-list-of-packages", Directory::tmpdir);
     if (is(WFM::Args(0), string)) {
 	string filename = (string) WFM::Args (0);
     } else {
