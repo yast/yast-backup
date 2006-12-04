@@ -27,6 +27,13 @@
      */
     y2milestone("Reading packages available on the installation sources...");
 
+    string filename = "/tmp/yast-backup-out";
+    if (is(WFM::Args(0), string)) {
+	string filename = (string) WFM::Args (0);
+    } else {
+	y2error ("Wrong parameter for script");
+    }
+
     // fake return for testsuites
     if (Mode::test()) {
 	y2milestone("SKIPPING");
@@ -53,7 +60,7 @@
     {
 	foreach(integer source_id, sources,
 	    ``{
-		map source_description = Pkg::SourceProduct(source_id);
+		map source_description = Pkg::SourceProductData (source_id);
 
 		y2debug("Source %1 description: %2", source_id, source_description);
 
@@ -132,5 +139,9 @@
 	size(installation_packages), installation_packages
     );
 
-    return installation_packages;
+    // write the output to the temporary file
+    y2milestone ("Writing list of %1 packages into the %2 file",
+	size (installation_packages), filename
+    );
+    SCR::Write (.target.ycp, filename, installation_packages);
 }
