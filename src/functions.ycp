@@ -24,6 +24,7 @@ import "Popup";
 import "FileUtils";
 import "Mode";
 import "FileUtils";
+import "Directory";
 
 textdomain "backup";
 
@@ -696,10 +697,50 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
  * (Requires at least one installation source, otherwise return empty list)
  * @return list<string> available packages
  */
- define list<string> GetInstallPackages() {
-    y2milestone("---------------------------------------------");
-    return (list <string>) WFM::call("backup_get_packages", []);
-    y2milestone("---------------------------------------------");
+ define list <string> GetInstallPackages () {
+    y2milestone("--- backup_get_packages ---");
+    // was: return (list <string>) WFM::call("backup_get_packages", []);
+    // bugzilla #224899, saves memory occupied by zypp data (packager)
+
+    string temporary_file = sformat ("%1/backup-list-of-packages", Directory::tmpdir);
+    if (FileUtils::Exists (temporary_file)) {
+	SCR::Execute (.target.remove, temporary_file);
+    }
+
+    string yastbin = "";
+    if (FileUtils::Exists ("/sbin/yast"))
+	yastbin = "/sbin/yast";
+    else if (FileUtils::Exists ("/sbin/yast2"))
+	yastbin = "/sbin/yast2";
+    else {
+	y2error ("Neither /sbin/yast nor /sbin/yast2 exist");
+	return [];
+    }
+
+    string cmd = sformat("%1 backup_get_packages %2", yastbin, temporary_file);
+    y2milestone ("Running command: '%1'", cmd);
+    map command = (map) SCR::Execute(.target.bash_output, cmd);
+
+    list <string> ret = nil;
+
+    if (command["exit"]:nil != 0) {
+	y2error ("Unexpected error: %1", command);
+	return [];
+    } else {
+	if (FileUtils::Exists (temporary_file)) {
+	    ret = (list <string>) SCR::Read (.target.ycp, temporary_file);
+	    SCR::Execute (.target.remove, temporary_file);
+	    if (ret == nil) {
+		return [];
+		y2error ("Error while reading %1", temporary_file);
+	    }
+	}
+    }
+    y2debug ("Client returned %1", ret);
+
+    y2milestone("--- backup_get_packages ---");
+    
+    return ret;
  }
 
 /**

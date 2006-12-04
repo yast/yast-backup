@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Mon Dec  4 09:27:07 CET 2006 - locilka@suse.cz
+
+- Calling client backup_get_packages via .target.bash_output
+  instead of WFM::call() in order to save memory occupied by ZYPP.
+  It saves more than 70 MB or RAM.
+- 2.15.0 
+
+-------------------------------------------------------------------
 Tue Nov  7 16:58:42 CET 2006 - locilka@suse.cz
 
 - Using Pkg::TargetInitialize instead of Pkg::TargetInit to
