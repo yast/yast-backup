@@ -19,26 +19,27 @@
     textdomain "backup";
 
     import "Mode";
-    import "Directory";
 
     /**
-     * Read packages available on the installation sources
-     * (Requires at least one installation source, otherwise return empty list)
-     * @return list<string> available packages
+     * Read packages available on the installation sources and writes them to the
+     * temporary file. Requires at least one installation source.
+     *
+     * @param string temporary file name
      */
     y2milestone("Reading packages available on the installation sources...");
 
-    string filename = sformat ("%1/backup-list-of-packages", Directory::tmpdir);
+    string filename = nil;
     if (is(WFM::Args(0), string)) {
 	string filename = (string) WFM::Args (0);
     } else {
 	y2error ("Wrong parameter for script");
+	return false;
     }
 
     // fake return for testsuites
     if (Mode::test()) {
 	y2milestone("SKIPPING");
-	return [];
+	return true;
     }
 
     Pkg::TargetInitialize ("/");
@@ -145,4 +146,6 @@
 	size (installation_packages), filename
     );
     SCR::Write (.target.ycp, filename, installation_packages);
+
+    return true;
 }
