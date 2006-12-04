@@ -24,6 +24,7 @@ import "Popup";
 import "FileUtils";
 import "Mode";
 import "FileUtils";
+import "Directory";
 
 textdomain "backup";
 
@@ -640,113 +641,51 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
  * (Requires at least one installation source, otherwise return empty list)
  * @return list<string> available packages
  */
- define list<string> GetInstallPackages() ``{
-    y2milestone("Reading packages available on the installation sources...");
+ define list <string> GetInstallPackages () {
+    y2milestone("--- backup_get_packages ---");
+    // was: return (list <string>) WFM::call("backup_get_packages", []);
+    // bugzilla #224899, saves memory occupied by zypp data (packager)
 
-    // fake return for testsuites
-    if (Mode::test()) {
-	y2milestone("SKIPPING");
-	return [];
+    string temporary_file = sformat ("%1/backup-list-of-packages", Directory::tmpdir);
+    if (FileUtils::Exists (temporary_file)) {
+        SCR::Execute (.target.remove, temporary_file);
     }
 
-    Pkg::TargetInitialize ("/");
-
-    // list of available enabled installation sources
-    list<integer> sources = Pkg::SourceStartCache(true);
-    y2debug("availables sources: %1", sources);
-
-    // list of installed products (last installed is first in the list)
-    list installed_products = Pkg::TargetProducts();
-    y2debug("installed products: %1", installed_products);
-
-    // installation sources for installed products
-    list<integer> product_sources = [];
-
-    // user defined installation sources
-    list<integer> nonproduct_sources = [];
-
-    if (size(sources) > 0)
-    {
-	foreach(integer source_id, sources,
-	    ``{
-		map source_description = Pkg::SourceProduct(source_id);
-
-		y2debug("Source %1 description: %2", source_id, source_description);
-
-		// TODO: really compare whole maps? Have they same keys?
-		if (contains(installed_products, source_description))
-		{
-		    product_sources = add(product_sources, source_id);
-		}
-		else
-		{
-		    nonproduct_sources = add(nonproduct_sources, source_id);
-		}
-	    }
-	);
-    }
-    else
-    {
-	y2warning("No installation source configured");
+    string yastbin = "";
+    if (FileUtils::Exists ("/sbin/yast"))
+        yastbin = "/sbin/yast";
+    else if (FileUtils::Exists ("/sbin/yast2"))
+        yastbin = "/sbin/yast2";
+    else {
+        y2error ("Neither /sbin/yast nor /sbin/yast2 exist");
+        return [];
     }
 
-    y2debug("product sources: %1", product_sources);
-    y2debug("non product sources: %1", nonproduct_sources);
+    string cmd = sformat("%1 backup_get_packages %2", yastbin, temporary_file);
+    y2milestone ("Running command: '%1'", cmd);
+    map command = (map) SCR::Execute(.target.bash_output, cmd);
 
-    // TODO: use better solution than temporal disabling of the installation sources
-    //       probably Pkg::GetPackages(`installed, false) should be extened to
-    //       Pkg::GetPackages(`installed, false, source_id)
+    list <string> ret = nil;
 
-    // temporaly disable non-product installation sources
-    if (size(nonproduct_sources) > 0)
-    {
-	foreach(integer source_id, nonproduct_sources,
-	    ``{
-		boolean res = Pkg::SourceSetEnabled(source_id, false);
-
-		if (res == false)
-		{
-		    y2error("Cannot disable installation source %1", source_id);
-		}
-	    }
-	);
+    if (command["exit"]:nil != 0) {
+        y2error ("Unexpected error: %1", command);
+        return [];
+    } else {
+        if (FileUtils::Exists (temporary_file)) {
+            ret = (list <string>) SCR::Read (.target.ycp, temporary_file);
+            SCR::Execute (.target.remove, temporary_file);
+            if (ret == nil) {
+                return [];
+                y2error ("Error while reading %1", temporary_file);
+            }
+        }
     }
+    y2debug ("Client returned %1", ret);
 
-    // get all available packages at the product installation sources
-    list<string> installation_packages = Pkg::GetPackages (`available, false);
-
-    // reenable disabled non-product installation sources
-    if (size(nonproduct_sources) > 0)
-    {
-	foreach(integer source_id, nonproduct_sources,
-	    ``{
-		boolean res = Pkg::SourceSetEnabled(source_id, true);
-
-		if (res == false)
-		{
-		    y2error("Cannot enable installation source %1", source_id);
-		}
-	    }
-	);
-    }
-
-    // convert package description to rpm format
-    // ("pkg version release arch" -> "pkg-version-release")
-    installation_packages = maplist(string pkginfo, installation_packages,
-	``{
-	    list<string> parts = splitstring(pkginfo, " ");
-
-	    return sformat("%1-%2-%3", parts[0]:"", parts[1]:"", parts[2]:"");
-	}
-    );
-
-    y2debug("available packages: %1", installation_packages);
-
-    // Clear the packagemanager cache
-    Pkg::SourceFinishAll();
-
-    return installation_packages;
-}
+    y2milestone("--- backup_get_packages ---");
+    
+    return ret;
+ }
 
 /**
  * Store autoyast profile of the system to file

@@ -1,0 +1,151 @@
+/**
+ *  File:
+ *    clients/backup_get_packages.ycp
+ *
+ *  Module:
+ *    Backup module
+ *
+ *  Authors:
+ *    Ladislav Slezak <lslezak@suse.cz>
+ *    Lukas Ocilka <locilka@suse.cz>
+ *
+ *  $Id:$
+ *
+ *  Client for returning available packages.
+ *  Client used by backup module. This should save memory.
+ */
+
+{
+    textdomain "backup";
+
+    import "Mode";
+
+    /**
+     * Read packages available on the installation sources and writes them to the
+     * temporary file. Requires at least one installation source.
+     *
+     * @param string temporary file name
+     */
+    y2milestone("Reading packages available on the installation sources...");
+
+    string filename = nil;
+    if (is(WFM::Args(0), string)) {
+	string filename = (string) WFM::Args (0);
+    } else {
+	y2error ("Wrong parameter for script");
+	return false;
+    }
+
+    // fake return for testsuites
+    if (Mode::test()) {
+	y2milestone("SKIPPING");
+	return true;
+    }
+
+    Pkg::TargetInitialize ("/");
+
+    // list of available enabled installation sources
+    list<integer> sources = Pkg::SourceStartCache(true);
+    y2debug("availables sources: %1", sources);
+
+    // list of installed products (last installed is first in the list)
+    list installed_products = Pkg::TargetProducts();
+    y2debug("installed products: %1", installed_products);
+
+    // installation sources for installed products
+    list<integer> product_sources = [];
+
+    // user defined installation sources
+    list<integer> nonproduct_sources = [];
+
+    if (size(sources) > 0)
+    {
+	foreach(integer source_id, sources,
+	    ``{
+		map source_description = Pkg::SourceProductData (source_id);
+
+		y2debug("Source %1 description: %2", source_id, source_description);
+
+		// TODO: really compare whole maps? Have they same keys?
+		if (contains(installed_products, source_description))
+		{
+		    product_sources = add(product_sources, source_id);
+		}
+		else
+		{
+		    nonproduct_sources = add(nonproduct_sources, source_id);
+		}
+	    }
+	);
+    }
+    else
+    {
+	y2warning("No installation source configured");
+    }
+
+    y2debug("product sources: %1", product_sources);
+    y2debug("non product sources: %1", nonproduct_sources);
+
+    // TODO: use better solution than temporal disabling of the installation sources
+    //       probably Pkg::GetPackages(`installed, false) should be extened to
+    //       Pkg::GetPackages(`installed, false, source_id)
+
+    // temporaly disable non-product installation sources
+    if (size(nonproduct_sources) > 0)
+    {
+	foreach(integer source_id, nonproduct_sources,
+	    ``{
+		boolean res = Pkg::SourceSetEnabled(source_id, false);
+
+		if (res == false)
+		{
+		    y2error("Cannot disable installation source %1", source_id);
+		}
+	    }
+	);
+    }
+
+    // get all available packages at the product installation sources
+    list<string> installation_packages = Pkg::GetPackages (`available, false);
+
+    // reenable disabled non-product installation sources
+    if (size(nonproduct_sources) > 0)
+    {
+	foreach(integer source_id, nonproduct_sources,
+	    ``{
+		boolean res = Pkg::SourceSetEnabled(source_id, true);
+
+		if (res == false)
+		{
+		    y2error("Cannot enable installation source %1", source_id);
+		}
+	    }
+	);
+    }
+
+    // convert package description to rpm format
+    // ("pkg version release arch" -> "pkg-version-release")
+    installation_packages = maplist(string pkginfo, installation_packages,
+	``{
+	    list<string> parts = splitstring(pkginfo, " ");
+
+	    return sformat("%1-%2-%3", parts[0]:"", parts[1]:"", parts[2]:"");
+	}
+    );
+
+    // Clear the packagemanager cache
+    Pkg::SourceFinishAll();
+    Pkg::TargetFinish();
+
+    y2debug ("All 'installed && available' packages: (%1) %2",
+	size(installation_packages), installation_packages
+    );
+
+    // write the output to the temporary file
+    y2milestone ("Writing list of %1 packages into the %2 file",
+	size (installation_packages), filename
+    );
+    SCR::Write (.target.ycp, filename, installation_packages);
+
+    return true;
+}
