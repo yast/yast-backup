@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Jan 12 15:41:30 CET 2007 - locilka@suse.cz
+
+- When creating backup on tape (e.g., /dev/nst0), backup profile
+  is also appended to that location (#185042 from comment #4).
+- 2.15.1
+
+-------------------------------------------------------------------
 Mon Dec  4 09:27:07 CET 2006 - locilka@suse.cz
 
 - Calling client backup_get_packages via .target.bash_output

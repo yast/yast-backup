@@ -596,7 +596,6 @@ global define void ExcludeNodevFS() ``{
     y2milestone("Detected nodev filesystems: %1", fs_exclude);
 }
 
-
 /**
  * Write autoinstallation profile to file autoinst.xml to the same directory as archive
  * @param volumes list of created archives (it is written to the XML profile as restoration source)
@@ -605,6 +604,7 @@ global define void ExcludeNodevFS() ``{
 
 global define map WriteProfile(list<string> volumes) ``{
     string archive = ((target_type == `nfs && nfsmount != nil) ? nfsmount + "/" : "") + archive_name;
+
     integer pos = findlastof(archive, "/");
     string dir = "";
     string file = archive;
@@ -712,12 +712,29 @@ global define map WriteProfile(list<string> volumes) ``{
 
     // store profile to this file
     string profilefile = directory + GetBaseName(archive_name) + ".xml";
+    // (tapes)
+    boolean removable_device = false;
+    if (regexpmatch (archive, "^/dev/")) {
+	// save xml to a temporary file
+	removable_device = true;
+	profilefile = (string) SCR::Read (.target.tmpdir) + "/backup-profile.xml";
+    }
 
     y2debug("Profile location: %1", profilefile);
 
     // create and save autoinstallation profile
     boolean res = CloneSystem(profilefile, ["lan"], "restore", restore);
     y2milestone("Clone result: %1", res);
+
+    // tar that temporary file to a device
+    if (removable_device) {
+	string command = sformat ("cd '%1'; /bin/tar -cf '%2' 'backup-profile.xml'",
+	    String::Quote ((string) SCR::Read (.target.tmpdir)), String::Quote (archive_name));
+	map run = (map) SCR::Execute (.target.bash_output, command);
+	y2milestone ("Running command %1 -> %2", command, run);
+	if (run["exit"]:-1 != 0) res = false;
+	profilefile = archive_name;
+    }
 
     if (target_type == `nfs)
     {
