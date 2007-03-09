@@ -26,6 +26,11 @@ Requires:	yast2
 Requires:	yast2-nfs-client
 Requires:	yast2-storage
 
+Recommends:	yast2-bootloader
+Recommends:	yast2-network
+Recommends:	yast2-tune
+Recommends:	yast2-restore
+
 Provides:	yast2-module-backup
 Obsoletes:	yast2-module-backup
 Provides:	yast2-trans-backup
