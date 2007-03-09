@@ -2,6 +2,7 @@
 Fri Mar  9 15:44:39 CET 2007 - locilka@suse.cz
 
 - Adjusted RPM dependencies and BuildRequirements.
+- Added recommended packages.
 - 2.15.2
 
 -------------------------------------------------------------------
