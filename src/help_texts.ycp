@@ -181,8 +181,8 @@ any user interaction.</P>")
 
     // For translators: help text in the automatic backup dialog (2/4)
     + _("<P>To start the backup automatically with the selected profile, 
-check <B>Start Backup Automatically</B> and set how often and when the 
-backup should be started. Use the 24-hour clock format for </b>Hour</b>.</P>")
+check <b>Start Backup Automatically</b> and set how often and when the 
+backup should be started. Use the 24-hour clock format for <b>Hour</b>.</P>")
 
     // For translators: help text in the automatic backup dialog (3/4)
     + _("<P>The previous backup archive, if it exists, will be renamed by 

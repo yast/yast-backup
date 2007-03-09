@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Fri Mar  9 15:44:39 CET 2007 - locilka@suse.cz
+
+- Adjusted RPM dependencies and BuildRequirements.
+- 2.15.2
+
+-------------------------------------------------------------------
+Mon Feb 26 10:05:16 CET 2007 - locilka@suse.cz
+
+- Fixed HTML tags (#248650).
+
+-------------------------------------------------------------------
 Fri Jan 12 15:41:30 CET 2007 - locilka@suse.cz
 
 - When creating backup on tape (e.g., /dev/nst0), backup profile
