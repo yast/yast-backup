@@ -19,6 +19,8 @@
 
 module	"Backup";
 
+textdomain "backup";
+
 import "Progress";
 import "Report";
 import "Nfs";
@@ -27,9 +29,22 @@ import "FileUtils";
 import "String";
 
 include "backup/functions.ycp";
-include "hwinfo/classnames.ycp";
 
-textdomain "backup";
+// include "hwinfo/classnames.ycp";
+// do not include (requires installed yast2-tune)
+// just use that part of the ClassNames from classnames.ycp
+map<integer,map> ClassNames = $[
+    0x106 : $[
+	// TRANSLATORS: name of device (the same as in yast2-tune) - the first device
+	"name"	: _("Mass storage device"),
+	0x00	: _("Disk"),
+	0x01	: _("Tape"),
+	0x02	: _("CD-ROM"),
+	0x03	: _("Floppy disk"),
+	// TRANSLATORS: name of device (the same as in yast2-tune) - the last device
+	0x80	: _("Storage device")
+    ]
+];
 
 // maximum cron file index
 integer max_cron_index = 0;
