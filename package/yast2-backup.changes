@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Mar 28 10:28:09 CEST 2007 - mvidner@suse.cz
+
+- Do not repeatedly add archive extension if the file name contains
+  non-ascii characters (#185042).
+- 2.15.3
+
+-------------------------------------------------------------------
 Fri Mar  9 15:44:39 CET 2007 - locilka@suse.cz
 
 - Adjusted RPM dependencies and BuildRequirements.

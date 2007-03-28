@@ -496,8 +496,11 @@ define boolean AbortConfirmation(symbol type) ``{
 
     // check if file can contain extension
     if (size(filename) >= size(extension)) {
+	string extension_re = regexpsub (extension, "\\.(.*)", "\\.\\1");
+	extension_re = (extension_re == nil? extension: extension_re) + "$";
 	// add extension only if it is missing
-	filename = (substring(filename, size(filename) - size(extension)) != extension) ? filename + extension : filename;
+	if (!regexpmatch (filename, extension_re))
+	    filename = filename + extension;
     } else {
 	filename = filename + extension;
     }

@@ -49,5 +49,8 @@ Testsuite::Test( ``(AddMissingExtension("/dir1.ext/dir2.ext/file", ".ext") ), [ 
 // bugzilla #185042
 // see "target" : $[ "stat" : $[] ]
 Testsuite::Test( ``(AddMissingExtension("/dev/nst0", ".ext") ), [ $[], $[], $[] ], nil );
+
+// #180631 problems with non-ascii characters
+Testsuite::Test( ``(AddMissingExtension("/foo/tučňák.png", ".png") ), [ $[], $[], $[] ], nil );
 }
 
