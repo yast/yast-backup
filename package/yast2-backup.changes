@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri May 25 13:30:04 CEST 2007 - jsrain@suse.cz
+
+- removed outdated translations from .desktop-files (#271209)
+
+-------------------------------------------------------------------
 Wed Mar 28 10:28:09 CEST 2007 - mvidner@suse.cz
 
 - Do not repeatedly add archive extension if the file name contains
