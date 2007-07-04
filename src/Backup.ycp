@@ -27,6 +27,7 @@ import "Nfs";
 import "Popup";
 import "FileUtils";
 import "String";
+import "Service";
 
 include "backup/functions.ycp";
 
@@ -1071,6 +1072,9 @@ global define string CreateCronSetting(string profilename) ``{
 global define void WriteCronSettings() ``{
     y2milestone("backup_profiles: %1", backup_profiles);
 
+    boolean cron_settings_changed = false;
+    boolean cron_is_needed = false;
+
     // write cron files
     foreach(string name, map opts, backup_profiles, ``{
 	    // cron file content
@@ -1096,12 +1100,17 @@ global define void WriteCronSettings() ``{
 
 		SCR::Write(.target.string, cron_file, setting);
 		y2milestone("Created file: %1", cron_file);
+		
+		cron_settings_changed = true;
+		cron_is_needed = true;
 	    }
 	    else if (size(cron_file) > 0 && opts[`cron_settings, "auto"]:false == false)
 	    {
 		// remove existing cron file
 		SCR::Execute(.target.bash, "/bin/rm -f " + cron_file);
 		y2milestone("removed old cron file: %1", cron_file);
+
+		cron_settings_changed = true;
 	    }
 
 	    // mark saved value as unchanged
@@ -1113,6 +1122,23 @@ global define void WriteCronSettings() ``{
 	    backup_profiles[name] = (map)eval(prof);
 	}
     );
+
+    // Cron needs to be restarted for changes to take effect
+    // bugzilla #285442
+    if (cron_settings_changed) {
+	// running
+	if (Service::Status("cron") == 0) {
+	    // restart it only
+	    Service::Restart ("cron");
+
+	// not running but needed
+	} else if (cron_is_needed) {
+	    // not enabled, enable it
+	    if (! Service::Enabled ("cron")) Service::Enable ("cron");
+	    // and start it
+	    Service::Start ("cron");
+	}
+    }
 }
 
 
