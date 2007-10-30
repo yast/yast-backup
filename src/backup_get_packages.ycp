@@ -30,7 +30,7 @@
 
     string filename = nil;
     if (is(WFM::Args(0), string)) {
-	string filename = (string) WFM::Args (0);
+	filename = (string) WFM::Args (0);
     } else {
 	y2error ("Wrong parameter for script");
 	return false;
@@ -67,7 +67,7 @@
 		y2debug("Source %1 description: %2", source_id, source_description);
 
 		// TODO: really compare whole maps? Have they same keys?
-		if (contains(installed_products, source_description))
+		if (source_description != nil && source_description != $[] && contains(installed_products, source_description))
 		{
 		    product_sources = add(product_sources, source_id);
 		}

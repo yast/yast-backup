@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Oct 30 09:51:56 CET 2007 - locilka@suse.cz
+
+- Fixed several issues around creating the archive (#332663).
+- 2.16.0
+
+-------------------------------------------------------------------
 Wed Jul  4 11:13:22 CEST 2007 - locilka@suse.cz
 
 - Restart and/or enable cron service if needed for changed/added

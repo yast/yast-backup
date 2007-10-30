@@ -346,6 +346,7 @@ sub BackItUp_AccordingIncludes ($);
 # uses global variable exclude_reg_comp (precompiled regular expressions)
 sub PrintFoundFile($$$$$)
 {
+    my ($package_name, $file_for_ycp);
     my ($file, $ref_package, $widget_file, $output_files, $start_directory) = @_;
 
     # $widget_index <-> using the global one
@@ -394,9 +395,17 @@ sub PrintFoundFile($$$$$)
 
 	# escaping newline characters is needed because each file
 	# is reported on separate line
+
+	$file_for_ycp = $file;
 	
-	$file =~ s/\\/\\\\/g;
-	$file =~ s/\n/\\n/g;
+	$file_for_ycp =~ s/\\/\\\\/g;
+	$file_for_ycp =~ s/\n/\\n/g;
+	$file_for_ycp =~ s/\"/\\"/g;
+
+	$package_name = $$ref_package;
+	$package_name =~ s/\\/\\\\/g;
+	$package_name =~ s/\n/\\n/g;
+	$package_name =~ s/\"/\\"/g;
 
 	if (!$output_files) {
 	    my $size = 0;
@@ -410,12 +419,12 @@ sub PrintFoundFile($$$$$)
 
 	if ($widget_file ne "")
 	{
-	    print WIDGETFILE '`item(`id('.$widget_index.'), "X", "'.$file.'", "'.$$ref_package.'"),'."\n";
-	    print WIDGETFILE2 '`item(`id('.$widget_index.'), " ", "'.$file.'", "'.$$ref_package.'"),'."\n";
+	    print WIDGETFILE '`item(`id('.$widget_index.'), "X", "'.$file_for_ycp.'", "'.$package_name.'"),'."\n";
+	    print WIDGETFILE2 '`item(`id('.$widget_index.'), " ", "'.$file_for_ycp.'", "'.$package_name.'"),'."\n";
 	}
 
 	if ($list_items_file ne "") {
-	    print LISTITEMSFILE '['.$widget_index.', "'.$file.'"],'."\n";
+	    print LISTITEMSFILE '['.$widget_index.', "'.$file_for_ycp.'"],'."\n";
 	}
     }
 }
