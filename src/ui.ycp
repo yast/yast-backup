@@ -2002,7 +2002,7 @@ Aborting the backup.
 
 		    string size_str = substring(line, 0, findfirstof(line, " "));
 		    integer size_line = nil;
-		    if (size_str != nil) {
+		    if (size_str != nil && size_str != "") {
 			size_line = tointeger(size_str);
 			if (size_line != nil) nopkg_size = nopkg_size + size_line;
 		    }
@@ -2171,7 +2171,15 @@ Aborting the backup.
 
     integer t1 = time();
 
-    list< list<any> > items = (list< list<any> >) SCR::Read(.target.ycp, (string) SCR::Read(.target.tmpdir) + "/items-list.ycp");
+    list< list<any> > items = [];
+    string items_filename = Directory::tmpdir + "/items-list.ycp";
+
+    if (FileUtils::Exists (items_filename)) {
+	y2milestone ("Reading %1", items_filename);
+	items = (list< list<any> >) SCR::Read(.target.ycp, items_filename);
+    } else {
+	y2error ("File %1 doesn't exist!", items_filename);
+    }
 
     // dialog header
     Wizard::SetContents( _("File Selection"),
@@ -2179,12 +2187,12 @@ Aborting the backup.
 	    `VSpacing(0.5),
 	    // label text
 	    `Left(`Label(_("Files to Back Up"))),
-	    `Table(`id(`table),
+	    `Table (
+		`id(`table),
 		`opt(`notify),
 		// table header
 		`header(" ", _("Filename"), _("Package")),
-		// Items are pre-defined in the file
-		(list<term>) SCR::Read(.target.ycp, (string) SCR::Read(.target.tmpdir) + "/items.ycp")
+		[]
 	    ),
 	    `HBox(
 		// push button label
@@ -2197,6 +2205,16 @@ Aborting the backup.
 	    `VSpacing(1.0)
 	),
 	backup_help_file_selection(), true, true
+    );
+
+    // Items are pre-defined in the file
+    string items_filename_show = Directory::tmpdir + "/items.ycp";
+    UI::ChangeWidget (`id (`table), `Items,
+	(FileUtils::Exists (items_filename_show) ?
+	    (list<term>) SCR::Read (.target.ycp, items_filename_show)
+	    :
+	    [`item (`id("none"), ["", _("Internal error"), ""])]
+	)
     );
 
     integer t2 = time();

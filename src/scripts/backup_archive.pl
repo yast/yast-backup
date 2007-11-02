@@ -23,6 +23,19 @@ use strict;
 use File::Temp qw( tempdir );
 use POSIX qw( strftime );
 
+# command line options
+my $archive_name = '';
+my $archive_type = '';
+my $help = '0';
+my $store_pt = '0';
+my @ext2_parts = ();
+my $verbose = '0';
+my $files_info = '';
+my $comment_file = '';
+my $complete_backup = '';
+my $multi_volume = undef;
+my $temp_dir = '/tmp';
+
 # return all harddisks present in system
 sub harddisks($)
 {
@@ -61,6 +74,9 @@ sub create_dirs($)
     if ($ix > 0)
     {
 	my $dirs = substr($f, 0, $ix);
+	if ($verbose) {
+	    print "Running: /bin/mkdir -p $dirs 2> /dev/null\n";
+	}
 	system("/bin/mkdir -p $dirs 2> /dev/null");		# create directory with parents
     }
 }
@@ -114,20 +130,6 @@ sub remove_escape($)
 
     return $result;
 }
-
-
-# command line options
-my $archive_name = '';
-my $archive_type = '';
-my $help = '0';
-my $store_pt = '0';
-my @ext2_parts = ();
-my $verbose = '0';
-my $files_info = '';
-my $comment_file = '';
-my $complete_backup = '';
-my $multi_volume = undef;
-my $temp_dir = '/tmp';
 
 # parse command line options
 GetOptions('archive-name=s' => \$archive_name, 
@@ -210,9 +212,16 @@ if ($archive_type eq 'txt')
 }
 
 # create parent temporary directory
-system("/bin/mkdir -p $temp_dir");
+system("/bin/mkdir -p '$temp_dir'");
+if (! -d $temp_dir) {
+    die "Cannot create directory $temp_dir: ".$!;
+}
 
 my $tmp_dir_root = tempdir($temp_dir."/backup_tmp_XXXXXXXX", CLEANUP => 1);	# remove directory content at exit
+system("/bin/mkdir -p '$tmp_dir_root'");
+if (! -d $tmp_dir_root) {
+    die "Cannot create directory $tmp_dir_root: ".$!;
+}
 
 my $tmp_dir = $tmp_dir_root."/tmp";
 if (!mkdir($tmp_dir))
@@ -243,7 +252,6 @@ $files_num++;
 
 print OUT "info/packages_info.gz\n";
 $files_num++;
-
 
 # store host name
 use Sys::Hostname;
@@ -490,9 +498,11 @@ if (defined open(FILES, $files_info))
 	
 	if ($line =~ /^\/.+/)
 	{
-	    if (-r remove_escape($line) or -l remove_escape($line))	# output only readable files from files-info
-						# symlinked files need not to be readable
-	    {
+	    my $esc_line = remove_escape($line);
+
+#	    if (-r $esc_line or -l $esc_line)	# output only readable files from files-info
+#						# symlinked files need not to be readable
+#	    {
     		print FILES_INFO $line."\n";
 
 		if (defined $opened)
@@ -504,14 +514,14 @@ if (defined open(FILES, $files_info))
 		    else
 		    {
 			# star doesn't use escape sequences
-			print PKGLIST remove_escape($line)."\n";
+			print PKGLIST $esc_line."\n";
 		    }
 		}
-	    }
-	    else
-	    {
-    		print "/File not readable: $line\n";
-	    }
+#	    }
+#	    else
+#	    {
+#    		print "/File not readable: $line\n";
+#	    }
 	}
 	else
 	{
@@ -639,10 +649,20 @@ if (defined $opened)
 close(FILES_INFO);
 
 # compress file packages_info (avg. ratio is ~10:1)
-while (!-e $tmp_dir.'/packages_info.gz') {
+my $wait_sec = 60;
+if (-e "$tmp_dir/packages_info") {
+    print "Gzipping $tmp_dir/packages_info\n";
     system("/usr/bin/gzip -9 $tmp_dir/packages_info");
-    warn 'Cannot create '.$tmp_dir.'/packages_info.gz: '.$!."\n";
-    sleep(15);
+    while ($wait_sec > 0 && ! -e "$tmp_dir/packages_info.gz") {
+	--$wait_sec;
+	sleep(1);
+    }
+} elsif (! -e "$tmp_dir/packages_info.gz") {
+    print ("No such file : $tmp_dir/packages_info");
+}
+
+if (! -e "$tmp_dir/packages_info.gz") {
+    print 'Cannot create '.$tmp_dir.'/packages_info.gz: '.$!."\n";
 }
 
 close(OUT);
@@ -671,7 +691,7 @@ create_dirs($archive_name);
 #  -L <size>		volume size in kiB
 #  -V <str>		volume prefix label
 
-my $tar_command = "(export LC_ALL=C; tar -c --files-from $tmp_dir/files --ignore-failed-read -C $tmp_dir_root/tmp -S";
+my $tar_command = "(export LC_ALL=C; cd $tmp_dir_root/tmp; tar -c --files-from $tmp_dir/files --ignore-failed-read -C $tmp_dir_root/tmp -S";
 
 if ($verbose)
 {
@@ -781,6 +801,7 @@ else
     # create standard (no multi volume) archive 
     $tar_command .= " -f $archive_name 2> /dev/null)";
 
+    print "Tar command: $tar_command\n";
     system($tar_command);
 }
 

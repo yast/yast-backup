@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Fri Nov  2 10:59:31 CET 2007 - locilka@suse.cz
+
+- Fixed creating the archive (tar -C).
+- Fixed reading installed packages.
+- Better solution of some exceptions when creating the archive and
+  temporary directories.
+- Fixed escaping backquotes for files presented in UI.
+  (All in bugzilla #332663)
+- 2.15.5
+
+-------------------------------------------------------------------
 Wed Jul  4 11:13:22 CEST 2007 - locilka@suse.cz
 
 - Restart and/or enable cron service if needed for changed/added
