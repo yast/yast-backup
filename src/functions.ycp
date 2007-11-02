@@ -722,22 +722,25 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
 	return [];
     }
 
-    string cmd = sformat("%1 backup_get_packages %2", yastbin, temporary_file);
+    string cmd = sformat("%1 backup_get_packages %2 1>/dev/null 2>/dev/null", yastbin, temporary_file);
     y2milestone ("Running command: '%1'", cmd);
     map command = (map) SCR::Execute(.target.bash_output, cmd);
 
-    list <string> ret = nil;
+    list <string> ret = [];
 
     if (command["exit"]:nil != 0) {
 	y2error ("Unexpected error: %1", command);
-	return [];
+	ret = [];
     } else {
 	if (FileUtils::Exists (temporary_file)) {
 	    ret = (list <string>) SCR::Read (.target.ycp, temporary_file);
 	    SCR::Execute (.target.remove, temporary_file);
+
 	    if (ret == nil) {
-		return [];
+		ret = [];
 		y2error ("Error while reading %1", temporary_file);
+	    } else {
+		y2milestone ("backup_get_packages found %1 packages", ret);
 	    }
 	}
     }
