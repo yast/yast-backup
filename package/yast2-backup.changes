@@ -5,7 +5,7 @@ Fri Nov  2 10:59:31 CET 2007 - locilka@suse.cz
 - Fixed reading installed packages.
 - Better solution of some exceptions when creating the archive and
   temporary directories.
-- Fixed escaping backquotes for files presented in UI.
+- Fixed escaping quotes and backslashes for files presented in UI.
   (All in bugzilla #332663)
 - 2.15.5
 
