@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Nov 19 16:50:32 CET 2007 - locilka@suse.cz
+
+- Unified used terminology (repositories) (FATE #302970).
+
+-------------------------------------------------------------------
 Tue Oct 30 09:51:56 CET 2007 - locilka@suse.cz
 
 - Fixed several issues around creating the archive (#332663).
