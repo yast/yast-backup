@@ -1676,7 +1676,7 @@ define void InitSearchingModifiedDialog () {
 	Wizard::ClearContents();
 	Wizard::SetContents("",
 	    // label text
-	    `Label(_("Reading packages available on the installation sources...")),
+	    `Label(_("Reading packages available at the software repositories...")),
 	    backup_help_searching_modified(),
 	    false, false
 	);
