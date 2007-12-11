@@ -13,10 +13,6 @@ BuildRequires:	yast2-devtools
 BuildRequires:	yast2-nfs-client
 BuildRequires:	yast2-testsuite
 
-# build-dependencies for autoyast (cloning)
-BuildRequires:	yast2-storage
-BuildRequires:	yast2-country
-
 Requires:	autoyast2-installation
 Requires:	bzip2
 Requires:	coreutils
