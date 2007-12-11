@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Dec 11 12:54:50 CET 2007 - locilka@suse.cz
+
+- UI mode 'testsuite' is now 'UI'.
+- Adjusted RPM dependencies (yast2-core).
+
+-------------------------------------------------------------------
 Mon Nov 19 16:50:32 CET 2007 - locilka@suse.cz
 
 - Unified used terminology (repositories) (FATE #302970).
