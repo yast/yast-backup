@@ -1,8 +1,9 @@
 -------------------------------------------------------------------
 Tue Dec 11 12:54:50 CET 2007 - locilka@suse.cz
 
-- UI mode 'testsuite' is now 'UI'.
+- UI mode 'testsuite' is now 'UI' (#347534).
 - Adjusted RPM dependencies (yast2-core).
+- 2.16.1
 
 -------------------------------------------------------------------
 Mon Nov 19 16:50:32 CET 2007 - locilka@suse.cz
