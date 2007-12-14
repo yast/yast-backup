@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Dec 14 18:40:12 CET 2007 - locilka@suse.cz
+
+- Fixed running the backup in a 'cron' mode. UI named 'testsuite'
+  has been renamed to 'UI' in yast2-core-2.15.7 (#347534).
+- Adjusted RPM dependencies.
+- 2.15.6
+
+-------------------------------------------------------------------
 Fri Nov  2 10:59:31 CET 2007 - locilka@suse.cz
 
 - Fixed creating the archive (tar -C).

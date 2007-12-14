@@ -31,6 +31,9 @@ Requires:	yast2-nfs-client
 Requires:	yast2-storage
 Requires:	yast2-tune
 
+# UI as a namespace
+Conflicts:	yast2-core < 2.15.7
+
 Recommends:	yast2-bootloader
 Recommends:	yast2-network
 Recommends:	yast2-tune
