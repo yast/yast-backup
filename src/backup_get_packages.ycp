@@ -29,8 +29,11 @@
     y2milestone("Reading packages available on the installation sources...");
 
     string filename = nil;
-    if (is(WFM::Args(0), string)) {
-	filename = (string) WFM::Args (0);
+    list args = WFM::Args();
+    y2milestone ("Args: %1", args);
+
+    if (args[0]:nil != nil && is(args[0]:"", string)) {
+	filename = (string) args[0]:"";
     } else {
 	y2error ("Wrong parameter for script");
 	return false;
@@ -43,14 +46,16 @@
     }
 
     Pkg::TargetInitialize ("/");
+    Pkg::SourceRestore();
+    Pkg::SourceStartManager(true);
 
     // list of available enabled installation sources
     list<integer> sources = Pkg::SourceStartCache(true);
-    y2debug("availables sources: %1", sources);
+    y2milestone("availables sources: %1", sources);
 
     // list of installed products (last installed is first in the list)
     list installed_products = Pkg::TargetProducts();
-    y2debug("installed products: %1", installed_products);
+    y2milestone("installed products: %1", installed_products);
 
     // installation sources for installed products
     list<integer> product_sources = [];

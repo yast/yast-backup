@@ -703,6 +703,9 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
  * @return list<string> available packages
  */
  define list <string> GetInstallPackages () {
+    // function returns empty list
+    return [];
+
     y2milestone("--- backup_get_packages ---");
     // was: return (list <string>) WFM::call("backup_get_packages", []);
     // bugzilla #224899, saves memory occupied by zypp data (packager)
@@ -722,6 +725,7 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
 	return [];
     }
 
+    // breaks ncurses
     string cmd = sformat("%1 backup_get_packages %2 1>/dev/null 2>/dev/null", yastbin, temporary_file);
     y2milestone ("Running command: '%1'", cmd);
     map command = (map) SCR::Execute(.target.bash_output, cmd);

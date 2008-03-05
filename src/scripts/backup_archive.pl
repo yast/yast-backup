@@ -490,7 +490,7 @@ if ($verbose)
     print "Creating archive:\n";
 }
 
-if (defined open(FILES, $files_info))
+if (open(FILES, $files_info))
 {
     while (my $line = <FILES>)
     {
@@ -596,6 +596,10 @@ if (defined open(FILES, $files_info))
     }
     
     close(FILES);
+}
+else
+{
+    print STDERR "Cannot open list of files to backup";
 }
 
 #last package
