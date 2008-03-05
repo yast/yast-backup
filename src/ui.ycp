@@ -33,7 +33,10 @@ include "backup/functions.ycp";
 
 textdomain "backup";
 
- integer wait_time = 500;    // loop delay (in miliseconds)
+integer wait_time = 250;    // loop delay (in miliseconds)
+
+// used for the ag_process
+integer backup_PID = nil;
 
 // variables needed for backup when freezes on ZERO (or almost zero) free space
 integer waiting_without_output = 0;
@@ -92,7 +95,7 @@ define symbol EvaluateFreeSpace (symbol ret) {
 		    y2milestone("Finishing backup...");
 		    return `abort;
 		// !cron mode => ask user
-		} else if ((boolean) SCR::Read(.background.isrunning)) {
+		} else if ((boolean) SCR::Read (.process.running, backup_PID)) {
 		    if (!Popup::YesNoHeadline(
 			// headline of a popup message
 			_("Warning"),
@@ -122,7 +125,7 @@ define symbol EvaluateFreeSpace (symbol ret) {
 		    y2milestone("Finishing backup...");
 		    return `abort;
 		// !cron mode => ask user
-		} else if ((boolean) SCR::Read(.background.isrunning)) {
+		} else if ((boolean) SCR::Read (.process.running, backup_PID)) {
 		    if (!Popup::YesNoHeadline(
 			// headline of a popup message
 			_("Warning"),
@@ -165,7 +168,7 @@ define symbol EvaluateFreeSpace (symbol ret) {
 
         if (AbortConfirmation(abort_question))
         {
-            SCR::Execute(.background.kill, nil);
+            SCR::Execute (.process.kill, backup_PID);
             return ret;
         }
         else
@@ -174,33 +177,25 @@ define symbol EvaluateFreeSpace (symbol ret) {
         }
     }
 
-    while ((integer)SCR::Read(.background.newlines) == 0 && (boolean)SCR::Read(.background.output_open))
+    if ((boolean) SCR::Read (.process.running, backup_PID))
     {
         sleep(wait);
 
         ret = (symbol) UI::PollInput();
 
-        if (ret == `abort || ret == `cancel)
-        {
+        if (ret == `abort || ret == `cancel) {
             ret = `abort;
-            y2warning("Abort pressed");
+	    y2warning("Abort pressed");
 
-            if (AbortConfirmation(abort_question))
-            {
-                SCR::Execute(.background.kill, "");
-                break;
-            }
-            else
-            {
-                ret = nil;
-            }
-        }
-
-	if (Backup::just_creating_archive) {
-	    CheckFreeSpace();
-    	    ret = EvaluateFreeSpace(ret);
-    	    if (ret == `abort) {
-        	break;
+	    if (Backup::just_creating_archive) {
+		CheckFreeSpace();
+		ret = EvaluateFreeSpace (ret);
+	    } else {
+		if (AbortConfirmation(abort_question)) {
+		    SCR::Execute(.process.kill, backup_PID);
+        	} else {
+        	    ret = nil;
+        	}
     	    }
 	}
     }
@@ -1682,9 +1677,6 @@ define void InitSearchingModifiedDialog () {
 	);
     }
 
-    // set buffer size
-    SCR::Write(.background.buffer_size, 500);
-
     // read list of available packages at the original installation sources
     Backup::ReadInstallablePackages();
 
@@ -1874,19 +1866,26 @@ define string MemorySpent () {
     y2milestone("Search script: %1", Backup::script_get_files + Backup::get_search_script_parameters());
 
     // starting the searching script in the background
-    boolean started = (boolean)SCR::Execute(.background.run_output, Backup::script_get_files + Backup::get_search_script_parameters());
+    backup_PID = (integer) SCR::Execute (.process.start_shell, Backup::script_get_files + Backup::get_search_script_parameters(), $["C_locale":true]);
     list<string> script_out = [ ];
+
+    boolean started = (backup_PID != nil && backup_PID > 0);
 
     symbol ret = nil;
 
-    y2milestone("subprocess started: %1 (PID: %2)", started, (integer)SCR::Read(.background.pid));
+    y2milestone ("subprocess started: %1 (PID: %2)", started, backup_PID);
 
     if (!started) {
 	// error popup message
 	Report::Error(_("Could not start the search script.
 Aborting the backup.
 "));
-	y2error("Errors: %1", (list<string>)SCR::Read(.background.newerr));
+	line = "";
+	while (line != nil) {
+	    line = (string) SCR::Read (.process.read_line_stderr, backup_PID);
+	    y2error ("Error: %1", line);
+	}
+
 	if (Backup::cron_mode) {
 	    return `abort;
 	} else {
@@ -1897,19 +1896,15 @@ Aborting the backup.
     integer search_time = time();
 
     // while background script runs
-    while(((boolean)SCR::Read(.background.output_open)) || ((integer)SCR::Read(.background.newlines)) > 0) {
-	script_out = (list<string>)SCR::Read(.background.newout);
+    while ((boolean) SCR::Read (.process.running, backup_PID) || ! (boolean) SCR::Read (.process.buffer_empty, backup_PID)) {
+	line = (string) SCR::Read (.process.read_line, backup_PID);	// read line
 
-	// processing the script output
-	while (size(script_out) > 0) {
-	    line = script_out[0]:nil;			// read line
-	    script_out = remove(script_out, 0);		// remove line
-
+	while (line != nil) {
 	    // reading installed packages until the last package is read
 	    if (reading_installed_packages) {
 		Search_ProcessInstalledPackages();
 	    } else {
-		if (substring(line, 0, size(id_package)) == id_package || substring(line, 0, size(id_complete_package)) == id_complete_package) {
+		if (substring (line, 0, size(id_package)) == id_package || substring (line, 0, size(id_complete_package)) == id_complete_package) {
 		    Search_ChangedPackageFiles();
 		} else {
 		    if  (substring(line, 0, size(id_file)) == id_file) {
@@ -1928,6 +1923,8 @@ Aborting the backup.
 		    }
 		}
 	    }
+
+	    line = (string) SCR::Read (.process.read_line, backup_PID);	// read line
 	}
 
 	if (search_no_package) {
@@ -1936,19 +1933,18 @@ Aborting the backup.
 
 	if (Backup::cron_mode) {
 	    // in cron mode only wait for subprocess
-	    while (((integer)SCR::Read(.background.newlines)) == 0 && (boolean)SCR::Read(.background.output_open)) {
+	    while ((string) SCR::Read (.process.read, backup_PID) != nil) {
 		sleep(wait_time);
 	    }
 
 	    ret = nil;
 	} else {
-	    ret = waitForUserOrProcess(wait_time, `changed);
+	    ret = waitForUserOrProcess (wait_time, `changed);
 	}
 
 	if (ret != nil) {
 	    return ret;
 	}
-
     }
     // end of the 'while' backround script runs
 
@@ -1978,24 +1974,13 @@ Aborting the backup.
 	list package_files_part = [];
 	integer new_files = 0;
 
-	while((boolean)SCR::Read(.background.output_open) || ((integer)SCR::Read(.background.newlines)) > 0 || (size(script_out) > 0))
+	while ((boolean) SCR::Read (.process.running, backup_PID) || ! (boolean) SCR::Read (.process.buffer_empty, backup_PID))
 	// test of script_out size is needed, because previous while cycle was interrupted and script could exited with no new output...
 	{
-	    if (size(script_out) == 0)
-	    {
-		script_out = (list<string>)SCR::Read(.background.newout);
-	    }
+	    line = (string) SCR::Read (.process.read_line, backup_PID);	// read line
+	    if (line == nil) continue;
 
-	    // current line index
-	    integer lineidx = 0;
-	    // number of new lines
-	    integer script_out_size = size(script_out);
-
-	    while (lineidx < script_out_size)
-	    {
-		line = script_out[lineidx]:nil;		// read line
-		lineidx = lineidx + 1;
-
+	    // --->
 		if (substring(line, 0, size(id_file)) == id_file)
 		{
 		    line = substring(line, size(id_file));
@@ -2061,15 +2046,18 @@ Aborting the backup.
 			}
 		    }
 		}
-	    }
+	    // <---
 
 	    script_out = [];
 
 	    if (Backup::cron_mode == true)
 	    {
 		// in cron mode only wait for subprocess
-		while (((integer)SCR::Read(.background.newlines)) == 0 && (boolean)SCR::Read(.background.output_open))
+		while ((boolean) SCR::Read (.process.running, backup_PID) || ! (boolean) SCR::Read (.process.buffer_empty, backup_PID))
 		{
+		    while ((string) SCR::Read (.process.read, backup_PID) != nil) {
+			// do nothing
+		    }
 		    sleep(wait_time);
 		}
 
@@ -2560,20 +2548,7 @@ define void CreateProgress_ArchivingDialog() {
     // prepare start
     Backup::PrepareBackup();
 
-    boolean started = (boolean)SCR::Execute(.background.run_output, sformat("%1 %2", Backup::script_create_archive, Backup::get_archive_script_parameters(tmpfile_list, tmpfile_comment)));
-
-    if (!started)
-    {
-	// error popup message
-	Report::Error(_("Could not start archiving script.
-Aborting the backup.
-"));
-	return `abort;
-    }
-
     list<string> script_out = [ ];
-
-
 
     archived_num = 0;
     boolean tar_running = false;
@@ -2590,10 +2565,35 @@ Aborting the backup.
 
     y2milestone("Creating archive...");
 
-    Backup::just_creating_archive = true;
-    while(((boolean)SCR::Read(.background.output_open)) == true || ((integer)(SCR::Read(.background.newlines)) > 0))
+    backup_PID = (integer) SCR::Execute(
+	.process.start_shell,
+	sformat("%1 %2 | tee /tee-yast-backup", Backup::script_create_archive, Backup::get_archive_script_parameters(tmpfile_list, tmpfile_comment)),
+	$["C_locale":true]
+    );
+    boolean started = (backup_PID != nil && backup_PID > 0);
+
+    if (!started)
     {
-	script_out = (list<string>) SCR::Read(.background.newout);
+	// error popup message
+	Report::Error(_("Could not start archiving script.
+Aborting the backup.
+"));
+	return `abort;
+    }
+
+    Backup::just_creating_archive = true;
+
+    line = "-- just -- started --";
+    // start while
+    //
+    // .running might return false
+    // but there still might be some buffer left
+    while ((boolean) SCR::Read (.process.running, backup_PID) || ! (boolean) SCR::Read (.process.buffer_empty, backup_PID))
+    {
+	line = (string) SCR::Read(.process.read_line, backup_PID);
+	if (line == nil) continue;
+
+	script_out = [line];
 	
 	// script returned some lines, no check the free space
 	if (size(script_out)>0) {
@@ -2812,7 +2812,10 @@ Aborting the backup.
 
 	    if (Backup::cron_mode) {
 		// in cron mode only wait for subprocess (and free space!)
-		while ((integer) SCR::Read(.background.newlines) == 0 && (boolean) SCR::Read(.background.output_open) && enough_free_space_tmp && enough_free_space_target) {
+		while (((boolean) SCR::Read (.process.running, backup_PID) || ! (boolean) SCR::Read (.process.buffer_empty, backup_PID)) && enough_free_space_tmp && enough_free_space_target) {
+		    while ((string) SCR::Read (.process.read_line, backup_PID) != nil) {
+			// do nothing
+		    }
 		    sleep(wait_time);
 		    CheckFreeSpace();
 		}
@@ -2836,6 +2839,10 @@ Aborting the backup.
 	}
 
     }
+    // end while
+
+    y2milestone ("DEBUG: running %1", (boolean) SCR::Read (.process.running, backup_PID));
+    y2milestone ("DEBUG: empty %1", (boolean) SCR::Read (.process.buffer_empty, backup_PID));
 
     Backup::selected_files = $[];
 

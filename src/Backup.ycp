@@ -426,11 +426,17 @@ global define string get_search_script_parameters() ``{
 	script_options = script_options + " --no-md5";
     }
 
-    // add widget file option
-    script_options = script_options + " --widget-file " + ((string)SCR::Read(.target.tmpdir)) + "/items.ycp";
+    // if (display files before archiving them)
+    if (display) {
+	y2milestone ("Files files will be displayed before archiving");
+	// add widget file option
+	script_options = script_options + " --widget-file " + ((string)SCR::Read(.target.tmpdir)) + "/items.ycp";
 
-    // add items list option
-    script_options = script_options + " --list-file " + ((string)SCR::Read(.target.tmpdir)) + "/items-list.ycp";
+	// add items list option
+	script_options = script_options + " --list-file " + ((string)SCR::Read(.target.tmpdir)) + "/items-list.ycp";
+    } else {
+	y2milestone ("Displaying files will be skipped");
+    }
 
     // add package verification option
     script_options = script_options + " --pkg-verification";

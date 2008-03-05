@@ -26,8 +26,8 @@ Requires:	yast2
 Requires:	yast2-nfs-client
 Requires:	yast2-storage
 
-# New mod-UI
-Conflicts:	yast2-core < 2.15.7
+# .process.buffer_empty
+Conflicts:	yast2-core < 2.16.10
 
 Recommends:	yast2-bootloader
 Recommends:	yast2-network
