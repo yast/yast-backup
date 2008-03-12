@@ -2567,7 +2567,7 @@ define void CreateProgress_ArchivingDialog() {
 
     backup_PID = (integer) SCR::Execute(
 	.process.start_shell,
-	sformat("%1 %2 | tee /tee-yast-backup", Backup::script_create_archive, Backup::get_archive_script_parameters(tmpfile_list, tmpfile_comment)),
+	sformat("%1 %2", Backup::script_create_archive, Backup::get_archive_script_parameters(tmpfile_list, tmpfile_comment)),
 	$["C_locale":true]
     );
     boolean started = (backup_PID != nil && backup_PID > 0);
