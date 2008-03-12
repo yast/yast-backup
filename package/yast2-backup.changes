@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Mar 12 14:05:08 CET 2008 - locilka@suse.cz
+
+- Removed 'tee' used for debugging.
+- 2.16.3
+
+-------------------------------------------------------------------
 Wed Mar  5 10:27:15 CET 2008 - locilka@suse.cz
 
 - Adapted to a new .process SCR agent.
