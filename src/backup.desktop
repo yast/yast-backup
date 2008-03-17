@@ -22,3 +22,4 @@ Exec=/sbin/yast2 backup
 Name=System Backup
 GenericName=Back up files and system areas
 X-KDE-SubstituteUID=true
+StartupNotify=true
