@@ -272,7 +272,7 @@ the entire file system is searched and backed up.</p>")
 <BR>It is possible to exclude some files from the backup.
 Search constraints can be a directory, file system, or regular expression.
 Use <b>Edit</b> to modify an existing constraint.
-<b>Delete</b> removes the selected constrain.
+<b>Delete</b> removes the selected constraint.
 To add a new constraint, click <b>Add</b> then select the type of constraint. </P>")
 
     // For translators: help text in exclude directory dialog - part 3/5
@@ -282,7 +282,7 @@ To add a new constraint, click <b>Add</b> then select the type of constraint. </
     + _("<P><B>File System</B>: It is possible to exclude all files located
 on a certain type of file system (such as ReiserFS or Ext2).
 The root directory will always be searched, even if its file system is selected.
-File systems that cannot be used on local disk, such as network file systems,
+File systems that cannot be used on a local disk, such as network file systems,
 are excluded by default.</P>")
 
     // For translators: help text in exclude directory dialog - part 5/5
