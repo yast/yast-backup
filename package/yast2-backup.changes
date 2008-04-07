@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Apr  7 10:50:30 CEST 2008 - locilka@suse.cz
+
+- Excluding /mnt by default (bnc #375212).
+- 2.16.4
+
+-------------------------------------------------------------------
 Tue Apr  1 09:53:08 CEST 2008 - jsrain@suse.cz
 
 - merged texts from proofread

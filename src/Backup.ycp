@@ -120,7 +120,7 @@ global boolean default_display = false;			// display files before creating archi
 global boolean default_do_md5_test = true;
 global boolean default_perms = true;			// store RPM file if owner/permissions were changed
 
-global list<string> default_default_dir = [ "/media", "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache", "/sys", "/windows" ];		// default excluded directoried from search
+global list<string> default_default_dir = [ "/media", "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache", "/sys", "/windows", "/mnt" ];		// default excluded directoried from search
 global list<string> default_dir_list = default_default_dir;			// selected directoried to exclude
 global string default_include_dir = "/";
 global list<string> default_regexp_list = [];
