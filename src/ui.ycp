@@ -509,7 +509,7 @@ define boolean InstallNeededPackages (list<string> packages) {
 
     // replace 'Next' button with 'Ok'
     Wizard::SetNextButton(`next, Label::OKButton() );
-    Wizard::SetFocusToNextButton();
+    UI::SetFocus (`id (`next));
 
     // set initial widget states
     update_cron_dialog();
@@ -1118,7 +1118,7 @@ Enter the filename to use.
 
     // replace 'Next' button with 'Ok'
     Wizard::SetNextButton(`ok, Label::OKButton() );
-    Wizard::SetFocusToNextButton();
+    UI::SetFocus (`id (`ok));
 
     // allow only digits in the text entry
     UI::ChangeWidget(`id(`user_size), `ValidChars, "0123456789" );
@@ -1342,6 +1342,7 @@ Enter the filename to use.
     );
 
     Wizard::SetNextButton(`finish, Label::OKButton() );
+    UI::SetFocus (`id (`finish));
 
     UI::ChangeWidget(`id(`par), `Enabled, Backup::backup_selected_ext2);
     UI::ChangeWidget(`id(`addnew), `Enabled, Backup::backup_selected_ext2);
@@ -3181,7 +3182,7 @@ Replace the existing profile?
     }
 
     Wizard::SetNextButton(`finish, Label::OKButton() );
-    Wizard::SetFocusToNextButton();
+    UI::SetFocus (`id (`finish));
 
     symbol ret = (symbol)UI::UserInput();
 
@@ -3259,7 +3260,7 @@ Replace the existing profile?
     }
 
     Wizard::SetNextButton(`finish, Label::OKButton() );
-    Wizard::SetFocusToNextButton();
+    UI::SetFocus (`id (`finish));
 
     symbol ret = nil;
 
@@ -3837,6 +3838,7 @@ string RenameProfilePupupDialog(string current_name) {
     if (Backup::selected_profile != nil) {
 	// replace 'Next' button with 'OK' if profile is configured
 	Wizard::SetNextButton(`next, Label::OKButton() );
+	UI::SetFocus (`id (`next));
     }
 
     return nil;
