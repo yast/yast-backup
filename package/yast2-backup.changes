@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon May 19 09:43:11 CEST 2008 - locilka@suse.cz
+
+- Replacing Wizard::SetFocusToNextButton with UI::SetFocus which
+  makes sure the button is really focused (bnc #389126).
+- 2.16.5
+
+-------------------------------------------------------------------
 Fri May 16 16:40:22 CEST 2008 - jsrain@suse.cz
 
 - added categories Settings and System into desktop file
