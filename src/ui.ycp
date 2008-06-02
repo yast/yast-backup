@@ -27,6 +27,8 @@ import "NetworkPopup";
 import "Nfs";
 import "PackageSystem";
 import "Popup";
+import "Confirm";
+import "Mode";
 
 include "backup/help_texts.ycp";
 include "backup/functions.ycp";
@@ -713,7 +715,14 @@ define boolean AbortNewProfileCreation(string profile_name) {
     Wizard::SetContents(_("Archive Settings"),
 	`VBox(
 	    `VSpacing(0.5),
-	    `TextEntry(`id(`filename), Label::FileName()),
+	    `HBox (
+		`InputField (`id (`filename), `opt (`hstretch), Label::FileName()),
+		`HSpacing(1),
+		`VBox (
+		    `Label (""),
+		    `PushButton (`id(`browse_file), Label::BrowseButton())
+		)
+	    ),
 	    `VSpacing(0.5),
 
 	    `Frame(_("Backup Location"),
@@ -729,7 +738,7 @@ define boolean AbortNewProfileCreation(string profile_name) {
 			    `HBox(
 				`HSpacing(2),
 				// text entry label
-				`TextEntry(`id(`nfsserver), _("I&P Address or Name of NFS Server"), Backup::nfsserver),
+				`InputField (`id (`nfsserver), `opt (`hstretch), _("I&P Address or Name of NFS Server"), Backup::nfsserver),
 				`HSpacing(1),
 				// push button label
 				`VBox(
@@ -741,7 +750,7 @@ define boolean AbortNewProfileCreation(string profile_name) {
 			    `HBox(
 				`HSpacing(2),
 				// text entry label
-				`TextEntry(`id(`nfsexport), _("&Remote Directory"), Backup::nfsexport),
+				`InputField (`id (`nfsexport), `opt (`hstretch), _("&Remote Directory"), Backup::nfsexport),
 				`HSpacing(1),
 				// push button label
 				`VBox(
@@ -841,10 +850,20 @@ be backed up by root.
 
     while (!cont)
     {
+	ret = (symbol) UI::UserInput();
+
+	if (ret == `browse_file) {
+	    // TRANSLATORS: explanatory headline for UI::AskForExistingFile pop-up
+	    string new_filename = UI::AskForExistingFile("", "", _("Where would you like to store the backup?"));
+	    if (new_filename != nil && new_filename != "") {
+		UI::ChangeWidget (`id(`filename), `Value, new_filename);
+	    }
+	    continue;
+	}
+
 	// update dialog (enable/disable widgets)
 	update_location_dialog();
 
-        ret = (symbol)UI::UserInput();
 	Backup::nfsserver = (string)UI::QueryWidget(`id(`nfsserver), `Value);
 	Backup::nfsexport = (string)UI::QueryWidget(`id(`nfsexport), `Value);
 
@@ -1100,7 +1119,7 @@ Enter the filename to use.
 			    `Left(
 				`HBox(
 				    // text entry label
-				    `TextEntry(`id(`user_size), _("Custom &Size")),
+				    `InputField (`id (`user_size), `opt (`hstretch), _("Custom &Size")),
 				    `ComboBox(`id(`user_unit), "", description_combo_units),
 				    `HStretch()
 				)
@@ -3242,7 +3261,7 @@ Replace the existing profile?
 	    ),
 	    `VSpacing(1.0),
 	    // text entry label
-	    `TextEntry(`id(`tmp), `opt(`hstretch), _("&Temporary Location of Archive Parts"), Backup::tmp_dir),
+	    `InputField (`id (`tmp), `opt(`hstretch), _("&Temporary Location of Archive Parts"), Backup::tmp_dir),
 	    `VSpacing(0.5)
 	),
 	expert_options_help(), true, true
@@ -3520,7 +3539,7 @@ string RenameProfilePupupDialog(string current_name) {
 	    `VSpacing(0.5),
 		`HBox(
 		    `HSpacing(1.0),
-		    `TextEntry(`id(`dir), label, dir),
+		    `InputField (`id(`dir), `opt (`vstretch), label, dir),
 		    `HSpacing(1),
 		    `VBox(
 			`Label(""),
@@ -3799,7 +3818,7 @@ string RenameProfilePupupDialog(string current_name) {
 	    `VSquash(
 		`MinHeight(6,
 		    // selection box
-		    `SelectionBox(`id(`include), `opt(`shrinkable), _("Directories Included in Search"), [])
+		    `SelectionBox(`id(`include), `opt(`shrinkable), _("&Directories Included in Search"), [])
 		)
 	    ),
 	    `HBox(
@@ -3975,7 +3994,7 @@ string RenameProfilePupupDialog(string current_name) {
     if (regexpmatch(new_dir, "^.+/$")) {
 	new_dir = regexpsub(new_dir, "^(.+)/$", "\\1");
     }
-	
+
     if (new_dir == Backup::default_include_dir) {
 	y2milestone("Selecting the whole fs '/'");
 	Backup::include_dirs = [Backup::default_include_dir];
@@ -3986,18 +4005,35 @@ string RenameProfilePupupDialog(string current_name) {
  }
 
  void AddIncludeItem () {
-    // return $[ "text" : text, "clicked" : input ];
-    map <string, any> new_dir = ShowEditBrowseDialog(_("&Add New Directory"), "");
+    while (true) {
+	// return $[ "text" : text, "clicked" : input ];
+	map <string, any> new_dir = ShowEditBrowseDialog(_("&Add New Directory"), "");
 
-    if (new_dir["clicked"]:nil == `ok && new_dir["text"]:"" != "" && new_dir["text"]:nil != nil) {
-	AddIncludeItemNow(new_dir["text"]:"");
+	if (new_dir["clicked"]:nil == `ok && new_dir["text"]:"" != "" && new_dir["text"]:nil != nil) {
+	    // bnc #395835
+	    if (Mode::normal() && ! FileUtils::Exists (new_dir["text"]:"") && (! Popup::AnyQuestion (
+		_("Warning"),
+		sformat (_("Directory %1 does not exist.
 
-	RedrawIncludeTable();
+Use it anyway?"), new_dir["text"]:""),
+		_("Yes, Use It"),
+		Label::NoButton(),
+		`focus_yes
+	    ))) {
+		continue;
+	    }
+
+	    AddIncludeItemNow(new_dir["text"]:"");
+
+	    RedrawIncludeTable();
+	}
+
+	break;
     }
  }
 
  void DeleteIncludeItem (string delete_dir) {
-    if (contains(Backup::include_dirs, delete_dir)) {
+    if (Confirm::DeleteSelected() && contains(Backup::include_dirs, delete_dir)) {
 	Backup::include_dirs = filter (string one_dir, Backup::include_dirs, {
 	    return one_dir != delete_dir;
 	});

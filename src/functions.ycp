@@ -104,7 +104,7 @@ define boolean AbortConfirmation(symbol type) ``{
 	    ((size(combo_content) > 0) ?
 		`ComboBox(`id(`te), `opt(`hstretch, `editable), label, combo_content)
 		:
-		`TextEntry(`id(`te), label, value)
+		`InputField (`id (`te), `opt (`hstretch), label, value)
 	    ),
 	    `VSpacing(1.0),
 	    `HBox(
@@ -137,7 +137,7 @@ define boolean AbortConfirmation(symbol type) ``{
     UI::OpenDialog(
 	`VBox(
 	    `HBox (
-		`TextEntry(`id(`te), label, value),
+		`InputField (`id (`te), `opt (`hstretch), label, value),
 		`HSpacing(1.0),
 		`VBox (
 		    `VSpacing(0.9),
