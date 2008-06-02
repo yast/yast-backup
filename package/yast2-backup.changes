@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Mon Jun  2 18:07:34 CEST 2008 - locilka@suse.cz
+
+- TextEntry items replaced with InputField items.
+- Checking existence of directory included for backup (bnc #395835)
+- Added Browse button for selecting the filename to store the
+  backup to.
+- Added confirmation dialog before removing dierctory included for
+  backup.
+
+-------------------------------------------------------------------
 Mon May 19 09:43:11 CEST 2008 - locilka@suse.cz
 
 - Replacing Wizard::SetFocusToNextButton with UI::SetFocus which
