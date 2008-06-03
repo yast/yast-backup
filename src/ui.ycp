@@ -1236,6 +1236,8 @@ Enter the filename to use.
 		    `VSpacing(0.3),
 		    // check box label
                     `Left(`CheckBox(`id(`search), `opt(`notify), _("&Back Up Files Not Belonging to Any Package"), Backup::do_search)),
+                    // check box label
+                    `Left(`CheckBox(`id(`all_rpms_content), `opt(`notify), _("Back Up Content of &All Packages"), Backup::backup_all_rpms_content)),
 		    `VSpacing(0.3),
 		    // check box label
 		    `Left(`CheckBox(`id(`display), _("Display List of Files Before &Creating Archive"), Backup::display)),
@@ -1284,6 +1286,7 @@ Enter the filename to use.
     }
 
     // get values
+    Backup::backup_all_rpms_content = (boolean) UI::QueryWidget(`id(`all_rpms_content), `Value);
     Backup::do_search = (boolean)UI::QueryWidget(`id(`search), `Value);
     Backup::display = (boolean)UI::QueryWidget(`id(`display), `Value);
     Backup::do_md5_test = (boolean)UI::QueryWidget(`id(`md5_check), `Value);

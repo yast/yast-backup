@@ -47,6 +47,7 @@ my $output_files = 0;
 my $output_default = 0;
 my $no_md5 = 0;
 my $pkg_verification = 0;
+my $backup_all_rpms_content = 0;
 my $inst_src_packages = "";
 my %instalable_packages;
 
@@ -67,7 +68,7 @@ GetOptions('search' => \$search_files, 'exclude-dir=s' => \@exclude_d,
     'start-dir=s' => \$start_directory, 'same-fs' => \$same_fs,
     'pkg-verification' => \$pkg_verification,
     'no-md5' => \$no_md5, 'inst-src-packages=s'=> \$inst_src_packages,
-    'include-dir=s' => \@include_d,
+    'include-dir=s' => \@include_d, 'all-rpms-content' => \$backup_all_rpms_content,
 );
 
 if ($help)
@@ -78,13 +79,14 @@ if ($help)
 
     print "Options:\n\n";
 
-    print "  --no-md5          Do not use MD5 test in verification\n";
+    print "  --no-md5           Do not use MD5 test in verification\n";
+    print "  --all-rpms-content All RPMs will be backed up completely\n";
 
     print "  --search           Search files which do not belog to any package\n";
     print "    --exclude-dir <dir>  Exclude directory <dir> from search\n";
     print "    --exclude-fs <fs>    Exclude filesystem <fs> from search\n";
     print "    --exclude-files <r>  Exclude files matching regular expression <r>\n";
-    
+
     print "    --include-dir <dir>  Only directories listed are backed up\n";
 
     print "  --output-files     Display only names of files to backup\n";
@@ -209,6 +211,14 @@ if ($inst_src_packages ne "")
 	{
 	    $unavailable_pkgs{$pk} = 1;
 	}
+    }
+}
+
+# bnc #344643
+# backup all installed packages
+if ($backup_all_rpms_content) {
+    foreach my $pk (@installed_packages) {
+	$unavailable_pkgs{$pk} = 1;
     }
 }
 

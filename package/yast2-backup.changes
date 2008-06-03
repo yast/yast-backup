@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Jun  3 18:38:51 CEST 2008 - locilka@suse.cz
+
+- New option 'Back Up Content of All Packages' has been added to
+  backup not only changed files but all (bnc #344643).
+
+-------------------------------------------------------------------
 Mon Jun  2 18:07:34 CEST 2008 - locilka@suse.cz
 
 - TextEntry items replaced with InputField items.

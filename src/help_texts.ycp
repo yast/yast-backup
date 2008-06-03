@@ -74,20 +74,25 @@ multiple of 2048 bytes.</P>");
  */
 
  define string backup_help_backup_setting() ``{
-    // For translators: help text in backup settings dialog - part 1/4
+    // For translators: help text in backup settings dialog - part 1
     return _("<P><B><BIG>Backup Options</BIG></B><BR>Here, select which parts of the system to search and back up. <B>Archive Description</B> is an optional description of the backup archive.</P>")
 
-    // For translators: help text in backup settings dialog - part 2/4
+    // For translators: help text in backup settings dialog - part 2
     + _("<P>The archive will contain files from packages that were changed since
 package installation or upgrade. Files that do not belong to any
 package can be optionally added to the archive.</P>")
 
-    // For translators: help text in backup settings dialog - part 3/4
+    // For translators: help text in backup settings dialog - part 3
     + _("<P>Check <B>Display List of Files</B> to show and edit a list of files found before creating the backup archive.</P>")
 
-    // For translators: help text in backup settings dialog - part 4/4
-    + _("<P>If you select <b>Check MD5 Sum</b>, the MD5 sum is used to determine if the file was changed. It is more reliable than checking the size or modification time, but takes longer.</P>");
+    // For translators: help text in backup settings dialog - part 4
+    + _("<P>If you select <b>Check MD5 Sum</b>, the MD5 sum is used to determine if the file was changed. It is more reliable than checking the size or modification time, but takes longer.</P>")
 
+    // TRANSLATORS: help text in backup settings dialog - part 5
+    + _("<p>Select <b>Backup Content of All Packages</b> to backup all files belonging
+to all installed packages. This option is useful when the same installation
+repositories or the same packages needn't be available when restoring the archive.
+It is faster not to use this option.</p>");
 }
 
 
