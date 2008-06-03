@@ -115,6 +115,7 @@ global string default_user_volume_size = "";
 global symbol default_user_volume_unit = nil;
 
 global boolean default_search = true;			// search files which do not belong to any package
+global boolean default_all_rpms_content = false;	// by default only changed RPM-files are backed up
 global boolean default_system = false;			// backup system areas
 global boolean default_display = false;			// display files before creating archive
 global boolean default_do_md5_test = true;
@@ -177,9 +178,10 @@ global integer user_vol_size = 0;
 global string temporary_dir = default_temporary_dir;
 global boolean mail_summary = default_mail_summary;
 
-global boolean do_search = default_search;			// search files which do not belong to any package
-global boolean system = default_system;			// backup system areas
-global boolean display = default_display;		// display files before creating archive
+global boolean do_search = default_search;				// search files which do not belong to any package
+global boolean backup_all_rpms_content = default_all_rpms_content;	// backup content of all packages
+global boolean system = default_system;					// backup system areas
+global boolean display = default_display;				// display files before creating archive
 global boolean do_md5_test = default_do_md5_test;
 global boolean perms = default_perms;
 
@@ -370,6 +372,12 @@ global define integer GetCapacity(list<map<string,any> > media, symbol m) ``{
 
 global define string get_search_script_parameters() ``{
     string script_options = " --start-dir / --output-progress";       // required parameter for YaST2 frontend
+
+    if (backup_all_rpms_content) {
+	// see bnc #344643
+	y2milestone ("Backup all RPMs content...");
+	script_options = script_options + " --all-rpms-content";
+    }
 
     if (do_search)
     {
@@ -1198,6 +1206,7 @@ global define void StoreSettingsToBackupProfile( string profile_name ) ``{
 	`user_volume_size 	: user_volume_size,
 	`user_volume_unit 	: user_volume_unit,
 	`search 		: do_search,
+	`all_rpms_content	: backup_all_rpms_content,
 	`system 		: system,
 	`display 		: display,
 	`do_md5_test 		: do_md5_test,
@@ -1260,6 +1269,7 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
     user_volume_size =  profile[ `user_volume_size ]:	default_user_volume_size;
     user_volume_unit =	profile[ `user_volume_unit ]:	default_user_volume_unit;
     do_search =		profile[ `search ]:		default_search;
+    backup_all_rpms_content = profile[ `all_rpms_content ]:	default_all_rpms_content;
     system =		profile[ `system ]:		default_system;
     display =		profile[ `display ]:		default_display;
     do_md5_test =	profile[ `do_md5_test ]:	default_do_md5_test;
@@ -1350,6 +1360,7 @@ global define void RestoreDefaultSettings() ``{
     user_volume_size = default_user_volume_size;
     user_volume_unit = default_user_volume_unit;
     do_search = default_search;
+    backup_all_rpms_content = default_all_rpms_content;
     system = default_system;
     display = default_display;
     do_md5_test = default_do_md5_test;
