@@ -3348,7 +3348,8 @@ string RenameProfilePupupDialog(string current_name) {
  */
  define symbol SelectProfileDialog() ``{
 
-    Wizard::SetNextButton(`finish, Label::CloseButton() );
+    Wizard::SetNextButton(`finish, Label::OKButton() );
+    Wizard::SetAbortButton (`abort, Label::CancelButton());
     Wizard::HideBackButton();
 
     string tableheader1 = _("Name");
