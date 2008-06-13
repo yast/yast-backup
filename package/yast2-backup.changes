@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Jun 13 13:27:06 CEST 2008 - locilka@suse.cz
+
+- YCP module 'Backup' has been marked as Internal.
+
+-------------------------------------------------------------------
 Tue Jun  3 18:38:51 CEST 2008 - locilka@suse.cz
 
 - New option 'Back Up Content of All Packages' has been added to
