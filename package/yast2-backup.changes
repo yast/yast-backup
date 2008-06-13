@@ -2,6 +2,7 @@
 Fri Jun 13 13:27:06 CEST 2008 - locilka@suse.cz
 
 - YCP module 'Backup' has been marked as Internal.
+- [Cancel] / [OK] (bnc #398501).
 
 -------------------------------------------------------------------
 Tue Jun  3 18:38:51 CEST 2008 - locilka@suse.cz
