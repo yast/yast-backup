@@ -278,7 +278,7 @@ the entire file system is searched and backed up.</p>
     + _("<P><BIG><B>Constraints</B></BIG>
 <BR>It is possible to exclude some files from the backup.
 Search constraints can be a directory, file system, or regular expression.
-Use <b>Edit</b> to modify an existing constraint.or
+Use <b>Edit</b> to modify an existing constraint, or
 <b>Delete</b> to remove the selected constraint.
 To add a new constraint, click <b>Add</b> then select the type of constraint. </P>")
 
