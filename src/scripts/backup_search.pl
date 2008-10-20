@@ -229,6 +229,20 @@ my %packages_files;
 my %package_files_inodes;
 my %dups;
 
+# bnc #421214
+sub Quote ($) {
+    my $string = shift;
+
+    if (not defined $string || $string eq "") {
+	return '';
+    };
+
+    $string =~ s/\'/\'"\'"\'/g;
+    $string = '\''.$string.'\'';
+
+    return $string;
+}
+
 # read list of all package's files if searching not owned files is required
 # or MD5 sum is not used in searching modified files
 if ($search_files or $no_md5)	
@@ -269,7 +283,7 @@ if ($search_files)
     # TODO: this approach is not 100% reliable - a device can mounted after this check
     if ($same_fs)
     {
-	open(MOUNT, "/bin/mount |");
+	open(MOUNT, "-|", "LC_ALL=C /bin/mount");
 
 	while (my $line = <MOUNT>) 
 	{
@@ -329,7 +343,7 @@ exit 0;
 sub ReadAllPackages()
 {
     # read all installed packages
-    open(RPMQA, "rpm -qa |")
+    open(RPMQA, "-|", "LC_ALL=C rpm -qa")
 	or die "Command 'rpm -qa' failed\n";
 
     print "Reading installed packages\n";
@@ -483,7 +497,7 @@ sub CheckFile {
 			# check if Mtime changed file is in more than one package
 			if ($mtime and !$size and $no_md5 and $$$refref_duplicates_file{$file})
 			{
-			    open(RPMQFILE, "rpm -qf $file |");
+			    open(RPMQFILE, "-|", "LC_ALL=C rpm -qf ".Quote ($file));
 			    my @packages_list = ();
 			    
 			    while (my $pkg = <RPMQFILE>)
@@ -503,7 +517,7 @@ sub CheckFile {
 				# so all files in package are verified
 				# in this verification is not MD5 test excluded
 				# TODO LATER: don't grep but cache results of all files from package
-				open(RPMVRF, "rpm -V $pack --nodeps | grep $file |");
+				open(RPMVRF, "-|", "LC_ALL=C rpm -V ".Quote ($pack)." --nodeps | grep ".Quote ($file));
 				
 				my $fl = <RPMVRF>;
 				
@@ -544,7 +558,7 @@ sub CheckFile {
 sub PrintOutInstPrefix ($) {
     my $package = shift;
 
-    my $rpm_query = 'LC_ALL=C rpm -q --queryformat "%{INSTPREFIXES}" '.$package;
+    my $rpm_query = 'LC_ALL=C rpm -q --queryformat "%{INSTPREFIXES}" '.Quote ($package);
     print "Installed: ".`$rpm_query`."\n";
 }
 
@@ -556,13 +570,14 @@ sub VerifyPackages(@%%) {
 
     ### Printing out all unavailable packages and their content
     if (keys %{$unavail}) {
-	open(RPML,
-	    'LC_ALL=C '.
-	    'rpm -q --queryformat "FULL-PACKAGE-NAME: %{NAME}-%{VERSION}-%{RELEASE}\n" --filesbypkg '.
-		join(' ', (keys %{$unavail})).
-	    ' |'
-	) || do {
-	    warn "Cannot run: ".'rpm -q --filesbypkg '.join(' ', (keys %{$unavail})).' |';
+	my $command = "";
+	foreach my $pack (keys %{$unavail}) {
+	    $command .= ' '.Quote ($pack);
+	}
+
+	$command = 'LC_ALL=C rpm -q --queryformat "FULL-PACKAGE-NAME: %{NAME}-%{VERSION}-%{RELEASE}\n" --filesbypkg '.$command;
+	open(RPML, "-|", $command) || do {
+	    warn "Cannot run: ".$command;
 	};
 	my $current_package_name = '';
 	while (my $l = <RPML>) {
@@ -603,7 +618,7 @@ sub VerifyPackages(@%%) {
 	}
 
 	# verification of the package - do not check package dependencies
-	open(RPMV, "LC_ALL=C rpm -V $package $md5_param --nodeps |")
+	open(RPMV, "-|", "LC_ALL=C rpm -V ".Quote ($package)." $md5_param --nodeps")
 	    or die "Verification of package $package failed.";
 
 	    while (my $line = <RPMV>) {
@@ -625,7 +640,7 @@ sub ReadAllFiles(%%)
     my ($all_files, $pkg_inodes) = @_;
     my %duplicates;
     
-    open(RPMQAL, "rpm -qal |")
+    open(RPMQAL, "-|", "LC_ALL=C rpm -qal")
 	or die "Command 'rpm -qal' failed\n";
 
     if ($output_progress)
@@ -671,12 +686,15 @@ sub isinpackage($)
 {
     my ($filename) = @_;
 
-    open(RPMQFILE, 'rpm -qf '.$filename.' 2>/dev/null |');
+    open(RPMQFILE, '-|', 'LANG=C rpm -qf '.Quote ($filename).' 2>/dev/null');
     my $inpackage = 0;
 
     while (my $pkg = <RPMQFILE>)
     {
-	$inpackage = 1;
+	# bnc #421214, backup also symbolic links
+	if ( $pkg !~ /is not owned by any package$/ ) {
+	    $inpackage = 1;
+	}
     }
     close(RPMQFILE);
 
@@ -792,7 +810,7 @@ sub FsToDirs(@)
 
     foreach my $fsys (@fs)
     {
-	open(MOUNTT, "export LC_ALL=C; mount -t $fsys |")
+	open(MOUNTT, "-|", "export LC_ALL=C; mount -t ".Quote ($fsys))
 	    or next;
      
 	while ($line = <MOUNTT>)
