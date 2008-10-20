@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Oct 20 16:22:38 CEST 2008 - locilka@suse.cz
+
+- Fixed storing the symlinks.
+- Correctly escaping shell commands (both bnc #421214).
+- 2.15.7
+
+-------------------------------------------------------------------
 Fri Dec 14 18:40:12 CET 2007 - locilka@suse.cz
 
 - Fixed running the backup in a 'cron' mode. UI named 'testsuite'
