@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Oct 20 16:13:27 CEST 2008 - locilka@suse.cz
+
+- Fixed storing the symlinks.
+- Correctly escaping shell commands (both bnc #421214).
+- 2.16.6
+
+-------------------------------------------------------------------
 Mon May 19 09:43:11 CEST 2008 - locilka@suse.cz
 
 - Replacing Wizard::SetFocusToNextButton with UI::SetFocus which
