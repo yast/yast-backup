@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Oct 23 17:19:32 CEST 2008 - locilka@suse.cz
+
+- Fixed storing the symlinks.
+- Correctly escaping shell commands (both bnc #421214).
+- 2.14.2
+
+-------------------------------------------------------------------
 Tue Nov  7 16:58:42 CET 2006 - locilka@suse.cz
 
 - Using Pkg::TargetInitialize instead of Pkg::TargetInit to
