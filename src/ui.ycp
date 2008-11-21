@@ -1384,7 +1384,7 @@ Enter the filename to use.
 
             if (ret == `edit)
 	    {
-	        map edited = ShowEditDialog("&Edit", curr, nil);
+	        map edited = ShowEditDialog(Label::EditButton(), curr, nil);
 
 		if (edited["clicked"]:nil == `ok)
 		{
@@ -3932,7 +3932,7 @@ string RenameProfilePupupDialog(string current_name) {
 
  void ExcludeItemEdit (string value, string type, list <string> & all_fss) {
 	    // textentry label
-	    map result = ShowEditDialog(_("&Edit"), value, (type == filesystem_text) ? all_fss : nil);
+	    map result = ShowEditDialog(Label::EditButton(), value, (type == filesystem_text) ? all_fss : nil);
 
             if (result["clicked"]:nil == `ok) {
                 string new_txt = (string)(result["text"]:nil);

@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Nov 21 12:19:36 CET 2008 - locilka@suse.cz
+
+- Text was not marked for translation, using fallback already
+  defined in Label module (bnc #446544).
+- 2.17.2
+
+-------------------------------------------------------------------
 Mon Oct 20 16:15:52 CEST 2008 - locilka@suse.cz
 
 - Fixed storing the symlinks.
