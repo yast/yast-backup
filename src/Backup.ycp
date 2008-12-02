@@ -1487,7 +1487,8 @@ global define list<term> BackupProfileDescriptions() ``{
 	    if (size(descr) > maxsize)
 	    {
 		// use only the beginning of the description, add dots
-		descr = substring(descr, 0, maxsize) + "...";
+		// BNC #446996: substring for localized strings -> lsubstring
+		descr = lsubstring (descr, 0, maxsize) + "...";
 	    }
 
 	    return `item( `id( key ), key, descr, CreateCronDescription(key) );

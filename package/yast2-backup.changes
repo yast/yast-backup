@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Tue Dec  2 13:50:44 CET 2008 - locilka@suse.cz
+
+- Using 'lsubstring' instead of 'substring' fur cutting the
+  description text - possibly in UTF-8 with multibyte-characters
+  (bnc #446996).
+- 2.17.3
+
+-------------------------------------------------------------------
 Fri Nov 21 12:19:36 CET 2008 - locilka@suse.cz
 
 - Text was not marked for translation, using fallback already
