@@ -4,6 +4,7 @@ Tue Dec  2 13:50:44 CET 2008 - locilka@suse.cz
 - Using 'lsubstring' instead of 'substring' fur cutting the
   description text - possibly in UTF-8 with multibyte-characters
   (bnc #446996).
+- Fixed Archive File Options dialog layout (bnc #447072).
 - 2.17.3
 
 -------------------------------------------------------------------
