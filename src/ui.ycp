@@ -1117,12 +1117,13 @@ Enter the filename to use.
 			    `VSpacing(0.5),
 
 			    `Left(
-				`HBox(
+				`VSquash(`HBox(
 				    // text entry label
-				    `InputField (`id (`user_size), `opt (`hstretch), _("Custom &Size")),
-				    `ComboBox(`id(`user_unit), "", description_combo_units),
+				    `Bottom(`InputField (`id (`user_size), `opt (`hstretch), _("Custom &Size"))),
+				    `HSpacing(1),
+				    `Bottom(`ComboBox(`id(`user_unit), "", description_combo_units)),
 				    `HStretch()
-				)
+				))
 			    ),
 			    `VSpacing(0.5)
 			),
