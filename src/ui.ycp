@@ -1403,8 +1403,8 @@ Enter the filename to use.
 			{
 			    // refresh ext2_backup content
 			    Backup::ext2_backup = maplist(term i, Backup::ext2_backup, ``{
-				list tmp = i[0]:[];
-				if (tmp[0]:nil == curr)
+				string tmp = i[0,0]:"";
+				if (tmp == curr)
 				{
 				    return `item(`id(txt), txt, dir);
 				}
@@ -1426,8 +1426,8 @@ Enter the filename to use.
 	    if (ret == `delete)
 	    {
 		Backup::ext2_backup = filter(term i, Backup::ext2_backup, ``{
-		    list tmp = i[0]:[];
-		    return (tmp[0]:nil != curr);
+		    string tmp = i[0,0]:"";
+		    return (tmp != curr);
 		});
 		UI::ChangeWidget(`id(`par), `Items, Backup::ext2_backup);
 	    }
