@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Jan 13 15:47:54 CET 2009 - locilka@suse.cz
+
+- Fixed editing the Ext2 File System Critical Area Backup items
+  (bnc #465729)
+- Changed layout of the Expert Backup Options dialog.
+
+-------------------------------------------------------------------
 Tue Dec  2 13:50:44 CET 2008 - locilka@suse.cz
 
 - Using 'lsubstring' instead of 'substring' fur cutting the
