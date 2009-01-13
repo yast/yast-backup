@@ -1403,8 +1403,8 @@ Enter the filename to use.
 			{
 			    // refresh ext2_backup content
 			    Backup::ext2_backup = maplist(term i, Backup::ext2_backup, ``{
-				list tmp = i[0]:[];
-				if (tmp[0]:nil == curr)
+				string tmp = i[0,0]:"";
+				if (tmp == curr)
 				{
 				    return `item(`id(txt), txt, dir);
 				}
@@ -1426,8 +1426,8 @@ Enter the filename to use.
 	    if (ret == `delete)
 	    {
 		Backup::ext2_backup = filter(term i, Backup::ext2_backup, ``{
-		    list tmp = i[0]:[];
-		    return (tmp[0]:nil != curr);
+		    string tmp = i[0,0]:"";
+		    return (tmp != curr);
 		});
 		UI::ChangeWidget(`id(`par), `Items, Backup::ext2_backup);
 	    }
@@ -3255,18 +3255,21 @@ Replace the existing profile?
  define symbol ExpertOptionsDialog() ``{
     // dialog header
     Wizard::SetContents( _("Expert Backup Options"),
-	`VBox(
+	`VBox (
 	    `VSpacing(0.5),
 	    // check box label
-	    `HBox(
-		`CheckBox(`id(`system), `opt(`notify), _("Back Up &Hard Disk System Areas"), Backup::system),
-		`HStretch(),
-		`PushButton(`id(`set_system), _("&Options..."))
+	    `CheckBoxFrame (
+		`id(`system), `opt(`notify), _("Back Up &Hard Disk System Areas"), Backup::system,
+		`VBox (
+		    `HBox (
+			// text entry label
+			`InputField (`id (`tmp), `opt(`hstretch), _("&Temporary Location of Archive Parts"), Backup::tmp_dir),
+			`HStretch(),
+			`PushButton(`id(`set_system), _("&Options..."))
+		    )
+		)
 	    ),
-	    `VSpacing(1.0),
-	    // text entry label
-	    `InputField (`id (`tmp), `opt(`hstretch), _("&Temporary Location of Archive Parts"), Backup::tmp_dir),
-	    `VSpacing(0.5)
+	    `VStretch()
 	),
 	expert_options_help(), true, true
     );
