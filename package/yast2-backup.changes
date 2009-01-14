@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Jan 14 16:37:41 CET 2009 - locilka@suse.cz
+
+- Added support for user-defined pre- and post-backup scripts
+  (bnc #466055).
+- 2.18.0
+
+-------------------------------------------------------------------
 Tue Jan 13 15:47:54 CET 2009 - locilka@suse.cz
 
 - Fixed editing the Ext2 File System Critical Area Backup items
