@@ -216,6 +216,8 @@ global string target_dir = "";
 global boolean cron_mode = false;
 global string cron_profile = "";
 
+global list <map> backup_helper_scripts = [];
+
 //global boolean LVMsnapshot = default_LVMsnapshot;
 //global boolean testonly = default_testonly;
 global boolean autoprofile = default_autoprofile;
@@ -341,7 +343,7 @@ global list< map<string,any> > units_description = [
 /* File where configuration is stored */
 string configuration_filename = "/var/adm/YaST/backup/profiles";
 
-string backup_scripts_dir = "/var/adm/YaST/backup/scripts/";
+global string backup_scripts_dir = "/var/adm/YaST/backup/scripts/";
 
 /**
  * Return capacity of required medium
@@ -1238,10 +1240,11 @@ global define void StoreSettingsToBackupProfile( string profile_name ) ``{
 	`nfsexport		: nfsexport,
 	`mail_summary		: mail_summary,
 	`tmp_dir		: tmp_dir,
-	`target_type		: target_type
+	`target_type		: target_type,
 //	`target_device		: target_device,
-//	`target_devices_options	: target_devices_options
-    ] ;
+//	`target_devices_options	: target_devices_options,
+	`backup_helper_scripts	: backup_helper_scripts,
+    ];
 
     // add the new profile
     backup_profiles[profile_name] = new_profile;
@@ -1347,6 +1350,8 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
 
     selected_profile = profile_name;
 
+    backup_helper_scripts = profile[ `backup_helper_scripts ]:[];
+
     return true;
 }
 
@@ -1397,6 +1402,8 @@ global define void RestoreDefaultSettings() ``{
 
     selected_files = (map<string,map>)eval(default_selected_files);
     backup_files = (map<string,map>)eval(default_backup_files);
+
+    backup_helper_scripts = [];
 
     selected_profile = nil;
 }

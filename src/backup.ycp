@@ -40,7 +40,7 @@ map sequence = $[
 
     "readprof" : $[
 	`edit	: "archive",
-	`start  : "do_searching",
+	`start  : "scripts_before",
 	`start  : "constraint",
 	`manual : "archive",
 	`cron	: "cron",
@@ -62,7 +62,7 @@ map sequence = $[
     ],
     "backup" : $[
         `next	: "constraint",
-	`next2	: "searching",
+	`next2	: "scripts_before",
 	`xpert	: "options",
 	`abort	: `abort
     ],
@@ -80,8 +80,12 @@ map sequence = $[
 	`abort	: `abort
     ],
     "searching"	: $[
-	`next	: "do_searching",
+	`next	: "scripts_before",
 	`ok	: "readprof"
+    ],
+    "scripts_before" : $[
+	`next	: "do_searching",
+	`abort	: `abort,
     ],
     "do_searching"	: $[
 	`next	: "files",
@@ -96,8 +100,12 @@ map sequence = $[
 	`back_from_files : "constraint"
     ],
     "archiving" : $[
-	`next	: "summary",
+	`next	: "scripts_after",
 	`abort	: `abort
+    ],
+    "scripts_after" : $[
+	`next	: "summary",
+	`abort	: `abort,
     ],
     "summary" : $[
 	`abort	: `abort,
@@ -116,10 +124,13 @@ map aliases = $[
     "options"	: ``(ExpertOptionsDialog()),
     "constraint": ``(ConstraintDialog()),
     "system"	: ``(SystemBackupDialog()),
-    "searching" : ``(PrepareSearching()),
+
+    "searching"		: ``(PrepareSearching()),
+    "scripts_before"	: ``(CallScriptsBeforeBackup()),
     "do_searching"	: [ ``(SearchingModifiedDialog()), true ],
-    "archiving"	: [ ``(ArchivingDialog()), true ],
-    "summary"	: ``(SummaryDialog())
+    "archiving"		: [ ``(ArchivingDialog()), true ],
+    "scripts_after"	: ``(CallScriptsAfterBackup()),
+    "summary"		: ``(SummaryDialog())
 ];
 
 map cmdline_description = $[
@@ -167,7 +178,7 @@ if (Backup::cron_mode == true)
     }
 
     // change workflow - start searching immediately, exit at summary stage
-    sequence["ws_start"] = "do_searching";
+    sequence["ws_start"] = "scripts_before";
     sequence["summary"] = $[
 	`abort	: `abort,
 	`finish	: `finish

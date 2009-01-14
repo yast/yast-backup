@@ -170,7 +170,7 @@ define symbol EvaluateFreeSpace (symbol ret) {
 
         if (AbortConfirmation(abort_question))
         {
-            SCR::Execute (.process.kill, backup_PID);
+            if (backup_PID != nil) SCR::Execute (.process.kill, backup_PID);
             return ret;
         }
         else
@@ -179,7 +179,7 @@ define symbol EvaluateFreeSpace (symbol ret) {
         }
     }
 
-    if ((boolean) SCR::Read (.process.running, backup_PID))
+    if (backup_PID != nil && (boolean) SCR::Read (.process.running, backup_PID))
     {
         sleep(wait);
 
@@ -1879,6 +1879,123 @@ define string MemorySpent () {
     return (string) run_ps["stdout"]:"";
 }
 
+define boolean CallPrePostBackupScripts (list <map> scripts_to_call, string dialog_caption) {
+    y2milestone ("Running scripts: %1", scripts_to_call);
+
+    Wizard::SetContents (
+	dialog_caption,
+	`VBox (
+	    `LogView (`id ("script_log"), _("User-Defined Scripts Output"), 18, 1024)
+	),
+	" ",
+	false,
+	false
+    );
+    UI::RecalcLayout();
+
+    boolean dialog_ret = true;
+    integer ui_wait_time = 100;
+
+    foreach (map script_to_call, scripts_to_call, {
+	string script = script_to_call["path"]:"";
+
+	if (script == nil || script == "") {
+	    y2error ("Cannot run script %1", script_to_call);
+	    return;
+	}
+
+	y2milestone ("Running script %1", script);
+	UI::ChangeWidget (`id ("script_log"), `LastLine, sformat(_("Starting script %1...\n"), script));
+
+	integer script_PID = (integer) SCR::Execute (.process.start_shell, script, $["C_locale":true]);
+	y2milestone ("Script started with PID %1", script_PID);
+
+	if (script_PID == nil || script_PID == 0) {
+	    y2error ("Cannot start script %1", script);
+	    Report::Error (sformat (_("Cannot start %1 script\n"), script));
+	    return;
+	}
+
+	any ret = nil;
+	string line = nil;
+	string errline = nil;
+
+	while ((boolean) SCR::Read (.process.running, script_PID) || ! (boolean) SCR::Read (.process.buffer_empty, script_PID)) {
+	    line = (string) SCR::Read (.process.read_line, script_PID);
+	    if (line != nil)
+		UI::ChangeWidget (`id ("script_log"), `LastLine, line + "\n");
+
+	    errline = (string) SCR::Read (.process.read_line_stderr, script_PID);
+	    if (errline != nil)
+		UI::ChangeWidget (`id ("script_log"), `LastLine, errline + "\n");
+
+	    if (Backup::cron_mode) {
+		sleep (wait_time);
+	    } else {
+		ret = UI::PollInput();
+
+		if (ret == `abort || ret == `cancel) {
+		    y2warning("Abort pressed");
+		    ret = `abort;
+
+		    if (AbortConfirmation (`changed)) {
+			SCR::Execute (.process.kill, script_PID);
+			dialog_ret = false;
+			break;
+		    }
+		}
+
+		if (line == nil && errline == nil)
+		    sleep (ui_wait_time);
+	    }
+	}
+
+	SCR::Execute (.process.release, script_PID);
+
+	UI::ChangeWidget (`id ("script_log"), `LastLine, "\n\n");
+
+	if (dialog_ret != true) break;
+    });
+
+    return dialog_ret;
+}
+
+define symbol CallScriptsBeforeBackup () {
+    list <map> scripts_to_call = filter (map one_script, Backup::backup_helper_scripts, {
+	return one_script["type"]:"before" == "before";
+    });
+
+    if (size (scripts_to_call) < 1) {
+	y2milestone ("No 'before' scripts to call...");
+	return `next;
+    }
+
+    if (! CallPrePostBackupScripts (scripts_to_call, _("User-Defined Scripts"))) {
+	y2milestone ("Aborting the backup");
+	return `abort;
+    }
+
+    return `next;
+}
+
+define symbol CallScriptsAfterBackup () {
+    list <map> scripts_to_call = filter (map one_script, Backup::backup_helper_scripts, {
+	return one_script["type"]:"before" != "before";
+    });
+
+    if (size (scripts_to_call) < 1) {
+	y2milestone ("No 'after' scripts to call...");
+	return `next;
+    }
+
+    if (! CallPrePostBackupScripts (scripts_to_call, _("User-Defined Scripts"))) {
+	y2milestone ("Aborting the backup");
+	return `abort;
+    }
+
+    return `next;
+}
+
 /**
  * Display progress of searching modified files in packages
  * @return symbol Symbol for wizard sequencer - pressed button
@@ -3246,6 +3363,259 @@ Replace the existing profile?
     return ret;
 }
 
+void RedrawScriptsTable (integer selected_item) {
+    integer counter = -1;
+
+    list <term> items = maplist (map one_item, Backup::backup_helper_scripts, {
+	counter = counter + 1;
+	// before
+	return `item (
+	    `id (counter),
+	    (one_item["type"]:"before" == "before" ?
+		// Script type
+		_("Run before backup")
+		:
+		// Script type
+		_("Run after backup")
+	    ),
+	    one_item["path"]:""
+	);
+    });
+
+    UI::ChangeWidget (`id ("table_of_scripts"), `Items, items);
+
+    if (size (Backup::backup_helper_scripts) > selected_item) {
+	UI::ChangeWidget (`id ("table_of_scripts"), `CurrentItem, selected_item);
+    }
+}
+
+void InitScriptContent () {
+    string file = (string) UI::QueryWidget (`id ("script_name"), `Value);
+
+    // the default content is taken from UI (might be already defined)
+    string script_content = (string) UI::QueryWidget (`id ("script_content"), `Value);
+
+    // if a file exists, the content is taken from there
+    if (FileUtils::Exists (file)) {
+	script_content = (string) SCR::Read (.target.string, file);
+
+	if (script_content == nil) {
+	    y2error ("Cannot read file %1", file);
+	    script_content = "";
+	}
+    } else {
+	y2warning ("File %1 does not exist (yet)", file);
+    }
+
+    // adjust UI
+    UI::ChangeWidget (`id ("script_content"), `Value, script_content);
+}
+
+boolean StoreScriptContent (string filename) {
+    string script_content = (string) UI::QueryWidget (`id ("script_content"), `Value);
+
+    if (! FileUtils::Exists (filename)) {
+	integer pos = findlastof (filename, "/");
+
+	if (pos == nil) {
+	    UI::SetFocus (`id ("script_content"));
+	    Report::Error (_("Invalid file name."));
+	    return false;
+	}
+
+	string directory = substring (filename, 0, pos + 1);
+
+	map cmd = (map) SCR::Execute (
+	    .target.bash_output,
+	    sformat ("mkdir -pv '%1' && touch '%2' && chmod 0700 '%2'", directory, filename)
+	);
+
+	if (cmd["exit"]:-1 != 0) {
+	    Report::Error (sformat (_("Cannot create file %1.
+Details: %2"), filename, cmd["stderr"]:""));
+	    return false;
+	}
+    }
+
+    if ((boolean) SCR::Write (.target.string, filename, script_content) != true) {
+	Report::Error (sformat (_("Cannot write to %1 file."), filename));
+	return false;
+    }
+
+    return true;
+}
+
+boolean AddEditScriptDialog (symbol ret) {
+    integer current_item = -1;
+    boolean editing = false;
+
+    string default_run_before_backup = "";
+    string default_run_after_backup = "";
+
+    // edit
+    if (ret == `edit_script) {
+	current_item = (integer) UI::QueryWidget (`id ("table_of_scripts"), `CurrentItem);
+	editing = true;
+    // add
+    } else {
+	if ((boolean) SCR::Execute (.target.mkdir, Backup::backup_scripts_dir) != true) {
+	    y2error ("Cannot create %1", Backup::backup_scripts_dir);
+	}
+    }
+
+	// >>> before backup - proposes a unique script name
+	map cmd = (map) SCR::Execute (
+	    .target.bash_output,
+	    sformat ("mktemp --dry-run -p '%1' -t run_before_backup.XXXXXXXXXXXXXXXX", String::Quote (Backup::backup_scripts_dir))
+	);
+
+	if (cmd["exit"]:-1 == 0) {
+	    default_run_before_backup = splitstring (cmd["stdout"]:"", "\n")[0]:"";
+	} else {
+	    y2warning ("Cannot propose a script name: %1", cmd);
+	}
+	// <<<
+
+	// >>> after backup - proposes a unique script name
+	cmd = (map) SCR::Execute (
+	    .target.bash_output,
+	    sformat ("mktemp --dry-run -p '%1' -t run_after_backup.XXXXXXXXXXXXXXXX", String::Quote (Backup::backup_scripts_dir))
+	);
+
+	if (cmd["exit"]:-1 == 0) {
+	    default_run_after_backup = splitstring (cmd["stdout"]:"", "\n")[0]:"";
+	} else {
+	    y2warning ("Cannot propose a script name: %1", cmd);
+	}
+	// <<<
+
+    map this_entry = Backup::backup_helper_scripts[current_item]:$[];
+
+    UI::OpenDialog (
+	`VBox (
+	    `MarginBox (1, 0,
+		`Left (`Heading ((editing == true ?
+		    _("Edit Backup Helper Script Options")
+		    :
+		    _("Add Backup Helper Script")
+		)))
+	    ),
+	    `MarginBox (1, 1, `VBox (
+		`Frame (_("Script Type"), `RadioButtonGroup (
+		    `id ("script_type"),
+		    `VBox (
+			`Left (`RadioButton (`id ("before"), `opt (`notify), _("&Before Backup"))),
+			`Left (`RadioButton (`id ("after"), `opt (`notify), _("&After Backup")))
+		    )
+		)),
+		`VSpacing (0.5),
+		`VSquash (`HBox (
+		    `Bottom (`ComboBox (`id ("script_name"), `opt (`editable, `hstretch, `notify), _("Script &Path"), [])),
+		    `Bottom (`PushButton (`id ("browse_script_name"), Label::BrowseButton()))
+		)),
+		`VSpacing (0.5),
+		`MinSize (80, 12, `MultiLineEdit (`id ("script_content"), _("Script &Content"), ""))
+	    )),
+	    `ButtonBox (
+		`PushButton (`id (`ok), Label::OKButton()),
+		`PushButton (`id (`cancel), Label::CancelButton())
+	    )
+	)
+    );
+
+    string current_script_type = "";
+    string default_script_path = "";
+
+    // Adjusting the defaults
+    if (this_entry["type"]:"before" == "before") {
+	current_script_type = "before";
+	default_script_path = default_run_before_backup;
+    } else {
+	current_script_type = "after";
+	default_script_path = default_run_after_backup;
+    }
+
+    string initial_script_path = this_entry["path"]:default_script_path;
+
+    // Adjusting UI
+    UI::ChangeWidget (`id ("script_type"), `CurrentButton, current_script_type);
+    UI::ChangeWidget (`id ("script_name"), `Items, toset ([this_entry["path"]:default_script_path, default_script_path]));
+    UI::ChangeWidget (`id ("script_name"), `Value, initial_script_path);
+
+    InitScriptContent();
+
+    any ret = nil;
+    boolean dialog_ret = false;
+    boolean path_changed_by_user = false;
+
+    while (true) {
+	ret = UI::UserInput();
+
+	if (ret == `ok) {
+	    this_entry["path"] = UI::QueryWidget (`id ("script_name"), `Value);
+	    this_entry["type"] = UI::QueryWidget (`id ("script_type"), `CurrentButton);
+
+	    if (this_entry["path"]:"" == "") {
+		UI::SetFocus (`id ("script_name"));
+		Report::Error (_("Script file name must be set."));
+		continue;
+	    }
+
+	    if (!StoreScriptContent (this_entry["path"]:""))
+		continue;
+
+	    // a new entry
+	    if (current_item == -1)
+		current_item = size (Backup::backup_helper_scripts);
+
+	    Backup::backup_helper_scripts[current_item] = this_entry;
+
+	    dialog_ret = true;
+	    break;
+	} else if (ret == `cancel) {
+	    break;
+
+	// Switching the script type
+	} else if (ret == "after" || ret == "before") {
+	    if (ret == "before") {
+		current_script_type = "before";
+		default_script_path = default_run_before_backup;
+	    } else {
+		current_script_type = "after";
+		default_script_path = default_run_after_backup;
+	    }
+
+	    if (path_changed_by_user != true) {
+		UI::ChangeWidget (`id ("script_name"), `Value, default_script_path);
+	    }
+
+	    InitScriptContent();
+
+	// Changed the script name
+	} else if (ret == "script_name") {
+	    path_changed_by_user = true;
+	    InitScriptContent();
+
+	// User pressed the [Browse] button
+	} else if (ret == "browse_script_name") {
+	    string file = UI::AskForExistingFile (Backup::backup_scripts_dir, "*", _("Choose a Script File Name"));
+
+	    if (file == nil) continue;
+
+	    UI::ChangeWidget (`id ("script_name"), `Value, file);
+	    InitScriptContent();
+	    path_changed_by_user = true;
+
+	} else {
+	    y2error ("Ret %1 not handled", ret);
+	}
+    }
+
+    UI::CloseDialog();
+
+    return dialog_ret;
+}
+
 /**
  * Display dialog with expert options (e.g. system area backup,
  * temporary location...)
@@ -3263,16 +3633,35 @@ Replace the existing profile?
 		`VBox (
 		    `HBox (
 			// text entry label
-			`InputField (`id (`tmp), `opt(`hstretch), _("&Temporary Location of Archive Parts"), Backup::tmp_dir),
+			`InputField (`id (`tmp), `opt(`hstretch), _("Temporary &Location of Archive Parts"), Backup::tmp_dir),
 			`HStretch(),
 			`PushButton(`id(`set_system), _("&Options..."))
 		    )
 		)
 	    ),
+	    `VSpacing(1),
+	    `Left(`Label (_("Pre and Post-Backup Scripts"))),
+	    `Table (
+		`id ("table_of_scripts"),
+		`header (
+		    // a header item
+		    _("Script Type"),
+		    // a header item
+		    _("Path")
+		),
+		[]
+	    ),
+	    `Left (`HBox (
+		`PushButton (`id (`add_script), `opt(`key_F3), _("&Add...")),
+		`PushButton (`id (`edit_script), `opt(`key_F4), _("&Edit...")),
+		`PushButton (`id (`delete_script), `opt(`key_F5), Label::DeleteButton())
+	    )),
 	    `VStretch()
 	),
 	expert_options_help(), true, true
     );
+
+    RedrawScriptsTable (0);
 
     // enable/disable widges
     if (Backup::archive_type == `txt)
@@ -3289,20 +3678,32 @@ Replace the existing profile?
     UI::SetFocus (`id (`finish));
 
     symbol ret = nil;
+    integer current_item = nil;
 
     while (ret != `finish && ret != `back && ret != `abort && ret != `set_system)
     {
 	ret = (symbol)UI::UserInput();
+	current_item = (integer) UI::QueryWidget (`id ("table_of_scripts"), `CurrentItem);
 
-	if (ret == `finish || ret == `set_system)
-	{
+	if (ret == `finish || ret == `set_system) {
 	    Backup::tmp_dir = (string)UI::QueryWidget(`id(`tmp), `Value);
 	    Backup::system = (boolean)UI::QueryWidget(`id(`system), `Value);
-	}
 
-	if (ret == `system)
-	{
+	} else if (ret == `system) {
 	    UI::ChangeWidget(`id(`set_system), `Enabled, (boolean)UI::QueryWidget(`id(`system), `Value));
+
+	} else if (ret == `add_script || ret == `edit_script) {
+	    if (AddEditScriptDialog (ret) == true)
+		// Redraw table and select either the new or the edited script
+		RedrawScriptsTable (ret == `add_script ? size(Backup::backup_helper_scripts)-1 : current_item);
+
+	} else if (ret == `delete_script) {
+	    if (Confirm::DeleteSelected () != true) continue;
+	    Backup::backup_helper_scripts[current_item] = nil;
+	    Backup::backup_helper_scripts = filter (map one_item, Backup::backup_helper_scripts, {
+		return one_item != nil;
+	    });
+	    RedrawScriptsTable (0);
 	}
     }
 
