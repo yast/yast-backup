@@ -1920,14 +1920,23 @@ define boolean CallPrePostBackupScripts (list <map> scripts_to_call, string dial
 	string line = nil;
 	string errline = nil;
 
-	while ((boolean) SCR::Read (.process.running, script_PID) || ! (boolean) SCR::Read (.process.buffer_empty, script_PID)) {
+	// something might be still in the buffer(s)
+	boolean last_line_non_empty = nil;
+
+	while ((boolean) SCR::Read (.process.running, script_PID) || ! (boolean) SCR::Read (.process.buffer_empty, script_PID) || last_line_non_empty == true) {
+	    last_line_non_empty = false;
+
 	    line = (string) SCR::Read (.process.read_line, script_PID);
-	    if (line != nil)
+	    if (line != nil) {
 		UI::ChangeWidget (`id ("script_log"), `LastLine, line + "\n");
+		last_line_non_empty = true;
+	    }
 
 	    errline = (string) SCR::Read (.process.read_line_stderr, script_PID);
-	    if (errline != nil)
+	    if (errline != nil) {
 		UI::ChangeWidget (`id ("script_log"), `LastLine, errline + "\n");
+		last_line_non_empty = true;
+	    }
 
 	    if (Backup::cron_mode) {
 		sleep (wait_time);
