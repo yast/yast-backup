@@ -3,6 +3,7 @@ Wed Jan 14 16:37:41 CET 2009 - locilka@suse.cz
 
 - Added support for user-defined pre- and post-backup scripts
   (bnc #466055).
+- Updated testsuites.
 - 2.18.0
 
 -------------------------------------------------------------------
