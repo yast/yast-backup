@@ -3396,6 +3396,11 @@ void RedrawScriptsTable (integer selected_item) {
     if (size (Backup::backup_helper_scripts) > selected_item) {
 	UI::ChangeWidget (`id ("table_of_scripts"), `CurrentItem, selected_item);
     }
+
+    boolean button_state = (size (items) > 0);
+
+    UI::ChangeWidget (`id (`delete_script), `Enabled, button_state);
+    UI::ChangeWidget (`id (`edit_script), `Enabled, button_state);
 }
 
 void InitScriptContent () {
