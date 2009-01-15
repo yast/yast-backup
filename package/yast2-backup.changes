@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Jan 15 17:15:13 CET 2009 - locilka@suse.cz
+
+- Fixed dialogs layout according to the YaST Style Guide (position
+  of Add/Edit/Delete buttons).
+- Asking for confirmation when deleting an entry from table.
+
+-------------------------------------------------------------------
 Wed Jan 14 16:37:41 CET 2009 - locilka@suse.cz
 
 - Added support for user-defined pre- and post-backup scripts
