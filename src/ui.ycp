@@ -1342,19 +1342,20 @@ Enter the filename to use.
 			`Left(`RadioButton(`id(`selected), `opt(`notify), _("&Selected"), Backup::backup_selected_ext2)),
 			`HBox(
 			    `HSpacing(3.0),
-			    // table header
-			    `Table(`id(`par), `header(_("Ext2 Partition"), _("Mount Point")), Backup::ext2_backup),
+			    `VBox (
+				// table header
+				`Table(`id(`par), `header(_("Ext2 Partition"), _("Mount Point")), Backup::ext2_backup),
+				`Left(`HBox(
+				    // push button label
+				    `PushButton(`id(`addnew),`opt(`key_F3), _("A&dd...") ) ,
+				    // push button label
+				    `PushButton(`id(`edit),`opt(`key_F4), _("&Edit...") ) ,
+				    // push button label
+				    `PushButton(`id(`delete),`opt(`key_F5), _("De&lete") )
+		    		))
+			    ),
 			    `HSpacing(2.0)
 			),
-
-			`HBox(
-			    // push button label
-			    `PushButton(`id(`addnew),`opt(`key_F3), _("A&dd...") ) ,
-			    // push button label
-			    `PushButton(`id(`edit),`opt(`key_F4), _("&Edit...") ) ,
-			    // push button label
-			    `PushButton(`id(`delete),`opt(`key_F5), _("De&lete") )
-		        ),
 		        `VSpacing(0.4)
 		    )
 	        )
@@ -1369,9 +1370,12 @@ Enter the filename to use.
 
     UI::ChangeWidget(`id(`par), `Enabled, Backup::backup_selected_ext2);
     UI::ChangeWidget(`id(`addnew), `Enabled, Backup::backup_selected_ext2);
-    UI::ChangeWidget(`id(`edit), `Enabled, Backup::backup_selected_ext2);
-    UI::ChangeWidget(`id(`delete), `Enabled, Backup::backup_selected_ext2);
 
+    // Enable the buttons only if they are of any use
+    boolean enable_modif_buttons = (size (Backup::ext2_backup) > 0);
+
+    UI::ChangeWidget(`id(`edit), `Enabled, enable_modif_buttons);
+    UI::ChangeWidget(`id(`delete), `Enabled, enable_modif_buttons);
 
     symbol ret = nil;
 
@@ -1425,6 +1429,8 @@ Enter the filename to use.
 
 	    if (ret == `delete)
 	    {
+		if (! Confirm::DeleteSelected()) continue;
+
 		Backup::ext2_backup = filter(term i, Backup::ext2_backup, ``{
 		    string tmp = i[0,0]:"";
 		    return (tmp != curr);
@@ -1476,6 +1482,11 @@ Enter the filename to use.
 	    }
 	}
 
+	// Enable the buttons only if they are of any use
+	enable_modif_buttons = (size (Backup::ext2_backup) > 0);
+
+	UI::ChangeWidget(`id(`edit), `Enabled, enable_modif_buttons);
+	UI::ChangeWidget(`id(`delete), `Enabled, enable_modif_buttons);
 
 	if (ret == `allmounted || ret == `selected || ret == `none)
 	{
@@ -2332,14 +2343,14 @@ Aborting the backup.
 		`header(" ", _("Filename"), _("Package")),
 		[]
 	    ),
-	    `HBox(
+	    `Left(`HBox(
 		// push button label
 		`PushButton(`id(`sel_file), _("Select or Deselect &File")),
 		// push button label
 		`PushButton(`id(`sel_all), _("&Select All")),
 		// push button label
 		`PushButton(`id(`desel_all), _("&Deselect All"))
-	    ),
+	    )),
 	    `VSpacing(1.0)
 	),
 	backup_help_file_selection(), true, true
@@ -4257,7 +4268,7 @@ string RenameProfilePupupDialog(string current_name) {
 	    `Left(`Label(_("Items Excluded from Search"))),
 	    // table header
 	    `Table(`id(`const), `opt(`vstretch), `header(_("Value"), _("Type")), []),
-	    `HBox(
+	    `Left(`HBox(
 		// push button label
                 `MenuButton(`id(`add_menu), _("A&dd"), [
 			`item(`id(`dir), _("&Directory...")),
@@ -4269,7 +4280,7 @@ string RenameProfilePupupDialog(string current_name) {
 		`PushButton(`id(`edit), `opt(`key_F4), _("&Edit...")),
 		// push button label
 		`PushButton(`id(`delete), `opt(`key_F5), _("De&lete"))
-	    )
+	    ))
 	),
         backup_help_constraints(), true, true
     );
