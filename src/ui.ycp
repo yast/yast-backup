@@ -4571,7 +4571,7 @@ Use it anyway?"), new_dir["text"]:""),
 	} else if (ret == `edit_include) {
 	    EditIncludeItem(value);
 	// Unknown
-	} else {
+	} else if (ret != `next && ret != `back && ret != `abort) {
 	    y2error("Unknown ret %1", ret);
 	}
 

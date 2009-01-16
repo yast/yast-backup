@@ -253,6 +253,8 @@ global map remove_result = $[];
 map detected_mpoints = nil;
 // end of global settings
 
+map cron_settings = $[];
+
 // media description - capacity is maximum file size which fits
 // to formatted medium using widely used file system (FAT on floppies)
 
@@ -1244,6 +1246,7 @@ global define void StoreSettingsToBackupProfile( string profile_name ) ``{
 //	`target_device		: target_device,
 //	`target_devices_options	: target_devices_options,
 	`backup_helper_scripts	: backup_helper_scripts,
+	`cron_settings		: cron_settings,
     ];
 
     // add the new profile
@@ -1352,6 +1355,8 @@ global define boolean RestoreSettingsFromBackupProfile( string profile_name ) ``
 
     backup_helper_scripts = profile[ `backup_helper_scripts ]:[];
 
+    cron_settings =	profile[ `cron_settings ]:	$[];
+
     return true;
 }
 
@@ -1406,6 +1411,8 @@ global define void RestoreDefaultSettings() ``{
     backup_helper_scripts = [];
 
     selected_profile = nil;
+
+    cron_settings = $[];
 }
 
 /**
