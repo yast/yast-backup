@@ -77,10 +77,12 @@ define boolean AbortConfirmation(symbol type) ``{
  * Ask user for some value: display dialog with label, text entry and OK/Cancel buttons.
  * @param label Displayed text above the text entry in the dialog
  * @param value Default text in text entry, for empty text set value to "" or nil
+ * @param list <string> values - pre-defined values for combo-box
+ * @param list <string> forbidden_letters - letters that will be filtered out
  * @return map Returned map: $[ "text" : string, "clicked" : symbol ]. Value with key text is string entered by user, symbol is `ok or `cancel depending which button was pressed.
  */
 
- define map ShowEditDialog(string label, string value, list<string> values) {
+ define map ShowEditDialog(string label, string value, list<string> values, list <string> forbidden_letters) {
 
     if (label == nil)
     {
@@ -120,6 +122,12 @@ define boolean AbortConfirmation(symbol type) ``{
 
     string text = (string) UI::QueryWidget(`id(`te), `Value);
     UI::CloseDialog();
+
+    if (forbidden_letters != nil && forbidden_letters != []) {
+	foreach (string one_letter, forbidden_letters, {
+	    text = mergestring (splitstring (text, one_letter), "");
+	});
+    }
 
     return $[ "text" : text, "clicked" : input ];
  }
