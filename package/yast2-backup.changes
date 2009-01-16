@@ -5,6 +5,7 @@ Fri Jan 16 12:35:47 CET 2009 - locilka@suse.cz
   the profile name (bnc #466750).
 - Fixed editing a profile to keep Automatic Backup settings
   (bnc #466773).
+- 2.18.1
 
 -------------------------------------------------------------------
 Thu Jan 15 17:15:13 CET 2009 - locilka@suse.cz
