@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jan 16 12:35:47 CET 2009 - locilka@suse.cz
+
+- Fixed Automatic Backup for profiles with a space character in
+  the profile name (bnc #466750).
+
+-------------------------------------------------------------------
 Thu Jan 15 17:15:13 CET 2009 - locilka@suse.cz
 
 - Fixed dialogs layout according to the YaST Style Guide (position

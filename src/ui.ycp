@@ -1389,7 +1389,7 @@ Enter the filename to use.
 
             if (ret == `edit)
 	    {
-	        map edited = ShowEditDialog(Label::EditButton(), curr, nil);
+	        map edited = ShowEditDialog(Label::EditButton(), curr, nil, []);
 
 		if (edited["clicked"]:nil == `ok)
 		{
@@ -1455,7 +1455,7 @@ Enter the filename to use.
 	    );
 
 	    // popup dialog header
-	    map result = ShowEditDialog(_("&Add Ext2 Partition"), "", detected_ext2_strings);
+	    map result = ShowEditDialog(_("&Add Ext2 Partition"), "", detected_ext2_strings, []);
 
 	    if (((symbol)(result["clicked"]:nil)) == `ok)
 	    {
@@ -3041,7 +3041,8 @@ Aborting the backup.
 	// TRANSLATORS: text of a popup dialog, %1 is a profile name to be renamed
 	dialog_text = sformat(_("Enter a new name for the %1 profile."), current_name);
     }
-    map new_name = ShowEditDialog(dialog_text, "", nil);
+    // double-quote in name breaks backup in several places
+    map new_name = ShowEditDialog(dialog_text, "", nil, ["\""]);
 
     while( (symbol)(new_name["clicked"]:nil) == `ok && Backup::backup_profiles[ (string)(new_name["text"]:nil) ]:nil != nil  )
     {
@@ -3049,7 +3050,8 @@ Aborting the backup.
 	if( ! Popup::YesNo(sformat(_("A profile %1 already exists.
 Replace the existing profile?
 "), new_name["text"]:"")) ) {
-	    new_name = ShowEditDialog(_("Enter a name for the new profile."), "", nil);
+	    // double-quote in name breaks backup at several places
+	    new_name = ShowEditDialog(_("Enter a name for the new profile."), "", nil, ["\""]);
 	}
 	else
 	{
@@ -3373,6 +3375,7 @@ Replace the existing profile?
 	    if( new_name != "" )
 	    {
 		Backup::StoreSettingsToBackupProfile( new_name );
+
 	    }
 	}
 
@@ -3759,14 +3762,17 @@ string RenameProfilePupupDialog(string current_name) {
 	//map current_settings = (map)eval(current_profile[`cron_settings]:$[]);
 
 	Backup::StoreSettingsToBackupProfile( new_name );
+
 	// "Renaming", Cron settings, It seems to be a hack }8->
 	Backup::backup_profiles[new_name, `cron_settings]
 	    = Backup::backup_profiles[current_name, `cron_settings]:$[];
 	// Setting that cron settings were changed
 	Backup::backup_profiles[new_name, `cron_settings, "cron_changed"] = true;
 	Backup::backup_profiles[current_name, `cron_settings, "cron_changed"] = true;
+
 	// Remove the backup profile, but do not remove cron file
 	Backup::RemoveBackupProfile( current_name, false );
+
 	return new_name;
     }
     return nil;
@@ -4299,7 +4305,7 @@ string RenameProfilePupupDialog(string current_name) {
 
  void AddExcludeItem_Regexp () {
 	    // textentry label
-	    map result = ShowEditDialog(_("&Add New Expression"), "", nil);
+	    map result = ShowEditDialog(_("&Add New Expression"), "", nil, []);
 
             if (result["clicked"]:nil == `ok) {
                 string new_regexp = (string) (result["text"]:nil);
@@ -4320,7 +4326,7 @@ string RenameProfilePupupDialog(string current_name) {
 
  void AddExcludeItem_Dir () {
 	    // textentry label
-	    map result = ShowEditDialog(_("&Add New Directory"), "", nil);
+	    map result = ShowEditDialog(_("&Add New Directory"), "", nil, []);
 
             if (result["clicked"]:nil == `ok) {
                 string new = (string)(result["text"]:nil);
@@ -4341,7 +4347,7 @@ string RenameProfilePupupDialog(string current_name) {
 
  void AddExcludeItem_Fs (list <string> & all_fss) {
 	    // combobox label
-	    map result = ShowEditDialog(_("&Add New File System"), "", all_fss);
+	    map result = ShowEditDialog(_("&Add New File System"), "", all_fss, []);
 
             if (result["clicked"]:nil == `ok) {
                 string new = (string)(result["text"]:nil);
@@ -4362,7 +4368,7 @@ string RenameProfilePupupDialog(string current_name) {
 
  void ExcludeItemEdit (string value, string type, list <string> & all_fss) {
 	    // textentry label
-	    map result = ShowEditDialog(Label::EditButton(), value, (type == filesystem_text) ? all_fss : nil);
+	    map result = ShowEditDialog(Label::EditButton(), value, (type == filesystem_text) ? all_fss : nil, []);
 
             if (result["clicked"]:nil == `ok) {
                 string new_txt = (string)(result["text"]:nil);
