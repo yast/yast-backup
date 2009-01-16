@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Jan 16 12:35:47 CET 2009 - locilka@suse.cz
+
+- Fixed Automatic Backup for profiles with a space character in
+  the profile name (bnc #466750).
+- 2.17.5
+
+-------------------------------------------------------------------
 Tue Jan 13 15:47:54 CET 2009 - locilka@suse.cz
 
 - Fixed editing the Ext2 File System Critical Area Backup items

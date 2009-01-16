@@ -37,5 +37,4 @@ export PATH=$PATH:/sbin
 
 # start backup - set cron mode, set nice level to not slowdown other processes
 # set server component testsuite to parse UI requests 
-nice -n 15 /usr/lib/YaST2/bin/y2base backup '("cron")' '("'$PROFILE'")' UI > /dev/null
-
+nice -n 15 /usr/lib/YaST2/bin/y2base backup "(\"cron\")" "(\"${PROFILE}\")" UI > /dev/null
