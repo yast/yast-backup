@@ -3,6 +3,8 @@ Fri Jan 16 12:35:47 CET 2009 - locilka@suse.cz
 
 - Fixed Automatic Backup for profiles with a space character in
   the profile name (bnc #466750).
+- Fixed editing a profile to keep Automatic Backup settings
+  (bnc #466773).
 - 2.17.5
 
 -------------------------------------------------------------------
