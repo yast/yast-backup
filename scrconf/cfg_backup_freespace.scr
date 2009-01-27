@@ -21,10 +21,11 @@
  *	Read(.backup.free_space, "/abcd2")
  *	(-1) // Cannot find '/bin/df' binary
  *
- * Agent calls command '/bin/df $directory' and returns the available space
- * in 1K blocks. -1 is returned in case of any error, such as 'Directory does
- * not exist', 'Object is not a directory', '/bin/df does not exist on the
- * system' or 'Directory not defined'. Every error should appear in the y2log.
+ * Descriotion:
+ * 	Agent calls command '/bin/df $directory' and returns the available space
+ * 	in 1K blocks. -1 is returned in case of any error, such as 'Directory does
+ * 	not exist', 'Object is not a directory', '/bin/df does not exist on the
+ * 	system' or 'Directory not defined'. Every error should appear in the y2log.
  *
  * $Id$
  *
