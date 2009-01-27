@@ -3,7 +3,6 @@
 #
 
 scrconf_DATA =	proc_filesystems.scr \
-		cfg_backup.scr \
-		cfg_backup_freespace.scr
+		cfg_backup.scr
 
 EXTRA_DIST = $(scrconf_DATA)
