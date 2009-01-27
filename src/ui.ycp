@@ -74,13 +74,13 @@ define void CheckFreeSpace () {
 	enough_free_space_target = true;
 
 	// check the tmpdir free space
-	integer free_tmp = (integer) SCR::Read(.backup.free_space, Backup::tmp_dir);
+	integer free_tmp = (integer) SCR::Read(.system.freespace, Backup::tmp_dir);
 	if (free_tmp != -1 && free_tmp < min_free_space) {
 	    enough_free_space_tmp = false;
 	}
 
 	// check the targetdir free space
-	integer free_target = (integer) SCR::Read(.backup.free_space, Backup::target_dir);
+	integer free_target = (integer) SCR::Read(.system.freespace, Backup::target_dir);
 	if (free_target != -1 && free_target < min_free_space) {
 	    enough_free_space_target = false;
 	}
