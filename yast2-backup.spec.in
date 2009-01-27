@@ -26,6 +26,8 @@ Requires:	util-linux
 Requires:	yast2
 Requires:	yast2-nfs-client
 Requires:	yast2-storage
+# ag_freespace
+Requires:	yast2 >= 2.18.4
 
 # new builtin lsubstring
 Conflicts:	yast2-core < 2.17.22
