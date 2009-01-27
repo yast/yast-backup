@@ -59,9 +59,7 @@ Obsoletes:	yast2-trans-backup
 %dir @yncludedir@/backup
 @scrconfdir@/proc_filesystems.scr
 @agentdir@/ag_file_append
-@agentdir@/ag_free_space
 @scrconfdir@/cfg_backup.scr
-@scrconfdir@/cfg_backup_freespace.scr
 @yncludedir@/backup/*
 @clientdir@/backup*.ycp
 @ybindir@/backup_*
