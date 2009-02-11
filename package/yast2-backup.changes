@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Feb 11 13:59:51 CET 2009 - coolo@suse.de
+
+- buildrequire yast2-slp to fix build
+
+-------------------------------------------------------------------
 Tue Jan 27 17:42:55 CET 2009 - locilka@suse.cz
 
 - SCR agent .backup.free_space has been moved to yast2-2.18.4 and
