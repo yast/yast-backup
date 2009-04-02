@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Apr  2 13:56:07 CEST 2009 - locilka@suse.cz
+
+- Fixed reporting for automatic backup (bnc #490995).
+- 2.18.3
+
+-------------------------------------------------------------------
 Wed Feb 11 13:59:51 CET 2009 - coolo@suse.de
 
 - buildrequire yast2-slp to fix build
