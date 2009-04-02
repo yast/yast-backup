@@ -2093,10 +2093,7 @@ Aborting the backup.
 	}
 
 	if (Backup::cron_mode) {
-	    // in cron mode only wait for subprocess
-	    while ((string) SCR::Read (.process.read, backup_PID) != nil) {
-		sleep(wait_time);
-	    }
+	    sleep(wait_time);
 
 	    ret = nil;
 	} else {
@@ -2213,14 +2210,7 @@ Aborting the backup.
 
 	    if (Backup::cron_mode == true)
 	    {
-		// in cron mode only wait for subprocess
-		while ((boolean) SCR::Read (.process.running, backup_PID) || ! (boolean) SCR::Read (.process.buffer_empty, backup_PID))
-		{
-		    while ((string) SCR::Read (.process.read, backup_PID) != nil) {
-			// do nothing
-		    }
-		    sleep(wait_time);
-		}
+		sleep(wait_time);
 
 		ret = nil;
 	    }
