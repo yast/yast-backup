@@ -3,6 +3,7 @@ Wed Apr  8 10:57:56 CEST 2009 - kmachalkova@suse.cz
 
 - Adjusted to new Nfs::Mount API (5th param specifying nfs type -
   nfs[23] vs. nfs4 is required). Assuming default 'nfs' here
+- 2.18.4
 
 -------------------------------------------------------------------
 Thu Apr  2 13:56:07 CEST 2009 - locilka@suse.cz
