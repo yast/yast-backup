@@ -469,7 +469,7 @@ global define string get_search_script_parameters() ``{
 global define boolean PrepareBackup() ``{
     if (target_type == `nfs && nfsmount == nil)
     {
-	nfsmount = Nfs::Mount(nfsserver, nfsexport, nil, "");
+	nfsmount = Nfs::Mount(nfsserver, nfsexport, nil, "", "");
 	return nfsmount != nil;
     }
 
