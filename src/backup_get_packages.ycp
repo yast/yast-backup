@@ -9,7 +9,7 @@
  *    Ladislav Slezak <lslezak@suse.cz>
  *    Lukas Ocilka <locilka@suse.cz>
  *
- *  $Id:$
+ *  $Id$
  *
  *  Client for returning available packages.
  *  Client used by backup module. This should save memory.
