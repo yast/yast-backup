@@ -44,7 +44,8 @@ Provides:	yast2-trans-backup
 Obsoletes:	yast2-trans-backup
 
 %description
--
+This package contains a module which searches for changed files and
+backs them up.
 
 @PREP@
 
