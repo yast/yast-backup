@@ -2,7 +2,7 @@
 
 @HEADER@
 
-Summary:		Backup module for YaST2
+Summary:		YaST2 - System Backup
 BuildArchitectures:	noarch
 
 BuildRequires:	autoyast2-installation
