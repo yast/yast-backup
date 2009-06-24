@@ -62,7 +62,8 @@ select your backup medium.  If your backup medium is not in the list,
 select <B>Custom</B>.  Then enter the volume size in <b>Custom Size</b>.</P>")
 
     // For translators: help text in tar options dialog - part 3/3
-    + _("<P><B>Note:</B> 1 kB=1000 Bytes, 1 kiB=1024 Bytes, etc. 
+    // http://en.wikipedia.org/wiki/Byte
+    + _("<P><B>Note:</B> 1 kB=1000 bytes, 1 KiB=1024 bytes, etc. 
 The entered volume size will be rounded down to a 
 multiple of 2048 bytes.</P>");
 }
