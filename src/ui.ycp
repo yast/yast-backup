@@ -1956,10 +1956,7 @@ Aborting the backup.
 	}
 
 	if (Backup::cron_mode) {
-	    // in cron mode only wait for subprocess
-	    while ((string) SCR::Read (.process.read, backup_PID) != nil) {
-		sleep(wait_time);
-	    }
+	    sleep(wait_time);
 
 	    ret = nil;
 	} else {
@@ -2076,14 +2073,7 @@ Aborting the backup.
 
 	    if (Backup::cron_mode == true)
 	    {
-		// in cron mode only wait for subprocess
-		while ((boolean) SCR::Read (.process.running, backup_PID) || ! (boolean) SCR::Read (.process.buffer_empty, backup_PID))
-		{
-		    while ((string) SCR::Read (.process.read, backup_PID) != nil) {
-			// do nothing
-		    }
-		    sleep(wait_time);
-		}
+		sleep(wait_time);
 
 		ret = nil;
 	    }
@@ -2835,16 +2825,9 @@ Aborting the backup.
 	    }
 
 	    if (Backup::cron_mode) {
-		// in cron mode only wait for subprocess (and free space!)
-		while (((boolean) SCR::Read (.process.running, backup_PID) || ! (boolean) SCR::Read (.process.buffer_empty, backup_PID)) && enough_free_space_tmp && enough_free_space_target) {
-		    while ((string) SCR::Read (.process.read_line, backup_PID) != nil) {
-			// do nothing
-		    }
-		    sleep(wait_time);
-		    CheckFreeSpace();
-		}
-
 		ret = nil;
+		sleep(wait_time);
+		CheckFreeSpace();
 	    } else {
 		ret = waitForUserOrProcess(wait_time, `changed);
 		CheckFreeSpace();
