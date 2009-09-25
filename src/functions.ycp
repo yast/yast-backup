@@ -911,7 +911,7 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
 	return nil;
     }
 
-    string mpoint = Nfs::Mount(server, share, nil, "");
+    string mpoint = Nfs::Mount(server, share, nil, "", "");
 
     if (mpoint == nil)
     {
