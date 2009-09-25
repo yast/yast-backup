@@ -649,7 +649,7 @@ define boolean AbortNewProfileCreation(string profile_name) {
 
 	    if (Backup::target_type == `nfs)
 	    {
-		nfsdir = Nfs::Mount(Backup::nfsserver, Backup::nfsexport, nil, "");
+		nfsdir = Nfs::Mount(Backup::nfsserver, Backup::nfsexport, nil, "", "");
 
 		if (nfsdir == nil)
 		{
