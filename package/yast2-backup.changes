@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Dec  2 15:41:11 CET 2009 - locilka@suse.cz
+
+- Fixed infinite loop in case of old archives to keep set to zero
+  (bnc #550996).
+- 2.13.7
+
+-------------------------------------------------------------------
 Thu Oct 23 17:05:12 CEST 2008 - locilka@suse.cz
 
 - Fixed storing the symlinks.
