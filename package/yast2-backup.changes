@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Dec  2 15:41:11 CET 2009 - locilka@suse.cz
+
+- Fixed infinite loop in case of old archives to keep set to zero
+  (bnc #550996).
+- 2.16.8
+
+-------------------------------------------------------------------
 Wed Jul  8 15:26:23 CEST 2009 - locilka@suse.cz
 
 - Fixed storing some additional backup information during
