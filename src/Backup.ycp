@@ -1874,10 +1874,10 @@ global define map RemoveOldSingleArchives(string name, integer max) ``{
 
     y2milestone("Old archives: %1", files);
 
-    if (size(files) >= max && max >= 0)
+    if (size(files) > 0 && size(files) >= max && max >= 0)
     {
 	// remove the old archives
-	while(size(files) >= max)
+	while(size(files) > 0 && size(files) >= max)
 	{
 	    string oldarchive = files[size(files) - 1]:"__DUMMY__";
 
