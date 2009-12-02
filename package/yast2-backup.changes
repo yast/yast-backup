@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Dec  2 15:41:11 CET 2009 - locilka@suse.cz
+
+- Fixed infinite loop in case of old archives to keep set to zero
+  (bnc #550996).
+- 2.18.5
+
+-------------------------------------------------------------------
 Wed Jun 24 13:35:51 CEST 2009 - locilka@suse.cz
 
 - Fixed 'bytes' units in help text (bnc #513438).
