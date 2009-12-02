@@ -3,6 +3,8 @@ Wed Dec  2 15:41:11 CET 2009 - locilka@suse.cz
 
 - Fixed infinite loop in case of old archives to keep set to zero
   (bnc #550996).
+- Fixed Mode when running in cron, 'commandline' is used instead of
+  'testsuite' (bnc #548427).
 - 2.16.8
 
 -------------------------------------------------------------------
