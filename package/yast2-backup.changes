@@ -8,6 +8,13 @@ Wed Dec  2 15:41:11 CET 2009 - locilka@suse.cz
 - 2.17.7
 
 -------------------------------------------------------------------
+Wed Jul  8 15:26:23 CEST 2009 - locilka@suse.cz
+
+- Fixed storing some additional backup information during
+  an automatic backup (bnc #490995).
+- 2.17.6
+
+-------------------------------------------------------------------
 Wed Jun 24 13:35:51 CEST 2009 - locilka@suse.cz
 
 - Fixed 'bytes' units in help text (bnc #513438).
@@ -17,13 +24,6 @@ Wed Apr  8 16:58:11 CEST 2009 - kmachalkova@suse.cz
 
 - Adjusted to new Nfs::Mount API (5th param specifying nfs type -
   nfs[23] vs. nfs4 is required). Assuming default 'nfs' here 
-
--------------------------------------------------------------------
-Wed Jul  8 15:26:23 CEST 2009 - locilka@suse.cz
-
-- Fixed storing some additional backup information during
-  an automatic backup (bnc #490995).
-- 2.17.6
 
 -------------------------------------------------------------------
 Fri Jan 16 12:35:47 CET 2009 - locilka@suse.cz
