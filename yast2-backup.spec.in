@@ -10,7 +10,7 @@ BuildRequires:	perl-XML-Writer
 BuildRequires:	update-desktop-files
 BuildRequires:	yast2
 BuildRequires:	yast2-devtools
-BuildRequires:	yast2-nfs-client
+BuildRequires:	yast2-nfs-client >= 2.17.12
 BuildRequires:	yast2-testsuite
 BuildRequires:	yast2-core >= 2.17.22
 
@@ -24,7 +24,7 @@ Requires:	perl
 Requires:	tar
 Requires:	util-linux
 Requires:	yast2
-Requires:	yast2-nfs-client
+Requires:	yast2-nfs-client >= 2.17.12
 Requires:	yast2-storage
 
 # new builtin lsubstring
