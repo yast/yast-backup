@@ -17,9 +17,8 @@ X-SuSE-YaST-SortKey=
 X-SuSE-YaST-AutoInstResource=
 
 Icon=yast-backup
-Exec=/sbin/yast2 backup 
+Exec=xdg-su -c "/sbin/yast2 backup"
 
 Name=System Backup
 GenericName=Back up files and system areas
-X-KDE-SubstituteUID=true
 StartupNotify=true
