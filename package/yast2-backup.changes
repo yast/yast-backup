@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Jan 25 16:36:47 CET 2010 - locilka@suse.cz
+
+- Fixed low speed of automatic backup (BNC #568615).
+
+-------------------------------------------------------------------
 Wed Dec  2 15:41:11 CET 2009 - locilka@suse.cz
 
 - Fixed infinite loop in case of old archives to keep set to zero
