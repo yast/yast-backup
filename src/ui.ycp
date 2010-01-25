@@ -181,7 +181,7 @@ define symbol EvaluateFreeSpace (symbol ret) {
 
     if (backup_PID != nil && (boolean) SCR::Read (.process.running, backup_PID))
     {
-        sleep(wait);
+        if ((boolean) SCR::Read (.process.buffer_empty, backup_PID) == true) sleep(wait);
 
         ret = (symbol) UI::PollInput();
 
@@ -1950,7 +1950,7 @@ define boolean CallPrePostBackupScripts (list <map> scripts_to_call, string dial
 	    }
 
 	    if (Backup::cron_mode) {
-		sleep (wait_time);
+		if ((boolean) SCR::Read (.process.buffer_empty, backup_PID) == true) sleep (wait_time);
 	    } else {
 		ret = UI::PollInput();
 
@@ -1966,7 +1966,7 @@ define boolean CallPrePostBackupScripts (list <map> scripts_to_call, string dial
 		}
 
 		if (line == nil && errline == nil)
-		    sleep (ui_wait_time);
+		    if ((boolean) SCR::Read (.process.buffer_empty, backup_PID) == true) sleep (ui_wait_time);
 	    }
 	}
 
@@ -2093,7 +2093,8 @@ Aborting the backup.
 	}
 
 	if (Backup::cron_mode) {
-	    sleep(wait_time);
+	    // BNC #568615: yast2 backup takes much longer when scheduled
+	    if ((boolean) SCR::Read (.process.buffer_empty, backup_PID) == true) sleep(wait_time);
 
 	    ret = nil;
 	} else {
@@ -2210,7 +2211,8 @@ Aborting the backup.
 
 	    if (Backup::cron_mode == true)
 	    {
-		sleep(wait_time);
+		// BNC #568615: yast2 backup takes much longer when scheduled
+		if ((boolean) SCR::Read (.process.buffer_empty, backup_PID) == true) sleep(wait_time);
 
 		ret = nil;
 	    }
@@ -2963,7 +2965,7 @@ Aborting the backup.
 
 	    if (Backup::cron_mode) {
 		ret = nil;
-		sleep(wait_time);
+		if ((boolean) SCR::Read (.process.buffer_empty, backup_PID) == true) sleep(wait_time);
 		CheckFreeSpace();
 	    } else {
 		ret = waitForUserOrProcess(wait_time, `changed);

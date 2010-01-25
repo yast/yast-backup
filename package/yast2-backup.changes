@@ -1,4 +1,9 @@
 ------------------------------------------------------------------
+Mon Jan 25 16:36:47 CET 2010 - locilka@suse.cz
+
+- Fixed low speed of automatic backup (BNC #568615).
+
+------------------------------------------------------------------
 Wed Jan 13 18:56:03 CET 2010 - kmachalkova@suse.cz
 
 - Adjusted .desktop file(s) to wrap /sbin/yast2/ calls in xdg-su
