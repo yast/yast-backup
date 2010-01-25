@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Jan 25 16:36:47 CET 2010 - locilka@suse.cz
+
+- Fixed low speed of automatic backup (BNC #568615).
+- 2.17.8
+
+-------------------------------------------------------------------
 Mon Dec  7 11:27:04 CET 2009 - locilka@suse.cz
 
 - Fixed RPM dependencies
