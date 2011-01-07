@@ -1,4 +1,11 @@
 ------------------------------------------------------------------
+Fri Jan  7 14:17:26 CET 2011 - locilka@suse.cz
+
+- Excluding '/var/lib/ntp/proc' directory and filesystem type
+  'none' by default (BNC #624826)
+- 2.20.1
+
+------------------------------------------------------------------
 Mon Jan 25 16:36:47 CET 2010 - locilka@suse.cz
 
 - Fixed low speed of automatic backup (BNC #568615).

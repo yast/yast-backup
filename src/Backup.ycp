@@ -123,13 +123,13 @@ global boolean default_display = false;			// display files before creating archi
 global boolean default_do_md5_test = true;
 global boolean default_perms = true;			// store RPM file if owner/permissions were changed
 
-global list<string> default_default_dir = [ "/media", "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache", "/sys", "/windows", "/mnt" ];		// default excluded directoried from search
+global list<string> default_default_dir = [ "/media", "/tmp", "/var/lock", "/var/run", "/var/tmp", "/var/cache", "/sys", "/windows", "/mnt", "/var/lib/ntp/proc" ];		// default excluded directoried from search
 global list<string> default_dir_list = default_default_dir;			// selected directoried to exclude
 global string default_include_dir = "/";
 global list<string> default_regexp_list = [];
 
 // iso9660 is used on CDROM, ntfs read-only
-global list<string> default_fs_exclude = [ "iso9660", "ntfs" ];		// selected filesystems to exclude from search
+global list<string> default_fs_exclude = [ "iso9660", "ntfs", "none" ];		// selected filesystems to exclude from search
 global list<string> default_detected_fs = nil;			// detected filesystems
 
 global list< map<string,any> > default_detected_ext2 = nil;		// detected mounted ext2 filesystems
