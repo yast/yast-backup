@@ -3641,17 +3641,15 @@ boolean AddEditScriptDialog (symbol ret) {
 	`VBox (
 	    `VSpacing(0.5),
 	    // check box label
-	    `CheckBoxFrame (
+	    `Left (`CheckBoxFrame (
 		`id(`system), `opt(`notify), _("Back Up &Hard Disk System Areas"), Backup::system,
-		`VBox (
-		    `HBox (
-			// text entry label
-			`InputField (`id (`tmp), `opt(`hstretch), _("Temporary &Location of Archive Parts"), Backup::tmp_dir),
-			`HStretch(),
-			`PushButton(`id(`set_system), _("&Options..."))
-		    )
+		`HBox (
+		    `HStretch(),
+		    `PushButton(`id(`set_system), _("&Options..."))
 		)
-	    ),
+	    )),
+	    // text entry label
+	    `InputField (`id (`tmp), `opt(`hstretch), _("Temporary &Location of Archive Parts"), Backup::tmp_dir),
 	    `VSpacing(1),
 	    `Left(`Label (_("Pre and Post-Backup Scripts"))),
 	    `Table (
