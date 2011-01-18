@@ -2,6 +2,7 @@
 Mon Jan 10 16:35:19 CET 2011 - locilka@suse.cz
 
 - Fixed adjusting temporary directory for backup (BNC #658150).
+- Adapted testsuite.
 - 2.20.2
 
 ------------------------------------------------------------------
