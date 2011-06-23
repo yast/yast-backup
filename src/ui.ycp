@@ -932,14 +932,17 @@ Enter the filename to use.
 		    continue;
 		}
 
-		string dir = substring(Backup::archive_name, 0, findlastof(Backup::archive_name, "/"));
-		// testing if the directory exists or if it is possible to create it
-		string error_message = IsPossibleToCreateDirectoryOrExists(dir);
-		if (error_message != "") {
+		if (regexpmatch (Backup::archive_name, "/")) {
+		    string dir = substring (Backup::archive_name, 0, findlastof (Backup::archive_name, "/"));
+
+		    // testing if the directory exists or if it is possible to create it
+		    string error_message = IsPossibleToCreateDirectoryOrExists (dir);
+		    if (error_message != "") {
 		    Popup::Error(error_message);
-		    
-		    cont = false;
-		    continue;
+
+			cont = false;
+			continue;
+		    }
 		}
 
 		if (!Backup::multi_volume)
