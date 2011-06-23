@@ -30,6 +30,8 @@ import "Popup";
 import "FileUtils";
 import "String";
 import "Service";
+import "Directory";
+import "String";
 
 include "backup/functions.ycp";
 
@@ -459,13 +461,90 @@ global define string get_search_script_parameters() ``{
 }
 
 /**
+ * When creating backup on NFS share, /etc/mtab is modified after mounting the NFS
+ * share to a temporary directory. This causes problems later after restoring
+ * the backup because mountpoint was only temporary and doesn't exist anymore.
+ *
+ * See BNC #675259
+ */
+string temporary_mtab_file = sformat("%1/temporary_mtab_file", Directory::tmpdir);
+string mtab_file = "/etc/mtab";
+
+/**
+ * Stores the content of /etc/mtab to a 'safe place'
+ */
+boolean BackupMtab () {
+    // nothing to backup
+    if (! FileUtils::Exists (mtab_file)) {
+	y2error ("There is no mtab file!");
+	return false;
+    }
+
+    y2milestone ("Creating backup of %1 to %2\n---\n%3\n---",
+	mtab_file, temporary_mtab_file,
+	SCR::Execute (.target.bash_output, sformat ("cat '%1'", String::Quote (mtab_file)))
+    );
+
+    // creating backup by `cat` - the original file attributes are kept intact
+    if ((integer) SCR::Execute (.target.bash,
+	sformat ("cat '%1' > '%2'", String::Quote (mtab_file), String::Quote (temporary_mtab_file))
+    ) != 0) {
+	y2error ("Cannot backup %1 to %2", mtab_file, temporary_mtab_file);
+	return false;
+    }
+
+    return true;
+}
+
+/**
+ * Restores the original content of /etc/mtab
+ */
+boolean RestoreMtab () {
+    // nothing to restore from
+    if (! FileUtils::Exists (temporary_mtab_file)) {
+	y2error ("There is no mtab file (%1) to restore", temporary_mtab_file);
+	return false;
+    }
+
+    y2milestone ("Restoring backup of %1 from %2", mtab_file, temporary_mtab_file);
+
+    // restoring by `cat` - the original file attributes are kept intact
+    if ((integer) SCR::Execute (.target.bash,
+	sformat ("cat '%1' > '%2'", String::Quote (temporary_mtab_file), String::Quote (mtab_file))
+    ) != 0) {
+	y2error ("Cannot restore content of %1 to %2", temporary_mtab_file, mtab_file);
+	return false;
+    }
+
+    y2milestone ("Current %1 file contains\n---\n%2\n---",
+	mtab_file,
+	SCR::Execute (.target.bash_output, sformat ("cat '%1'", String::Quote (mtab_file)))
+    );
+
+    // cleaning up
+    if ((integer) SCR::Execute (.target.bash, sformat ("rm -f '%1'", temporary_mtab_file)) != 0) {
+	y2error ("Cannot remove temporary mtab file %1", temporary_mtab_file);
+	return false;
+    }
+
+    return true;
+}
+
+/**
  * Pre-backup function - mount NFS share if required
  * @return boolean true on success
  */
 global define boolean PrepareBackup() ``{
     if (target_type == `nfs && nfsmount == nil)
     {
+	// BNC #675259: Backup /etc/mtab before it's changed by mounting a NFS share
+	BackupMtab();
+
 	nfsmount = Nfs::Mount(nfsserver, nfsexport, nil, "", "");
+
+	// BNC #675259: Restore backup of /etc/mtab before the backup archive is created
+	RestoreMtab();
+
 	return nfsmount != nil;
     }
 
