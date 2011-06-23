@@ -1,4 +1,12 @@
 ------------------------------------------------------------------
+Thu Jun 23 16:39:40 CEST 2011 - locilka@suse.cz
+
+- Fixed handling /etc/mtab while creating backup archive on NFS
+  share. Archive must contain the mtab file without a temporary
+  NFS entry, otherwise it breaks during restoration (BNC #675259).
+- 2.21.0
+
+------------------------------------------------------------------
 Mon Jan 10 16:35:19 CET 2011 - locilka@suse.cz
 
 - Fixed adjusting temporary directory for backup (BNC #658150).
