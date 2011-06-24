@@ -493,7 +493,7 @@ define boolean InstallNeededPackages (list<string> packages) {
 			    `HBox(
 				`HSpacing(1),
 				// integer field widget label
-				`IntField(`id(`old), _("Ma&ximum Number of Old Backups"), 0, 100, current_settings["old"]:3),
+				`IntField(`id(`old), _("Ma&ximum Number of Old Full Backups"), 0, 100, current_settings["old"]:3),
 				`HStretch()
 			    ),
 			    `VSpacing(0.45),

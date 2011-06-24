@@ -1,10 +1,16 @@
 ------------------------------------------------------------------
+Fri Jun 24 13:13:06 CEST 2011 - locilka@suse.cz
+
+- Enhanced dialog and help for automatic backup - emphasized the
+  fact that all backups are full backups (BNC #698802).
+- 2.21.0
+
+------------------------------------------------------------------
 Thu Jun 23 16:39:40 CEST 2011 - locilka@suse.cz
 
 - Fixed handling /etc/mtab while creating backup archive on NFS
   share. Archive must contain the mtab file without a temporary
   NFS entry, otherwise it breaks during restoration (BNC #675259).
-- 2.21.0
 
 ------------------------------------------------------------------
 Mon Jan 10 16:35:19 CET 2011 - locilka@suse.cz
