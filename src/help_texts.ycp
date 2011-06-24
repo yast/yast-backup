@@ -192,10 +192,11 @@ check <b>Start Backup Automatically</b> and set how often and when the
 backup should be started. Use the 24-hour clock format for <b>Hour</b>.</P>")
 
     // For translators: help text in the automatic backup dialog (3/4)
-    + _("<P>The previous backup archive, if it exists, will be renamed by 
+    + _("<P>The previous full backup archive, if it exists, will be renamed by 
 putting the date in the form YYYYMMDDHHMMSS at the beginning of the 
 filename. If the number of old archives is greater than the predefined 
-value, the oldest archives are deleted.</P>")
+value, the oldest archives are deleted. All archives are stored
+as <b>full backups</b>.</P>")
 
 	// For translators: help text in automatic backup dialog (4/4)
      + _("<p>For the root user to receive information about the backup, 
