@@ -54,7 +54,8 @@
     y2milestone("availables sources: %1", sources);
 
     // list of installed products (last installed is first in the list)
-    list installed_products = Pkg::TargetProducts();
+    list<map> installed_products = Pkg::ResolvableProperties("", `product, "");
+    installed_products = filter(map p, installed_products, {return p["status"]:`none == `installed;});
     y2milestone("installed products: %1", installed_products);
 
     // installation sources for installed products
