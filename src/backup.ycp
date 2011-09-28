@@ -169,7 +169,7 @@ if (Backup::cron_mode != true)
     // create wizard dialog
     Wizard::CreateDialog();
     // set icon
-    Wizard::SetTitleIcon("yast-backup");
+    Wizard::SetDesktopTitleAndIcon("backup");
 }
 
 Backup::ReadBackupProfiles();
