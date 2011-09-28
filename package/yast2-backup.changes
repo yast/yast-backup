@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Sep 28 19:56:34 CEST 2011 - visnov@suse.cz
+
+- set dialog title
+- 2.21.2
+
+-------------------------------------------------------------------
 Fri Sep 23 11:54:55 UTC 2011 - lslezak@suse.cz
 
 - use Pkg::ResolvableProperties() instead of obsoleted

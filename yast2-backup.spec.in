@@ -26,7 +26,7 @@ Requires:	gzip
 Requires:	perl
 Requires:	tar
 Requires:	util-linux
-Requires:	yast2
+Requires:	yast2 >= 2.21.22
 Requires:	yast2-nfs-client
 Requires:	yast2-storage
 # ag_freespace
