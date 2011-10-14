@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Oct 14 12:22:11 CEST 2011 - locilka@suse.cz
+
+- Using UI::AskForSaveFileName for selecting new/existent file
+  where to store the backup output (BNC #717164).
+- 2.21.3
+
+-------------------------------------------------------------------
 Wed Sep 28 19:56:34 CEST 2011 - visnov@suse.cz
 
 - set dialog title
