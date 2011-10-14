@@ -854,7 +854,7 @@ be backed up by root.
 
 	if (ret == `browse_file) {
 	    // TRANSLATORS: explanatory headline for UI::AskForExistingFile pop-up
-	    string new_filename = UI::AskForExistingFile("", "", _("Where would you like to store the backup?"));
+	    string new_filename = UI::AskForSaveFileName("", "", _("Where would you like to store the backup?"));
 	    if (new_filename != nil && new_filename != "") {
 		UI::ChangeWidget (`id(`filename), `Value, new_filename);
 	    }
