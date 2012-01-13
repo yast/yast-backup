@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jan 13 15:53:45 CET 2012 - locilka@suse.cz
+
+- Fixed parsing output from verification of packages (bnc #736233)
+- 2.21.4
+
+-------------------------------------------------------------------
 Fri Oct 14 12:22:11 CEST 2011 - locilka@suse.cz
 
 - Using UI::AskForSaveFileName for selecting new/existent file
