@@ -25,9 +25,9 @@ use strict;
 #function prototypes
 sub ReadAllPackages();
 sub FsToDirs(@);
-sub ReadAllFiles(%%);
-sub VerifyPackages(@%%);
-sub SearchDirectory($%%%);
+sub ReadAllFiles;
+sub VerifyPackages;
+sub SearchDirectory;
 
 # command line options
 my $search_files = 0;
@@ -453,6 +453,21 @@ sub PrintFoundFile($$$$$)
     }
 }
 
+sub split_rpm_verify ($) {
+    # format of the line:
+    # _9_chars_with_changed_attrs_   _1_char_file_type_ /changed/file/name
+    #
+    # example:
+    # 5S.T.....  c /etc/ssh/sshd_config
+    my $verify_output_line = shift;
+
+    my $rpmout = substr($verify_output_line, 0, 9);
+    my $filename = $verify_output_line;
+    $filename =~ s/^.{9}[^\/]+//;
+
+    return ($rpmout, $filename);
+}
+
 # Check file and return whether to backup or not
 sub CheckFile {
     my $line = shift;
@@ -470,25 +485,26 @@ sub CheckFile {
 		my $backup = 1;
 		my $file_size = 0;
 
-		$link = ($$line =~ /^....L.* (\/.*)/);
+		my ($verify_out, $filename) = split_rpm_verify ($$line);
 
+		$link = ($verify_out =~ /L/);
 		if ($link)
 		{
-		    $file = $1;
+		    $file = $filename;
 		}
 
 		if ($no_md5)
 		{
-		    $size = ($$line =~ /^S.* (\/.*)/);
+		    $size = ($verify_out =~ /S/);
 		    if ($size)
 		    {
-			$file = $1;
+			$file = $filename;
 		    }
 		    
-		    $mtime = ($$line =~ /^\..{6}T.* (\/.*)/);
+		    $mtime = ($verify_out =~ /T/);
 		    if ($mtime)
 		    {
-			$file = $1;
+			$file = $filename;
 		    }
 
 
@@ -529,7 +545,8 @@ sub CheckFile {
 				{
 				    while (my $fl = <RPMVRF>)
 				    {
-					if (($fl !~ /^S.* \/./) and ($fl !~ /^\..{6}T.* \/.*/) and ($fl !~ /^..5.* \/.*/))
+					my ($vo, $fn) = split_rpm_verify ($fl);
+					if (($vo !~ /S/) and ($vo !~ /T/) and ($vo !~ /5/))
 					{
 					    $backup = 0;
 					}
@@ -545,10 +562,11 @@ sub CheckFile {
 		}
 		else
 		{
-		    $md5_test = ($$line =~ /^..5.* (\/.*)/);
+		    my ($rpmout, $filename) = split_rpm_verify($$line);
+		    $md5_test = ($rpmout =~ /5/);
 		    if ($md5_test)
 		    {
-			$file = $1;
+			$file = $filename;
 		    }
 		}
 
@@ -563,7 +581,7 @@ sub PrintOutInstPrefix ($) {
 }
 
 # verify each package in the list
-sub VerifyPackages(@%%) {
+sub VerifyPackages() {
     my ($packages, $unavail, $duplicates) = @_;
 
     # rpm -q --filesbypkg @all-rpm-packages
@@ -635,7 +653,7 @@ sub VerifyPackages(@%%) {
 
 
 # read all files which belong to packages
-sub ReadAllFiles(%%) 
+sub ReadAllFiles() 
 {
     my ($all_files, $pkg_inodes) = @_;
     my %duplicates;
@@ -731,7 +749,7 @@ sub BackItUp_AccordingIncludes ($) {
 }
 
 # search files which do not belong to any package
-sub SearchDirectory($%%%)
+sub SearchDirectory()
 {
     my ($dir, $files, $exclude, $inodes) = @_;
     
