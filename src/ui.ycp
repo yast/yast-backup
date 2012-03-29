@@ -1241,7 +1241,7 @@ Enter the filename to use.
 		    // check box label
                     `Left(`CheckBox(`id(`search), `opt(`notify), _("&Back Up Files Not Belonging to Any Package"), Backup::do_search)),
                     // check box label
-                    `Left(`CheckBox(`id(`all_rpms_content), `opt(`notify), _("Back Up Content of &All Packages"), Backup::backup_all_rpms_content)),
+                    `Left(`CheckBox(`id(`all_rpms_content), `opt(`notify), _("Back up Content of &All Packages"), Backup::backup_all_rpms_content)),
 		    `VSpacing(0.3),
 		    // check box label
 		    `Left(`CheckBox(`id(`display), _("Display List of Files Before &Creating Archive"), Backup::display)),
