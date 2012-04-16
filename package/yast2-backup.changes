@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Apr 16 13:43:20 CEST 2012 - locilka@suse.com
+
+- UI refresh in searching for modified files optimized for faster
+  machines (and disks) (BNC #756493).
+
+-------------------------------------------------------------------
 Thu Mar 29 13:57:41 CEST 2012 - jsuchome@suse.cz
 
 - merged proofread texts 
