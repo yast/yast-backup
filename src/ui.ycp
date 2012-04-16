@@ -1757,8 +1757,31 @@ define void Search_ChangedPackageFiles () {
 		    }
 }
 
+integer ui_last_refresh = 0;
+integer ui_time_now = 0;
+
 /**
- * not sure
+ * Updates UI: Modified files size and count
+ */
+define void Search_UpdateFilesAndSize (integer & modified_size, integer & modified_num) {
+    # There's no UI in cron mode
+    if (Backup::cron_mode)
+        return;
+
+    ui_time_now = time();
+
+    if (ui_time_now > ui_last_refresh) {
+        ui_last_refresh = ui_time_now;
+
+        UI::ChangeWidget(`id(`totsize),  `Value,
+            _("Total Size: ") + String::FormatSize (modified_size));
+        UI::ChangeWidget(`id(`numfiles), `Value,
+            _("Modified Files: ") + sformat ("%1", modified_num));
+    }
+}
+
+/**
+ * Updates UI while searching for modified files
  */
 define void Search_ModifiedFiles () {
 			line = substring(line, size(id_file));
@@ -1767,11 +1790,7 @@ define void Search_ModifiedFiles () {
 			modified_size = modified_size + tointeger(size_str);
 			modified_num = modified_num + 1;
 
-			if (!Backup::cron_mode)
-			{
-			    UI::ChangeWidget(`id(`totsize),  `Value, _("Total Size: ")     + sformat("%1", String::FormatSize(modified_size)));
-			    UI::ChangeWidget(`id(`numfiles), `Value, _("Modified Files: ") + sformat("%1", modified_num));
-			}
+                        Search_UpdateFilesAndSize(modified_size, modified_num);
 
 			string found_file = substring(line, findfirstof(line, " ") + 1);
 
@@ -1826,7 +1845,7 @@ define void Search_ReadListOfFilesAndPackages () {
 					reading_installed_packages = true;
 				    } else {
 					if (line == id_files_read) {
-					    if (Backup::cron_mode != true) {
+					    if (!Backup::cron_mode) {
 						SetDialogContents_SearchingForModifiedFiles(total_packages);
 						UI::RecalcLayout();
 					    }
@@ -1882,6 +1901,27 @@ define string MemorySpent () {
     return (string) run_ps["stdout"]:"";
 }
 
+integer dir_last_refresh = 0;
+integer dir_time_now = 0;
+string dir_shown = "";
+
+define void Search_ShowCurrentDir (string & actual_dir) {
+    // No update
+    if (dir_shown == actual_dir)
+        return;
+
+    dir_time_now = time();
+
+    if (dir_time_now > dir_last_refresh) {
+        UI::ChangeWidget(`id(`directory), `Value, _("Searching in Directory: ") + actual_dir);
+        dir_last_refresh = dir_time_now;
+        dir_shown = actual_dir;
+
+        // BNC#172406: Cannot be used for ncurses
+        if (!in_ncurses) UI::RecalcLayout();
+    }
+}
+
 /**
  * Display progress of searching modified files in packages
  * @return symbol Symbol for wizard sequencer - pressed button
@@ -1935,6 +1975,7 @@ Aborting the backup.
 		    Search_ChangedPackageFiles();
 		} else {
 		    if  (substring(line, 0, size(id_file)) == id_file) {
+		        ui_last_refresh = 0;
 			Search_ModifiedFiles();
 		    } else {
 			if (line == id_nopackage) {
@@ -1986,18 +2027,26 @@ Aborting the backup.
     // searching files not belonging to any package
     if (search_no_package) {
 	string actual_dir = "/";
+
+        # Strings are not localized on purpose: Used for matching output from
+        # the searching script
 	string id_readingall = "Reading all files";
 	string id_readall = "Files read";
 	string id_dir = "Dir: ";
+
+        # Chached value
+	integer size_id_dir = size(id_dir);
 
 	if (!Backup::cron_mode) {
 	    SetDialogContents_SearchingFiles();
 	}
 
-	integer dircount = 0;
+	ui_last_refresh = 0;
 
 	list package_files_part = [];
 	integer new_files = 0;
+
+        string dir_shown = "";
 
 	while ((boolean) SCR::Read (.process.running, backup_PID) || ! (boolean) SCR::Read (.process.buffer_empty, backup_PID))
 	// test of script_out size is needed, because previous while cycle was interrupted and script could exited with no new output...
@@ -2019,12 +2068,7 @@ Aborting the backup.
 		    
 		    nopkg_num = nopkg_num + 1;
 
-		    // refresh status when 10 new files was found - it's faster...
-		    if (nopkg_num % 10 == 0 && Backup::cron_mode != true)
-		    {
-			UI::ChangeWidget(`id(`totsize),  `Value, _("Total Size: ") + String::FormatSize(nopkg_size));
-			UI::ChangeWidget(`id(`numfiles), `Value, _("Modified Files: ") + sformat("%1", nopkg_num));
-		    }
+		    Search_UpdateFilesAndSize(modified_size, modified_num);
 
 		    string found_file = substring(line, findfirstof(line, " ") + 1);
 
@@ -2042,35 +2086,20 @@ Aborting the backup.
 		    new_files = new_files + 1;
 
 		    // merge more files in one step - it's faster
-		    if (new_files == 1000)
-		    {
+		    if (new_files == 1000) {
 			package_files = merge(package_files, package_files_part);
 			package_files_part = [];
 			new_files = 0;
 		    }
-		}
-		else
-		{
-		    if  (substring(line, 0, size(id_dir)) == id_dir)
-		    {
-			dircount = dircount + 1;
-
-			if (dircount == 5)
-			{
-			    actual_dir = substring(line, size(id_dir));
-
-			    if (!Backup::cron_mode)
-			    {
-				UI::ChangeWidget(`id(`directory), `Value, _("Searching in Directory: ") + actual_dir);
-				// bug #172406
-				// Cannot be used for ncurses
-				if (!in_ncurses) UI::RecalcLayout();
-			    }
-
-			    dircount = 0;
+		} else {
+		    if (!Backup::cron_mode) {
+			if (substring (line, 0, size_id_dir) == id_dir) {
+                            actual_dir = substring(line, size_id_dir);
 			}
 		    }
 		}
+
+                Search_ShowCurrentDir (actual_dir);
 	    // <---
 
 	    script_out = [];
