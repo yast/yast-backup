@@ -1739,6 +1739,9 @@ define void Search_ProcessInstalledPackages () {
     }
 }
 
+integer ui_last_refresh = 0;
+integer ui_time_now = 0;
+
 define void Search_ChangedPackageFiles () {
 		    // store package's changed files
 		    if (size(package_files) > 0) {
@@ -1759,7 +1762,17 @@ define void Search_ChangedPackageFiles () {
 		    }
 		    package_num = package_num + 1;
 
-		    if (!Backup::cron_mode) {
+		    // Do not refresh UI in cron mode
+		    if (Backup::cron_mode)
+			return;
+
+		    ui_time_now = time();
+
+		    // BNC#756493: Refresh the UI max. once per second
+		    // Otherwise it uses too much CPU on faster systems / disks
+		    if (ui_time_now > ui_last_refresh) {
+			ui_last_refresh = ui_time_now;
+
 			UI::ChangeWidget(`id(`package), `Value, _("Searching in Package: ") + actual_package);
 			UI::ChangeWidget(`id(`progress), `Value, package_num);
 			// bug #172406
@@ -1767,9 +1780,6 @@ define void Search_ChangedPackageFiles () {
 			if (!in_ncurses) UI::RecalcLayout();
 		    }
 }
-
-integer ui_last_refresh = 0;
-integer ui_time_now = 0;
 
 /**
  * Updates UI: Modified files size and count
