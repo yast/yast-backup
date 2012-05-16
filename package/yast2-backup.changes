@@ -3,6 +3,7 @@ Thu May  3 16:07:13 CEST 2012 - locilka@suse.com
 
 - UI refresh adapted also in searching for changed files belonging
   to RPMs (BNC #756493).
+- 2.22.2
 
 -------------------------------------------------------------------
 Mon Apr 16 13:43:20 CEST 2012 - locilka@suse.com
