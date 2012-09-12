@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Sep 12 08:07:36 UTC 2012 - mfilka@suse.com
+
+- NFS related fields disabled when local backup selected - bnc#776079
+- 2.22.3 
+
+-------------------------------------------------------------------
 Thu May  3 16:07:13 CEST 2012 - locilka@suse.com
 
 - UI refresh adapted also in searching for changed files belonging
