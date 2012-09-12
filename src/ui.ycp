@@ -815,6 +815,8 @@ define boolean AbortNewProfileCreation(string profile_name) {
         backup_help_archive_settings(), true, true
     );
 
+    update_location_dialog();
+
     if (Backup::archive_type == nil)
 	Backup::archive_type = `tgz;
 
