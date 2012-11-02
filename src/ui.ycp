@@ -2827,6 +2827,8 @@ Aborting the backup.
 		{
 		    if (substring(line, 0, size(id_tar_exit)) == id_tar_exit)
 		    {
+			y2milestone ("Tar exit: %1\nErr: %2", line, SCR::Read (.process.read_stderr, backup_PID));
+			
 			tar_result = tointeger(substring(line, size(id_tar_exit)));
 		    }
 		    else
