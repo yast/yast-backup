@@ -219,7 +219,7 @@ if (! -d $temp_dir) {
 }
 
 my $tmp_dir_root = tempdir($temp_dir."/backup_tmp_XXXXXXXX", CLEANUP => 1);	# remove directory content at exit
-system("/bin/mkdir -p $tmp_dir_root");
+system("/bin/mkdir -p '$tmp_dir_root'");
 if (! -d $tmp_dir_root) {
     die "Cannot create directory $tmp_dir_root: ".$!;
 }
