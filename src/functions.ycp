@@ -25,6 +25,7 @@ import "FileUtils";
 import "Mode";
 import "FileUtils";
 import "Directory";
+import "String";
 
 textdomain "backup";
 
@@ -944,7 +945,6 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
     return server + ":" + share + slash + filename;
 }
 
-
 /**
  * Get available space in the directory
  * @param directory selected directory
@@ -960,12 +960,13 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
 	return $[];
     }
 
-    map result = (map)SCR::Execute(.target.bash_output, "/bin/df -P " + directory);
+    string cmd = sformat("/bin/df -P '%1'", String::Quote(directory));
+    map result = (map)SCR::Execute(.target.bash_output, cmd);
     integer exit = result["exit"]:-1;
 
     if (exit != 0)
     {
-	y2warning("Command df failed, exit: %1", exit);
+	y2warning("Command %1 failed, exit: %2", cmd, exit);
 	return $[];
     }
 
