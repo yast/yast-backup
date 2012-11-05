@@ -945,10 +945,6 @@ printf (\"%d%02d%02d%02d%02d%02d\", $year, $mon, $mday, $hour, $min, $sec);'");
     return server + ":" + share + slash + filename;
 }
 
-define string quote(string var) {
-    return mergestring(splitstring(var, "\""), "\\\\\"");
-}
-
 /**
  * Get available space in the directory
  * @param directory selected directory
@@ -964,7 +960,7 @@ define string quote(string var) {
 	return $[];
     }
 
-    string cmd = "/bin/df -P \"" + quote(directory) + "\"";
+    string cmd = sformat("/bin/df -P '%1'", String::Quote(directory));
     map result = (map)SCR::Execute(.target.bash_output, cmd);
     integer exit = result["exit"]:-1;
 
