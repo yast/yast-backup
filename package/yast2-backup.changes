@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Nov  2 11:27:29 UTC 2012 - locilka@suse.com
+
+- Escaping shell paths that might contain spaces or special
+  characters (BNC #776078)
+- 2.23.1
+
+-------------------------------------------------------------------
 Wed Sep 12 08:07:36 UTC 2012 - mfilka@suse.com
 
 - NFS related fields disabled when local backup selected - bnc#776079
