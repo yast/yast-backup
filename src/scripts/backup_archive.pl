@@ -22,6 +22,7 @@ use strict;
 
 use File::Temp qw( tempdir );
 use POSIX qw( strftime );
+use File::Path qw(make_path);
 
 # command line options
 my $archive_name = '';
@@ -75,9 +76,9 @@ sub create_dirs($)
     {
 	my $dirs = substr($f, 0, $ix);
 	if ($verbose) {
-	    print "Running: /bin/mkdir -p $dirs 2> /dev/null\n";
+	    print "Running: make_path $dirs\n";
 	}
-	system("/bin/mkdir -p $dirs 2> /dev/null");		# create directory with parents
+	make_path($dirs);
     }
 }
 
@@ -736,7 +737,8 @@ if (defined $multi_volume && $multi_volume >= 0)
     }
     
     my $num_string = sprintf("%02d", $volume_num);
-    $tar_command .= " -M -V 'YaST2 backup:' -f $output_directory/${num_string}_$output_filename";
+    my $out_filename = "$output_directory/${num_string}_$output_filename";
+    $tar_command .= " -M -V 'YaST2 backup:' -f '".qq($out_filename)."'";
 
     if ($multi_volume > 0)
     {
@@ -803,16 +805,16 @@ if (defined $multi_volume && $multi_volume >= 0)
 else
 {
     # create standard (no multi volume) archive 
-    $tar_command .= " -f $archive_name 2> /dev/null)";
-
+    $archive_name =~ s/\'/\'\\\'\'/g;
+    $tar_command .= " -f '$archive_name')";
     print "Tar command: $tar_command\n";
+
     system($tar_command);
 }
 
+print STDERR $!."\n";
 
 if ($verbose)
 {
     print "/Tar result: $?\n";
 }
-
-
