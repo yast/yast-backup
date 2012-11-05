@@ -574,7 +574,7 @@ global define boolean PostBackup() ``{
  */
 
 global define string get_archive_script_parameters(string file_list, string file_comment) ``{
-    string archive_options = " --verbose --files-info " + file_list + " --comment-file " + file_comment;
+    string archive_options = " --verbose --files-info '" + String::Quote(file_list) + "' --comment-file '" + String::Quote(file_comment) + "'";
 
     if (size(complete_backup) > 0)
     {
@@ -592,8 +592,8 @@ global define string get_archive_script_parameters(string file_list, string file
 
     y2debug("nfsmount: %1, archive_name: %2", nfsmount, archive_name);
 
-    archive_options = archive_options + " --archive-name " + ((target_type == `file) ? archive_name :
-	sformat("%1/%2", nfsmount, archive_name));
+    archive_options = archive_options + " --archive-name '" + String::Quote((target_type == `file) ? archive_name :
+	sformat("%1/%2", nfsmount, archive_name)) + "'";
 
     if (system)
     {
