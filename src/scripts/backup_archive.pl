@@ -22,7 +22,7 @@ use strict;
 
 use File::Temp qw( tempdir );
 use POSIX qw( strftime );
-use File::Path qw(make_path);
+use File::Path qw(mkpath);
 
 # command line options
 my $archive_name = '';
@@ -76,9 +76,9 @@ sub create_dirs($)
     {
 	my $dirs = substr($f, 0, $ix);
 	if ($verbose) {
-	    print "Running: make_path $dirs\n";
+	    print "Running: mkpath $dirs\n";
 	}
-	make_path($dirs);
+	mkpath($dirs);
     }
 }
 
