@@ -188,7 +188,7 @@ if ($archive_type eq 'txt')
     create_dirs($archive_name);
 
     open(OUT, '>', $archive_name)
-	or die "Error storing file list\n";
+	or die "Error storing file list to ".$archive_name.": ".$!."\n";
 
     if (defined open(FILES, $files_info))
     {
@@ -215,37 +215,37 @@ if ($archive_type eq 'txt')
 # create parent temporary directory
 system("/bin/mkdir -p '$temp_dir'");
 if (! -d $temp_dir) {
-    die "Cannot create directory $temp_dir: ".$!;
+    die "Cannot create directory ".$temp_dir.": ".$!;
 }
 
 my $tmp_dir_root = tempdir($temp_dir."/backup_tmp_XXXXXXXX", CLEANUP => 1);	# remove directory content at exit
 system("/bin/mkdir -p '$tmp_dir_root'");
 if (! -d $tmp_dir_root) {
-    die "Cannot create directory $tmp_dir_root: ".$!;
+    die "Cannot create directory ".$tmp_dir_root.": ".$!;
 }
 
 my $tmp_dir = $tmp_dir_root."/tmp";
 if (!mkdir($tmp_dir))
 {
-    die "Can not create directory $tmp_dir\n";
+    die "Can not create directory ".$tmp_dir.": ".$!."\n";
 }
 
 $tmp_dir .= "/info";
 if (!mkdir($tmp_dir))
 {
-    die "Can not create directory $tmp_dir\n";
+    die "Can not create directory ".$tmp_dir.": ".$!."\n";
 }
 
 my $tmp_dir_sys = $tmp_dir_root."/tmp/system";
 if (!mkdir($tmp_dir_sys))
 {
-    die "Can not create directory $tmp_dir_sys\n";
+    die "Can not create directory ".$tmp_dir_sys.": ".$!."\n";
 }
 
 my $files_num = 0;
 
 open(OUT, '>', $tmp_dir."/files")
-    or die "Can not open file $tmp_dir/files\n";
+    or die "Can not open file ".$tmp_dir."/files: ".$!."\n";
 
 
 print OUT "info/files\n";
@@ -471,8 +471,8 @@ foreach my $part (@ext2_parts)
 
 # filter files_info file, output only file names
 
-open(FILES_INFO, "> $tmp_dir/packages_info")
-    or die "Can not create file $tmp_dir/packages_info\n";
+open(FILES_INFO, '>', $tmp_dir."/packages_info")
+    or die "Can not create file ".$tmp_dir."/packages_info: ".$!."\n";
 
 my $package_name;
 my $install_prefix;
@@ -814,7 +814,17 @@ else
 
 print STDERR $!."\n";
 
+# Flush the error output
+select(STDERR);
+$| = 1;
+
+# Flush the standard output
+select(STDOUT);
+$| = 1;
+
 if ($verbose)
 {
     print "/Tar result: $?\n";
 }
+
+exit 0;
