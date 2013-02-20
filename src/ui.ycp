@@ -2855,15 +2855,15 @@ Aborting the backup.
     }
     // end while
 
-    y2milestone ("DEBUG: process running: %1", (boolean) SCR::Read (.process.running, backup_PID));
-    y2milestone ("DEBUG: buffer empty: %1", (boolean) SCR::Read (.process.buffer_empty, backup_PID));
+    y2milestone ("archiving process running: %1, buffer empty: %2",
+	(boolean) SCR::Read (.process.running, backup_PID),
+	(boolean) SCR::Read (.process.buffer_empty, backup_PID)
+    );
 
-    // Store process error output
+    // Store process error output if any
     any read_stderr = SCR::Read (.process.read_stderr, backup_PID);
     if (read_stderr != nil && read_stderr != "") {
-        y2error ("DEBUG: stderr: %1", read_stderr);
-    } else {
-        y2milestone ("DEBUG: stderr: %1", read_stderr);
+        y2error ("archiving process stderr: %1", read_stderr);
     }
 
     Backup::selected_files = $[];
