@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Feb 19 15:11:46 UTC 2013 - locilka@suse.com
+
+- Perl's make_path should be mkpath in SLE 11
+  see (bnc#801714, bnc#803291)
+
+-------------------------------------------------------------------
 Fri Nov  2 11:27:29 UTC 2012 - locilka@suse.com
 
 - Escaping shell paths that might contain spaces or special

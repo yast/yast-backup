@@ -2855,8 +2855,16 @@ Aborting the backup.
     }
     // end while
 
-    y2milestone ("DEBUG: running %1", (boolean) SCR::Read (.process.running, backup_PID));
-    y2milestone ("DEBUG: empty %1", (boolean) SCR::Read (.process.buffer_empty, backup_PID));
+    y2milestone ("archiving process running: %1, buffer empty: %2",
+	(boolean) SCR::Read (.process.running, backup_PID),
+	(boolean) SCR::Read (.process.buffer_empty, backup_PID)
+    );
+
+    // Store process error output if any
+    any read_stderr = SCR::Read (.process.read_stderr, backup_PID);
+    if (read_stderr != nil && read_stderr != "") {
+        y2error ("archiving process stderr: %1", read_stderr);
+    }
 
     Backup::selected_files = $[];
 
@@ -3128,6 +3136,7 @@ Replace the existing profile?
 	// part of summary text - %1 is file name
 	string profilesummary = (((boolean)(profilewritten["result"]:false)) == true) ? sformat(_("Autoinstallation profile saved to file %1."), (string)(profilewritten["profile"]:"")) : (em + _("Autoinstallation profile was not saved.") + _em);
 
+	y2milestone ("Tar result: '%1'", tar_result);
 	backup_result = backup_result
 	    // part of summary text
 	    + ((tar_result == 0) ? archive_created : (em + _("Archive creation failed") + _em))
