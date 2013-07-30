@@ -4,6 +4,8 @@
 Group:          System/YaST
 License:        GPL-2.0
 
+Requires:       yast2-ruby-bindings >= 1.0.0
+
 Summary:		YaST2 - System Backup
 BuildArchitectures:	noarch
 
@@ -65,10 +67,9 @@ backs them up.
 @agentdir@/ag_file_append
 @scrconfdir@/cfg_backup.scr
 @yncludedir@/backup/*
-@clientdir@/backup*.ycp
+@clientdir@/backup*.rb
 @ybindir@/backup_*
-@moduledir@/Backup.ycp
-@moduledir@/Backup.ybc
+@moduledir@/Backup.rb
 @desktopdir@/backup.desktop
 %doc @docdir@
 
