@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Jul 31 08:26:34 UTC 2013 - yast-devel@opensuse.org
+
+- converted from YCP to Ruby by YCP Killer
+  (https://github.com/yast/ycp-killer)
+- version 3.0.0
+
+-------------------------------------------------------------------
 Fri Nov  2 11:27:29 UTC 2012 - locilka@suse.com
 
 - Escaping shell paths that might contain spaces or special
