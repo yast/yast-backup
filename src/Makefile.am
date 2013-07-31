@@ -1,36 +1,35 @@
-#
-# Makefile.am for backup/src
-#
-# $Id$
-#
+# Sources for backup
 
-SUBDIRS = scripts
+module_DATA = \
+  modules/Backup.rb
+
+client_DATA = \
+  clients/backup.rb \
+  clients/backup_available_packages.rb \
+  clients/backup_save_profile.rb \
+  clients/backup_get_packages.rb
 
 yncludedir = @yncludedir@/backup
+ynclude_DATA = \
+  include/backup/ui.rb \
+  include/backup/help_texts.rb \
+  include/backup/functions.rb
 
-client_DATA =				\
-	backup_save_profile.ycp		\
-	backup_available_packages.ycp	\
-	backup_get_packages.ycp		\
-	backup.ycp	
+scrconf_DATA = \
+  scrconf/cfg_backup.scr \
+  scrconf/proc_filesystems.scr
 
-ynclude_DATA =		\
-	functions.ycp	\
-	ui.ycp		\
-	help_texts.ycp
+agent_SCRIPTS = \
+  servers_non_y2/ag_file_append
 
-desktop_DATA = backup.desktop
+ybin_SCRIPTS = \
+  bin/backup_archive.pl \
+  bin/backup_cron \
+  bin/backup_search.pl
 
-module_DATA = Backup.ycp
+desktop_DATA = \
+  desktop/backup.desktop
+
+EXTRA_DIST = $(module_DATA) $(client_DATA) $(ynclude_DATA) $(scrconf_DATA) $(agent_SCRIPTS) $(ybin_SCRIPTS) $(desktop_DATA)
 
 include $(top_srcdir)/Makefile.am.common
-
-backup:
-	ln -sf . backup
-
-ycpchook = backup
-
-YCPCFLAGS=-I.
-
-
-EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(module_DATA) $(desktop_DATA)
